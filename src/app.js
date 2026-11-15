@@ -137,6 +137,47 @@ let currentTournament = loadTournament() || null;
 let activeTournamentMatchId = null;
 
 // ==========================================
+// Team Selector Categories Helper
+// ==========================================
+function buildTeamOptionsHtml(selectedId, includeAllOption = false) {
+  const continents = [
+    { key: 'Europe', label: '🏆 European Clubs (UEFA)' },
+    { key: 'South America', label: '🔥 South American Clubs (CONMEBOL)' },
+    { key: 'North America', label: '⭐ North & Central American Clubs (CONCACAF)' },
+    { key: 'Asia & Oceania', label: '🌏 Asian & Oceanic Clubs (AFC / OFC)' },
+    { key: 'Africa', label: '🦁 African Clubs (CAF)' }
+  ];
+
+  let html = '';
+  if (includeAllOption) {
+    html += '<option value="ALL">All Clubs & National Teams (5,700+ Players)</option>';
+  }
+
+  for (const c of continents) {
+    const clubsInContinent = TEAMS.filter(t => (t.isClub || !t.fifa_rank) && t.continent === c.key);
+    if (clubsInContinent.length > 0) {
+      html += `<optgroup label="${c.label}">`;
+      html += clubsInContinent.map(t => `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join('');
+      html += '</optgroup>';
+    }
+  }
+
+  const otherClubs = TEAMS.filter(t => (t.isClub || !t.fifa_rank) && !t.continent);
+  if (otherClubs.length > 0) {
+    html += '<optgroup label="🌐 Other World Clubs">';
+    html += otherClubs.map(t => `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join('');
+    html += '</optgroup>';
+  }
+
+  const nations = TEAMS.filter(t => t.fifa_rank);
+  html += '<optgroup label="🌍 FIFA Senior National Teams (Top 150)">';
+  html += nations.map(t => `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>#${t.fifa_rank} ${escapeHtml(t.name)}</option>`).join('');
+  html += '</optgroup>';
+
+  return html;
+}
+
+// ==========================================
 // 1. Dream Team Studio
 // ==========================================
 function renderDreamStudio() {
@@ -165,16 +206,7 @@ function renderDreamStudio() {
   const opponentSelect = $('#dreamOpponentSelect');
   if (opponentSelect) opponentSelect.disabled = dreamConfig.opponentMode === 'ai-dream';
   if (opponentSelect && opponentSelect.children.length === 0) {
-    const clubs = TEAMS.filter(t => t.isClub || !t.fifa_rank);
-    const nations = TEAMS.filter(t => t.fifa_rank);
-    opponentSelect.innerHTML = `
-      <optgroup label="World Elite & Domestic Clubs">
-        ${clubs.map(t=>`<option value="${t.id}" ${t.id===dreamConfig.opponentId?'selected':''}>${escapeHtml(t.name)}</option>`).join('')}
-      </optgroup>
-      <optgroup label="Top 150 FIFA Senior National Teams">
-        ${nations.map(t=>`<option value="${t.id}" ${t.id===dreamConfig.opponentId?'selected':''}>#${t.fifa_rank} ${escapeHtml(t.name)}</option>`).join('')}
-      </optgroup>
-    `;
+    opponentSelect.innerHTML = buildTeamOptionsHtml(dreamConfig.opponentId);
   }
   const oppTeam = getTeam(dreamConfig.opponentId);
   $('#dreamOpponentPreview').innerHTML = dreamConfig.opponentMode === 'ai-dream'
@@ -421,17 +453,7 @@ function randomizeGalacticos() {
 function renderScoutingHub() {
   const teamFilter = $('#scoutTeamFilter');
   if (teamFilter && teamFilter.children.length <= 1) {
-    const clubs = TEAMS.filter(t => t.isClub || !t.fifa_rank);
-    const nations = TEAMS.filter(t => t.fifa_rank);
-    teamFilter.innerHTML = `
-      <option value="ALL">All Clubs & Nations</option>
-      <optgroup label="World Elite & Domestic Clubs">
-        ${clubs.map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('')}
-      </optgroup>
-      <optgroup label="Top 150 Senior National Teams">
-        ${nations.map(t=>`<option value="${t.id}">#${t.fifa_rank} ${escapeHtml(t.name)}</option>`).join('')}
-      </optgroup>
-    `;
+    teamFilter.innerHTML = buildTeamOptionsHtml(null, true);
   }
 
   const query = $('#scoutSearchInput').value.trim().toLowerCase();
@@ -754,19 +776,8 @@ function updatePlayButton(){
 
 function renderSelects(){
   const home=$('#homeSelect'),away=$('#awaySelect');
-  const clubs = TEAMS.filter(t => t.isClub || !t.fifa_rank);
-  const nations = TEAMS.filter(t => t.fifa_rank);
-
-  const optionsHtml = `
-    <optgroup label="World Elite & Domestic Clubs">
-      ${clubs.map(t=>`<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('')}
-    </optgroup>
-    <optgroup label="Top 150 FIFA Senior National Teams">
-      ${nations.map(t=>`<option value="${t.id}">#${t.fifa_rank} ${escapeHtml(t.name)}</option>`).join('')}
-    </optgroup>
-  `;
-  home.innerHTML=optionsHtml;
-  away.innerHTML=optionsHtml;
+  home.innerHTML = buildTeamOptionsHtml(match.homeId);
+  away.innerHTML = buildTeamOptionsHtml(match.awayId);
   home.value=match.homeId;
   away.value=match.awayId;
   $('#seedInput').value=match.seed;

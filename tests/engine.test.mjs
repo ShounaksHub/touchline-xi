@@ -4,7 +4,7 @@ import {TEAMS,getTeam} from '../src/data.js';
 import {createMatch,advanceMinute,playFullMatch,matchFromFrame,swapPlayer,changeFormation,applyTactic,validateLineup,resetStartingXI,applyShout,applyTeamTalk,simulatePenaltyShootout} from '../src/engine.js';
 
 test('clubs and top 150 national teams contain unique sixteen-player rosters',()=>{
-  assert.equal(TEAMS.length, 166);
+  assert.equal(TEAMS.length, 357);
   for(const team of TEAMS){assert.equal(team.players.length,16);assert.equal(new Set(team.players.map(p=>p.id)).size,16);assert.equal(team.starting.length,11);assert.equal(team.substitutes.length,5)}
 });
 test('same seed and inputs produce deterministic 90-minute outcomes',()=>{
