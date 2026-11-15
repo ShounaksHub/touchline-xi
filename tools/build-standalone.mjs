@@ -80,4 +80,32 @@ const standaloneHtml = template
 fs.writeFileSync(path.join(root, 'touchline-xi-standalone.html'), standaloneHtml);
 fs.writeFileSync(path.join(root, 'index.html'), standaloneHtml);
 
-console.log(`✓ Standalone bundle generated: touchline-xi-standalone.html & index.html (${Math.round(Buffer.byteLength(standaloneHtml)/1024)} KiB)`);
+// Also generate dist/ directory for Vercel static output
+const distDir = path.join(root, 'dist');
+if (!fs.existsSync(distDir)) fs.mkdirSync(distDir, { recursive: true });
+fs.writeFileSync(path.join(distDir, 'index.html'), standaloneHtml);
+fs.writeFileSync(path.join(distDir, 'touchline-xi-standalone.html'), standaloneHtml);
+if (fs.existsSync(path.join(root, 'styles.css'))) {
+  fs.copyFileSync(path.join(root, 'styles.css'), path.join(distDir, 'styles.css'));
+}
+const assetsDir = path.join(distDir, 'assets');
+if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
+if (fs.existsSync(path.join(root, 'assets', 'favicon.svg'))) {
+  fs.copyFileSync(path.join(root, 'assets', 'favicon.svg'), path.join(assetsDir, 'favicon.svg'));
+}
+
+// Also generate public/ directory for universal zero-config host fallback
+const publicDir = path.join(root, 'public');
+if (!fs.existsSync(publicDir)) fs.mkdirSync(publicDir, { recursive: true });
+fs.writeFileSync(path.join(publicDir, 'index.html'), standaloneHtml);
+fs.writeFileSync(path.join(publicDir, 'touchline-xi-standalone.html'), standaloneHtml);
+if (fs.existsSync(path.join(root, 'styles.css'))) {
+  fs.copyFileSync(path.join(root, 'styles.css'), path.join(publicDir, 'styles.css'));
+}
+const publicAssetsDir = path.join(publicDir, 'assets');
+if (!fs.existsSync(publicAssetsDir)) fs.mkdirSync(publicAssetsDir, { recursive: true });
+if (fs.existsSync(path.join(root, 'assets', 'favicon.svg'))) {
+  fs.copyFileSync(path.join(root, 'assets', 'favicon.svg'), path.join(publicAssetsDir, 'favicon.svg'));
+}
+
+console.log(`✓ Standalone bundle generated: touchline-xi-standalone.html, index.html, dist/ & public/ (${Math.round(Buffer.byteLength(standaloneHtml)/1024)} KiB)`);
