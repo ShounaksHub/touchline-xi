@@ -19,14 +19,19 @@
         <span class="brand-name">TOUCHLINE<span class="brand-slash">/</span><b>XI</b></span>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
-        <button class="nav-link is-active" data-section="matchday" data-page="page-matchday">Match centre 🏟️</button>
-        <button class="nav-link" data-section="squad" data-page="page-squad">Squad lab 📋</button>
-        <button class="nav-link" data-section="tournament" data-page="page-tournament">Tournament Cup 🏆</button>
-        <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam">Dream Team Studio ✨</button>
-        <button class="nav-link" data-section="scouting" data-page="page-scouting">Scouting &amp; Database 🔍</button>
-        <button class="nav-link" data-section="vault" data-page="page-vault">Replay vault 📼</button>
+        <button class="nav-link is-active" data-section="matchday" data-page="page-matchday"><span class="nav-icon">01</span><span>Match centre</span></button>
+        <button class="nav-link" data-section="squad" data-page="page-squad"><span class="nav-icon">02</span><span>Squad lab</span></button>
+        <button class="nav-link" data-section="tournament" data-page="page-tournament"><span class="nav-icon">03</span><span>Tournament cup</span></button>
+        <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam"><span class="nav-icon">04</span><span>Dream team studio</span></button>
+        <button class="nav-link" data-section="scouting" data-page="page-scouting"><span class="nav-icon">05</span><span>Scouting &amp; database</span></button>
+        <button class="nav-link" data-section="vault" data-page="page-vault"><span class="nav-icon">06</span><span>Replay vault</span></button>
       </nav>
       <div class="topbar-right">
+        <div class="music-controls" aria-label="Matchday music controls">
+          <button id="musicPlayBtn" class="music-control-btn" type="button" aria-label="Play matchday music">Play music</button>
+          <select id="musicTrackSelect" aria-label="Choose matchday song"></select>
+          <label class="music-volume" for="musicVolume">Volume <input id="musicVolume" type="range" min="0" max="1" step="0.05" value="0.45" /></label>
+        </div>
         <button id="helpModalBtn" class="audio-toggle-btn" aria-label="Game rules and guide" style="cursor:pointer;">📖 How to Play</button>
         <button id="soundToggleBtn" class="audio-toggle-btn" aria-label="Toggle stadium sound">🔊 Sound: <span id="soundStatusText">OFF</span></button>
         <span class="topbar-mark"><span class="signal-dot"></span> OFFLINE READY</span>
@@ -423,7 +428,12 @@
               </div>
               <p class="wizard-desc">Challenge any of the Top 150 FIFA Senior National Teams or Domestic Clubs.</p>
               <div class="field">
-                <label for="dreamOpponentSelect">OPPONENT NATION / CLUB</label>
+                <label>OPPOSITION TYPE</label>
+                <div class="mentality-buttons opponent-mode-buttons" id="dreamOpponentMode">
+                  <button class="is-active" data-opponent-mode="selected">Selected club or nation</button>
+                  <button data-opponent-mode="ai-dream">AI Dream Team</button>
+                </div>
+                <label for="dreamOpponentSelect">SELECTED OPPONENT</label>
                 <div class="select-wrap">
                   <select id="dreamOpponentSelect"></select>
                 </div>
@@ -613,44 +623,50 @@
       <div class="welcome-modal-banner">
         <div class="welcome-badge"><img src="assets/logo.jpg" alt="Logo" class="welcome-banner-logo" /> THE GAFFER'S MATCHDAY BRIEFING</div>
         <button class="welcome-close-btn" id="closeWelcomeBtn" aria-label="Close welcome guide">✕</button>
-        <h2>Welcome to Touchline XI, Boss! ⚽</h2>
-        <p>The deterministic, zero-dependency football manager simulator where your decisions genuinely change the pitch.</p>
+        <h2>Welcome to Touchline XI</h2>
+        <p>A deterministic, zero-dependency football manager simulator where your decisions change the match.</p>
       </div>
 
       <div class="welcome-modal-body">
         <!-- 3 Feature Highlights Cards -->
         <div class="welcome-cards-grid">
           <div class="welcome-card">
-            <div class="welcome-card-icon">📋</div>
+            <div class="welcome-card-icon">01</div>
             <h4>1. Set the System in Squad Lab</h4>
             <p>Choose your club or nation, pick a formation (4-3-3, 3-5-2, etc.), manage stamina, and swap bench substitutes.</p>
           </div>
           <div class="welcome-card">
-            <div class="welcome-card-icon">🏟️</div>
+            <div class="welcome-card-icon">02</div>
             <h4>2. Kick Off in Match Centre</h4>
             <p>Watch 22 tactical dots battle on the 2D pitch radar with ball physics, pass trajectories, commentary, and live xG flow.</p>
           </div>
           <div class="welcome-card">
-            <div class="welcome-card-icon">⚡</div>
-            <h4>3. Roar Touchline Shouts</h4>
-            <p>Bark real-time orders: <em>⚡ High Press</em> for quick turnovers, <em>🧱 Park The Bus</em> to defend the lead, or <em>🔥 Demand More</em> for a stamina boost!</p>
+            <div class="welcome-card-icon">03</div>
+            <h4>3. Direct the Touchline</h4>
+            <p>Issue real-time orders such as <em>High Press</em>, <em>Park the Bus</em>, and <em>Demand More</em> to shape the match.</p>
+          </div>
+          <div class="welcome-card">
+            <div class="welcome-card-icon">04</div>
+            <h4>4. Build a Dream Team</h4>
+            <p>Draft your own XI from the global player database, then play against any selected club or nation, or challenge an AI Dream Team.</p>
           </div>
         </div>
 
         <!-- Rules & Golden Laws Box -->
         <div class="welcome-rules-box">
-          <h3>📜 The 4 Golden Rules of the Touchline:</h3>
+          <h3>The four rules of the touchline</h3>
           <ul class="welcome-rules-list">
             <li><strong>Stamina Matters:</strong> Heavy-metal pressing and fast tempo tire your players out, reducing shot composure and tackle speed. Use your 5 bench substitutes wisely!</li>
             <li><strong>Half-Time Team Talk:</strong> At minute 45, address your squad in the locker room. Your words boost stamina, pass accuracy, or defensive grit.</li>
             <li><strong>Knockout Drama:</strong> In the Tournament Cup, drawn matches proceed to 30 minutes of Extra Time and sudden-death penalty shootouts.</li>
             <li><strong>Deterministic Seeds:</strong> Share your match seed with a friend — same seed + same tactics produces the exact same 90-minute outcome every time.</li>
+            <li><strong>Dream Team Matchups:</strong> In Dream Team Studio, choose a real club or nation, or let the AI draft an elite opposing XI for you.</li>
           </ul>
         </div>
 
         <!-- Hotkeys Cheatsheet -->
         <div class="welcome-hotkeys-row">
-          <span>🎮 <b>Pro Shortcuts:</b></span>
+          <span><b>Pro shortcuts</b></span>
           <span class="hotkey-pill"><kbd>Space</kbd> Play / Pause</span>
           <span class="hotkey-pill"><kbd>S</kbd> Step 1 min</span>
           <span class="hotkey-pill"><kbd>F</kbd> Sim to FT</span>
@@ -664,7 +680,7 @@
           <input type="checkbox" id="dontShowWelcomeAgain" />
           <span>Don't show this briefing automatically on startup</span>
         </label>
-        <button class="primary-button" id="startPlayingBtn">⚽ Take The Touchline &amp; Play! ↗</button>
+        <button class="primary-button" id="startPlayingBtn">Enter the field ↗</button>
       </div>
     </div>
   </div>

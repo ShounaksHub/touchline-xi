@@ -118,7 +118,17 @@ const copyAssets = (targetDir) => {
   }
 };
 
+const copyMusic = (targetDir) => {
+  const srcMusic = path.join(root, 'music of the game');
+  if (!fs.existsSync(srcMusic)) return;
+  const dest = path.join(targetDir, 'music of the game');
+  fs.mkdirSync(dest, { recursive: true });
+  for (const file of fs.readdirSync(srcMusic)) fs.copyFileSync(path.join(srcMusic, file), path.join(dest, file));
+};
+
 copyAssets(distDir);
 copyAssets(publicDir);
+copyMusic(distDir);
+copyMusic(publicDir);
 
 console.log(`✓ Standalone bundle generated: touchline-xi-standalone.html, index.html, dist/ & public/ (${Math.round(Buffer.byteLength(standaloneHtml)/1024)} KiB)`);

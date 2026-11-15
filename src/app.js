@@ -19,6 +19,37 @@ const formatStat=(key,value)=>{
 const keyEvents=new Set(['goal','save','shot','card','half','full','sub','tactic','talk','shootout']);
 const savedPrefs=(()=>{try{return JSON.parse(localStorage.getItem(PREFS))||{}}catch{return {}}})();
 
+const MUSIC_TRACKS = [
+  ['John Newman — Love Me Again', 'John Newman - Love Me Again.mp3'],
+  ['Haaland Song', 'Haaland Song ( Ha Ha Ha).mp3'],
+  ['Dreamers', 'Dreamers.mp3'],
+  ['Dai Dai 2026', 'Dai Dai 2026.mp3'],
+  ['La La La 2014', 'La la la 2014.mp3'],
+  ['Wavin’ Flag', 'K\'NAAN - Wavin\' Flag (Coca-Cola Celebration Mix).mp3'],
+  ['Oh Kevin De Bruyne', 'Oh Kevin De Bruyne.mp3'],
+  ['The Cup of Life', 'Ricky Martin - The Cup of Life.mp3'],
+  ['Waka Waka', 'Waka Waka.mp3']
+];
+const musicPlayer = (() => {
+  const audio = new Audio();
+  audio.loop = true;
+  audio.volume = Number(localStorage.getItem('touchline_music_volume') ?? 0.45);
+  let index = Number(localStorage.getItem('touchline_music_track') ?? 0) || 0;
+  const source = () => `music%20of%20the%20game/${encodeURIComponent(MUSIC_TRACKS[index][1])}`;
+  const load = () => { audio.src = source(); audio.load(); };
+  load();
+  return {
+    tracks: MUSIC_TRACKS,
+    get index() { return index; },
+    get playing() { return !audio.paused; },
+    play() { return audio.play().catch(() => {}); },
+    pause() { audio.pause(); },
+    toggle() { return this.playing ? (this.pause(), false) : (this.play(), true); },
+    setTrack(next) { index = Number(next) || 0; localStorage.setItem('touchline_music_track', String(index)); load(); return this.play(); },
+    setVolume(value) { audio.volume = Number(value); localStorage.setItem('touchline_music_volume', String(audio.volume)); }
+  };
+})();
+
 // Initialize match
 let match=createMatch({
   homeId:savedPrefs.homeId??'club_real_madrid',
@@ -75,6 +106,7 @@ let dreamConfig = {
   formation: '4-3-3',
   style: 'Tiki-Taka',
   opponentId: 'club_man_city',
+  opponentMode: 'selected',
   aiDifficulty: 'Standard',
   starters: [
     { role: 'GK', id: 'spain_5', name: 'Iker Casillas', nat: 'Spain', ovr: 94, card: '94 Icon Moments' },
@@ -127,7 +159,10 @@ function renderDreamStudio() {
     <b>Tactical Parameters:</b> Pressing: ${currentStyle.pressing} · Tempo: ${currentStyle.tempo} · Width: ${currentStyle.width} · Mentality: ${currentStyle.mentality}
   `;
 
+  const opponentMode = $('#dreamOpponentMode');
+  if (opponentMode) opponentMode.querySelectorAll('button').forEach(button => button.classList.toggle('is-active', button.dataset.opponentMode === dreamConfig.opponentMode));
   const opponentSelect = $('#dreamOpponentSelect');
+  if (opponentSelect) opponentSelect.disabled = dreamConfig.opponentMode === 'ai-dream';
   if (opponentSelect && opponentSelect.children.length === 0) {
     const clubs = TEAMS.filter(t => t.isClub || !t.fifa_rank);
     const nations = TEAMS.filter(t => t.fifa_rank);
@@ -141,10 +176,9 @@ function renderDreamStudio() {
     `;
   }
   const oppTeam = getTeam(dreamConfig.opponentId);
-  $('#dreamOpponentPreview').innerHTML = `
-    <b>Target:</b> ${escapeHtml(oppTeam.name)} (${oppTeam.fifa_rank ? 'FIFA Rank #' + oppTeam.fifa_rank : 'Club'})<br>
-    <small>Key Star: ${escapeHtml(oppTeam.max_card_player?.name || oppTeam.players?.[0]?.name || 'Captain')} · ${oppTeam.max_card_player?.ovr || 88} OVR</small>
-  `;
+  $('#dreamOpponentPreview').innerHTML = dreamConfig.opponentMode === 'ai-dream'
+    ? '<b>Target:</b> AI Dream Team<br><small>Elite players drafted from the global database · adaptive opposition manager</small>'
+    : `<b>Target:</b> ${escapeHtml(oppTeam.name)} (${oppTeam.fifa_rank ? 'FIFA Rank #' + oppTeam.fifa_rank : 'Club'})<br><small>Key Star: ${escapeHtml(oppTeam.max_card_player?.name || oppTeam.players?.[0]?.name || 'Captain')} · ${oppTeam.max_card_player?.ovr || 88} OVR</small>`;
 
   const formationSlots = FORMATIONS[dreamConfig.formation] || FORMATIONS['4-3-3'];
   for (let i = 0; i < 11; i++) {
@@ -256,6 +290,20 @@ function selectPlayerFromModal(playerId) {
   toast(`${chosen.name} drafted into your Dream Team!`);
 }
 
+function draftAIDreamTeam() {
+  const used = new Set();
+  const pick = roles => {
+    const player = ALL_PLAYERS_POOL.find(p => roles.includes(p.role) && !used.has(p.id));
+    if (player) used.add(player.id);
+    return player;
+  };
+  const slots = [['GK'], ['LB','RB','CB'], ['CB'], ['CB'], ['LB','RB','CB'], ['CDM','CM'], ['CM','CAM'], ['CM','CAM'], ['LW','RW','LM','RM'], ['ST'], ['RW','LW','ST']];
+  const roles = ['GK','LB','CB','CB','RB','CDM','CM','CM','LW','ST','RW'];
+  const starters = slots.map((slot, index) => ({ ...pick(slot), slotRole: roles[index] }));
+  const bench = [['GK'], ['CB','LB','RB'], ['CDM','CM','CAM'], ['ST','LW','RW'], ['RW','LW','ST']].map(slot => ({ ...pick(slot) }));
+  return { starters, bench };
+}
+
 function deployDreamTeamAndPlay() {
   stop();
   const all16 = [...dreamConfig.starters, ...dreamConfig.bench];
@@ -290,6 +338,20 @@ function deployDreamTeamAndPlay() {
     substitutes: dreamConfig.bench.map(p => p.id)
   };
 
+  let awayId = dreamConfig.opponentId;
+  let customAwayTeam = null;
+  if (dreamConfig.opponentMode === 'ai-dream') {
+    const aiDraft = draftAIDreamTeam();
+    const aiPlayers = [...aiDraft.starters, ...aiDraft.bench];
+    customAwayTeam = {
+      id: 'ai_dream_team', name: 'AI Dream Team', short: 'AID', city: 'Global XI',
+      primary: '#3f5d80', secondary: '#eef2f6', crest: 'AI', isCustom: true,
+      players: aiPlayers.map((p, index) => ({ ...p, number: index + 1, overall: p.ovr, keeping: p.role === 'GK' ? p.ovr : 5 })),
+      starting: aiDraft.starters.map(p => p.id), substitutes: aiDraft.bench.map(p => p.id)
+    };
+    awayId = customAwayTeam.id;
+  }
+
   const existingDreamIdx = TEAMS.findIndex(t => t.id === 'dream_team');
   if (existingDreamIdx >= 0) {
     TEAMS[existingDreamIdx] = dreamTeamObj;
@@ -301,7 +363,8 @@ function deployDreamTeamAndPlay() {
   match = createMatch({
     customHomeTeam: dreamTeamObj,
     homeId: 'dream_team',
-    awayId: dreamConfig.opponentId,
+    awayId,
+    customAwayTeam,
     seed: `DREAM-${Math.floor(Math.random() * 90000 + 10000)}`,
     formation: dreamConfig.formation,
     tactics: {
@@ -318,7 +381,7 @@ function deployDreamTeamAndPlay() {
   render();
 
   showPage('matchday');
-  toast(`Dream Team deployed in a ${dreamConfig.formation} (${dreamConfig.style}) vs ${getTeam(dreamConfig.opponentId).name}!`);
+  toast(`Dream Team deployed in a ${dreamConfig.formation} (${dreamConfig.style}) vs ${getTeam(awayId).name}`);
 }
 
 function randomizeGalacticos() {
@@ -1312,6 +1375,20 @@ function bind(){
       toast(isNowOn ? 'Stadium audio enabled' : 'Audio muted');
   });
 
+  const musicPlayBtn = $('#musicPlayBtn');
+  const musicTrackSelect = $('#musicTrackSelect');
+  const musicVolume = $('#musicVolume');
+  if (musicPlayBtn && musicTrackSelect && musicVolume) {
+    musicTrackSelect.innerHTML = musicPlayer.tracks.map(([title], index) => `<option value="${index}">${escapeHtml(title)}</option>`).join('');
+    musicTrackSelect.value = String(musicPlayer.index);
+    musicVolume.value = String(Number(localStorage.getItem('touchline_music_volume') ?? 0.45));
+    const updateMusicButton = () => { musicPlayBtn.textContent = musicPlayer.playing ? 'Pause music' : 'Play music'; };
+    musicPlayBtn.addEventListener('click', () => { musicPlayer.toggle(); updateMusicButton(); });
+    musicTrackSelect.addEventListener('change', e => { musicPlayer.setTrack(e.target.value); updateMusicButton(); });
+    musicVolume.addEventListener('input', e => musicPlayer.setVolume(e.target.value));
+    updateMusicButton();
+  }
+
   // Navigation Links & Multi-Page View Switcher
   $$('.nav-link').forEach(b => b.addEventListener('click', () => {
     const section = b.dataset.section;
@@ -1388,6 +1465,13 @@ function bind(){
     dreamConfig.style = card.dataset.dreamStyle;
     renderDreamStudio();
     toast(`Play Style set to ${dreamConfig.style}`);
+  });
+
+  $('#dreamOpponentMode').addEventListener('click', e => {
+    const button = e.target.closest('[data-opponent-mode]');
+    if (!button) return;
+    dreamConfig.opponentMode = button.dataset.opponentMode;
+    renderDreamStudio();
   });
 
   $('#dreamOpponentSelect').addEventListener('change', e => {
@@ -1508,6 +1592,8 @@ function bind(){
     $('#closeWelcomeBtn')?.addEventListener('click', closeWelcome);
     $('#startPlayingBtn')?.addEventListener('click', () => {
       closeWelcome();
+      musicPlayer.play();
+      $('#musicPlayBtn') && ($('#musicPlayBtn').textContent = 'Pause music');
       toast('Welcome to the Touchline. Best of luck today');
     });
     welcomeModal.addEventListener('click', (e) => {
