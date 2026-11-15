@@ -1054,6 +1054,31 @@ function renderVault(){
   }).join('');
 }
 
+function renderLineupBoards(){
+  const board=(side)=>{
+    const team=getTeam(side==='home'?match.homeId:match.awayId);
+    const lineup=match.lineups?.[side] || team.starting || [];
+    const starterRows=lineup.map((id,i)=>{
+      const p=getPlayer(team,id); if(!p)return '';
+      const stamina=Math.round(match.stamina?.[id] ?? 100);
+      return `<div class="lineup-row"><span class="lineup-number">${p.number || i+1}</span><span class="lineup-player" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="lineup-role">${escapeHtml(p.role || '')} · ${stamina}%</span></div>`;
+    }).join('');
+    const bench=(team.players||[]).filter(p=>!lineup.includes(p.id)).slice(0,5).map((p,i)=>`<div class="lineup-row is-bench"><span class="lineup-number">${p.number || i+12}</span><span class="lineup-player" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="lineup-role">${escapeHtml(p.role || '')}</span></div>`).join('');
+    return `<div class="lineup-board-head"><div><div class="lineup-board-kicker">${side==='home'?'USER XI':'OPPOSITION XI'}</div><h3>${escapeHtml(team.name)}</h3></div><span class="lineup-board-meta">${match.formations?.[side] || 'XI'}</span></div><div class="lineup-list">${starterRows}</div><div class="lineup-divider">SUBSTITUTES · ${Math.max(0,5-(match.substitutionsUsed||0))} CHANGES LEFT</div><div class="lineup-list">${bench}</div>`;
+  };
+  const homeBoard=$('#homeLineupBoard'),awayBoard=$('#awayLineupBoard');
+  if(homeBoard)homeBoard.innerHTML=board('home');
+  if(awayBoard)awayBoard.innerHTML=board('away');
+  const alert=$('#quickSubAlert');
+  if(alert){
+    const tired=[];
+    for(const side of ['home','away']) for(const id of (match.lineups?.[side]||[])) if((match.stamina?.[id]??100)<=42){const p=getPlayer(getTeam(side==='home'?match.homeId:match.awayId),id);if(p)tired.push({name:p.name,energy:Math.round(match.stamina?.[id]??42)})}
+    const shouldShow=match.minute>0 && match.phase!=='FULL_TIME' && tired.length>0 && (match.substitutionsUsed||0)<5;
+    alert.classList.toggle('is-visible',shouldShow);
+    if(shouldShow) $('#quickSubText').textContent=`${tired[0].name} is at ${tired[0].energy}% energy. Open Squad Lab to make a change.`;
+  }
+}
+
 function render(){
   renderScoreboard();
   renderStats();
@@ -1062,6 +1087,7 @@ function render(){
   renderFormation();
   renderTactics();
   renderSquad();
+  renderLineupBoards();
   $('#homeSelect').value=match.homeId;
   $('#awaySelect').value=match.awayId;
   $('#homeSelect').disabled=!!replay;
@@ -1174,6 +1200,12 @@ function bind(){
     if(match.phase==='FULL_TIME'&&!replay) return;
     stop();
     newTick();
+  });
+
+  $('#quickSubBtn')?.addEventListener('click',()=>{
+    showPage('squad-lab');
+    scrollToSection('#squad-lab');
+    toast('Squad Lab opened — select a tired starter, then choose a substitute.');
   });
 
   $('#fullTimeBtn').addEventListener('click',()=>{

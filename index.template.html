@@ -117,7 +117,9 @@
                   TOP-DOWN RADAR <span class="dot-divide">·</span> <span id="pitchStatus">RMA vs MCI</span>
                 </div>
               </div>
-              <div class="pitch-surface" id="pitchSurface">
+              <div class="match-stage">
+                <aside class="lineup-board lineup-board-home" id="homeLineupBoard" aria-label="Home starting eleven and substitutes"></aside>
+                <div class="pitch-surface" id="pitchSurface">
                 <canvas id="pitchCanvas" width="1120" height="660" role="img" aria-label="Top-down animated football pitch showing both teams and the match ball"></canvas>
                 <div class="pitch-overlay pitch-overlay-top">
                   <span class="pitch-brand">TXI <i>·</i> LIVE</span>
@@ -131,6 +133,12 @@
                   <b>GOAL!</b>
                   <span id="goalFlashWho">REAL MADRID</span>
                 </div>
+                <div class="quick-sub-alert" id="quickSubAlert" role="status" aria-live="polite">
+                  <div><strong>QUICK SUB RECOMMENDED</strong><span id="quickSubText">A tired player is losing energy.</span></div>
+                  <button type="button" id="quickSubBtn">Open squad</button>
+                </div>
+                </div>
+                <aside class="lineup-board lineup-board-away" id="awayLineupBoard" aria-label="Away starting eleven and substitutes"></aside>
               </div>
               <div class="playback-controls">
                 <div class="playback-main">

@@ -655,6 +655,61 @@ select:focus-visible {
   overflow: hidden
 }
 
+.match-stage {
+  display: grid;
+  grid-template-columns: minmax(170px, 220px) minmax(0, 1fr) minmax(170px, 220px);
+  gap: 16px;
+  align-items: stretch;
+  padding: 0 18px 18px;
+  background: #fff;
+}
+
+.lineup-board {
+  min-width: 0;
+  border: 1px solid #dce5dc;
+  border-radius: 8px;
+  background: #f8faf7;
+  padding: 14px 12px;
+  color: #23372b;
+}
+
+.lineup-board-head { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; margin-bottom:12px; }
+.lineup-board-kicker { color:#7c8f82; font-size:9px; font-weight:800; letter-spacing:.13em; }
+.lineup-board h3 { margin:4px 0 0; font-size:16px; line-height:1.05; letter-spacing:-.04em; }
+.lineup-board-meta { color:#91a095; font-size:9px; font-weight:750; white-space:nowrap; }
+.lineup-list { display:grid; gap:5px; }
+.lineup-row { display:grid; grid-template-columns:22px minmax(0,1fr) auto; align-items:center; gap:6px; padding:6px 7px; border-radius:5px; background:#fff; border:1px solid #e4ebe4; }
+.lineup-row.is-bench { background:#eef4ed; border-style:dashed; }
+.lineup-number { color:#5f8a54; font-size:10px; font-weight:850; }
+.lineup-player { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; font-weight:700; }
+.lineup-role { color:#91a095; font-size:9px; font-weight:700; }
+.lineup-divider { margin:13px 0 7px; color:#839387; font-size:9px; font-weight:850; letter-spacing:.12em; }
+.lineup-board-away .lineup-row { grid-template-columns:auto minmax(0,1fr) 22px; text-align:right; }
+.lineup-board-away .lineup-number { order:3; }
+.lineup-board-away .lineup-role { text-align:right; }
+
+.quick-sub-alert { display:none; align-items:center; gap:12px; position:absolute; z-index:8; top:16px; left:50%; transform:translateX(-50%); min-width:310px; padding:10px 12px; border:1px solid #d7ed8d; border-radius:7px; background:#1b3327f2; color:#f4ffd9; box-shadow:0 8px 24px #10221955; }
+.match-stage { position:relative; }
+.quick-sub-alert.is-visible { display:flex; animation:sub-alert-in .28s ease-out; }
+.quick-sub-alert strong { display:block; font-size:11px; letter-spacing:.05em; }
+.quick-sub-alert span { display:block; margin-top:2px; color:#c7d9c9; font-size:10px; }
+.quick-sub-alert button { margin-left:auto; border:0; border-radius:4px; padding:7px 9px; background:#d8ff69; color:#183020; font-size:10px; font-weight:850; cursor:pointer; }
+@keyframes sub-alert-in { from { opacity:0; transform:translate(-50%,-8px) } to { opacity:1; transform:translate(-50%,0) } }
+
+@media (max-width: 1120px) {
+  .match-stage { grid-template-columns: 1fr 1fr; }
+  .match-stage .pitch-surface { grid-column: 1 / -1; grid-row: 1; }
+  .lineup-board-home { grid-column: 1; grid-row: 2; }
+  .lineup-board-away { grid-column: 2; grid-row: 2; }
+}
+@media (max-width: 720px) {
+  .match-stage { grid-template-columns: 1fr; padding:0 10px 10px; }
+  .match-stage .pitch-surface,.lineup-board-home,.lineup-board-away { grid-column:1; }
+  .match-stage .pitch-surface { grid-row:1; }
+  .lineup-board-home { grid-row:2; }
+  .lineup-board-away { grid-row:3; }
+}
+
 .panel-heading {
   display: flex;
   align-items: center;
@@ -4534,7 +4589,9 @@ footer {
                   TOP-DOWN RADAR <span class="dot-divide">·</span> <span id="pitchStatus">RMA vs MCI</span>
                 </div>
               </div>
-              <div class="pitch-surface" id="pitchSurface">
+              <div class="match-stage">
+                <aside class="lineup-board lineup-board-home" id="homeLineupBoard" aria-label="Home starting eleven and substitutes"></aside>
+                <div class="pitch-surface" id="pitchSurface">
                 <canvas id="pitchCanvas" width="1120" height="660" role="img" aria-label="Top-down animated football pitch showing both teams and the match ball"></canvas>
                 <div class="pitch-overlay pitch-overlay-top">
                   <span class="pitch-brand">TXI <i>·</i> LIVE</span>
@@ -4548,6 +4605,12 @@ footer {
                   <b>GOAL!</b>
                   <span id="goalFlashWho">REAL MADRID</span>
                 </div>
+                <div class="quick-sub-alert" id="quickSubAlert" role="status" aria-live="polite">
+                  <div><strong>QUICK SUB RECOMMENDED</strong><span id="quickSubText">A tired player is losing energy.</span></div>
+                  <button type="button" id="quickSubBtn">Open squad</button>
+                </div>
+                </div>
+                <aside class="lineup-board lineup-board-away" id="awayLineupBoard" aria-label="Away starting eleven and substitutes"></aside>
               </div>
               <div class="playback-controls">
                 <div class="playback-main">
@@ -70954,6 +71017,31 @@ function renderVault(){
   }).join('');
 }
 
+function renderLineupBoards(){
+  const board=(side)=>{
+    const team=getTeam(side==='home'?match.homeId:match.awayId);
+    const lineup=match.lineups?.[side] || team.starting || [];
+    const starterRows=lineup.map((id,i)=>{
+      const p=getPlayer(team,id); if(!p)return '';
+      const stamina=Math.round(match.stamina?.[id] ?? 100);
+      return `<div class="lineup-row"><span class="lineup-number">${p.number || i+1}</span><span class="lineup-player" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="lineup-role">${escapeHtml(p.role || '')} · ${stamina}%</span></div>`;
+    }).join('');
+    const bench=(team.players||[]).filter(p=>!lineup.includes(p.id)).slice(0,5).map((p,i)=>`<div class="lineup-row is-bench"><span class="lineup-number">${p.number || i+12}</span><span class="lineup-player" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="lineup-role">${escapeHtml(p.role || '')}</span></div>`).join('');
+    return `<div class="lineup-board-head"><div><div class="lineup-board-kicker">${side==='home'?'USER XI':'OPPOSITION XI'}</div><h3>${escapeHtml(team.name)}</h3></div><span class="lineup-board-meta">${match.formations?.[side] || 'XI'}</span></div><div class="lineup-list">${starterRows}</div><div class="lineup-divider">SUBSTITUTES · ${Math.max(0,5-(match.substitutionsUsed||0))} CHANGES LEFT</div><div class="lineup-list">${bench}</div>`;
+  };
+  const homeBoard=$('#homeLineupBoard'),awayBoard=$('#awayLineupBoard');
+  if(homeBoard)homeBoard.innerHTML=board('home');
+  if(awayBoard)awayBoard.innerHTML=board('away');
+  const alert=$('#quickSubAlert');
+  if(alert){
+    const tired=[];
+    for(const side of ['home','away']) for(const id of (match.lineups?.[side]||[])) if((match.stamina?.[id]??100)<=42){const p=getPlayer(getTeam(side==='home'?match.homeId:match.awayId),id);if(p)tired.push({name:p.name,energy:Math.round(match.stamina?.[id]??42)})}
+    const shouldShow=match.minute>0 && match.phase!=='FULL_TIME' && tired.length>0 && (match.substitutionsUsed||0)<5;
+    alert.classList.toggle('is-visible',shouldShow);
+    if(shouldShow) $('#quickSubText').textContent=`${tired[0].name} is at ${tired[0].energy}% energy. Open Squad Lab to make a change.`;
+  }
+}
+
 function render(){
   renderScoreboard();
   renderStats();
@@ -70962,6 +71050,7 @@ function render(){
   renderFormation();
   renderTactics();
   renderSquad();
+  renderLineupBoards();
   $('#homeSelect').value=match.homeId;
   $('#awaySelect').value=match.awayId;
   $('#homeSelect').disabled=!!replay;
@@ -71074,6 +71163,12 @@ function bind(){
     if(match.phase==='FULL_TIME'&&!replay) return;
     stop();
     newTick();
+  });
+
+  $('#quickSubBtn')?.addEventListener('click',()=>{
+    showPage('squad-lab');
+    scrollToSection('#squad-lab');
+    toast('Squad Lab opened — select a tired starter, then choose a substitute.');
   });
 
   $('#fullTimeBtn').addEventListener('click',()=>{
