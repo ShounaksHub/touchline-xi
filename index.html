@@ -3025,6 +3025,32 @@ footer span {
   }
 }
 
+@media(max-width: 640px) {
+  .scouting-toolbar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .seed-box {
+    width: 100%;
+  }
+  .intro-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .vault-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .topbar-right {
+    gap: 6px;
+  }
+  .audio-toggle-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
+
 </style>
   
 </head>
@@ -3060,7 +3086,13 @@ footer span {
           <p class="intro-copy">Pick the eleven. Set the system. Issue real-time touchline shouts, manage stamina, and lead your team to victory.</p>
         </div>
         <div class="intro-actions">
-          <div class="seed-box"><label for="seedInput">MATCH SEED</label><input id="seedInput" value="KICKOFF-26" maxlength="28" spellcheck="false" aria-label="Match seed"/></div>
+          <div class="seed-box">
+            <label for="seedInput">MATCH SEED</label>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input id="seedInput" value="KICKOFF-26" maxlength="28" spellcheck="false" aria-label="Match seed"/>
+              <button class="text-button" id="randomSeedBtn" title="Generate random seed" style="padding:4px 8px;font-size:14px;cursor:pointer;">🎲</button>
+            </div>
+          </div>
           <button class="primary-button" id="newMatchBtn"><span>↗</span> New fixture</button>
         </div>
       </section>
@@ -3425,6 +3457,8 @@ footer span {
             <p>Keep the moments worth revisiting. Everything is stored locally on this device.</p>
           </div>
           <div class="vault-actions">
+            <input type="file" id="replayFileInput" accept=".json,application/json" style="display:none"/>
+            <button class="secondary-button" id="importReplayBtn">↑ Import JSON</button>
             <button class="secondary-button" id="saveBtn">＋ Save this match</button>
             <button class="text-button" id="clearVaultBtn">Clear vault</button>
           </div>
@@ -8666,7 +8700,7 @@ function rand(m) {
 const between = (m,a,b) => a + (b-a)*rand(m);
 const chance = (m,p) => rand(m) < clamp(p,0,1);
 
-const emptyStats = () => ({possession:0, passes:0, completed:0, shots:0, onTarget:0, xg:0, fouls:0, yellow:0, corners:0, offsides:0, saves:0});
+const emptyStats = () => ({possession:0, passes:0, completed:0, shots:0, onTarget:0, xg:0, fouls:0, yellow:0, red:0, corners:0, offsides:0, saves:0});
 
 function validateLineup(teamId, ids) {
   const team = getTeam(teamId);
@@ -8681,7 +8715,8 @@ function validateLineup(teamId, ids) {
 function frameFromMatch(m) {
   return copy({minute:m.minute, phase:m.phase, score:m.score, stats:m.stats, ball:m.ball, possession:m.possession,
     rng:m.rng, events:m.events, tactics:m.tactics, formations:m.formations, lineups:m.lineups, substitutionsUsed:m.substitutionsUsed,
-    stamina:copy(m.stamina || {}), winner:m.winner || null, penalties:m.penalties || null});
+    stamina:copy(m.stamina || {}), winner:m.winner || null, penalties:m.penalties || null, knockout:!!m.knockout,
+    bookings:copy(m.bookings || { home: {}, away: {} })});
 }
 
 function createMatch(options = {}) {
@@ -8723,7 +8758,7 @@ function createMatch(options = {}) {
     version:1, seed:String(options.seed ?? 'TOUCHLINE-001'), rng:seedToState(options.seed ?? 'TOUCHLINE-001'),
     homeId, awayId, minute:0, phase:'PRE_MATCH', possession:'home', ball:{x:50,y:50}, score:{home:0,away:0},
     stats:{home:emptyStats(),away:emptyStats()}, lineups, substitutionsUsed:0, stamina, knockout:!!options.knockout,
-    winner:null, penalties:null,
+    winner:null, penalties:null, bookings:{home:{},away:{}},
     formations:{home:options.formation && FORMATIONS[options.formation] ? options.formation : '4-3-3',away:'4-3-3'},
     tactics:{home:{...DEFAULT_TACTICS,...(options.tactics ?? {})},away:{...DEFAULT_TACTICS,pressing:betweenFake(options.seed,42,72),tempo:betweenFake(`${options.seed}-tempo`,42,66)}},
     events:[{minute:0,type:'kickoff',side:null,text:'The teams are ready. Awaiting kick-off.'}],
@@ -8787,9 +8822,14 @@ function addEvent(m,type,side,text,extra={}) {
   m.events.push(entry);
   return entry;
 }
-function selectAttacker(m,side,role='attack') {
+
+function selectAttacker(m,side,role='attack',excludeId=null) {
   const team=getTeam(side==='home'?m.homeId:m.awayId);
-  const picks=m.lineups[side].map(id=>getPlayer(team,id)).filter(Boolean);
+  const picks=m.lineups[side].map(id=>getPlayer(team,id)).filter(p=>p && p.id!==excludeId);
+  if (!picks.length) {
+    const fallback = getPlayer(team, m.lineups[side][0]) || { id: 'p0', name: 'Player', role: 'CM', shooting: 70, defending: 70, passing: 70, pace: 70, physical: 70, keeping: 5 };
+    return fallback;
+  }
   const weighted=picks.map(p=>{
     let w=role==='shoot' ? p.shooting : role==='defend' ? p.defending : p.passing;
     if (p.role==='GK') w*=0.03;
@@ -8800,13 +8840,29 @@ function selectAttacker(m,side,role='attack') {
   for(let i=0;i<picks.length;i++){ticket-=weighted[i];if(ticket<=0)return picks[i];}
   return picks[picks.length-1];
 }
+
 function average(m,side,attr) {
   const team=getTeam(side==='home'?m.homeId:m.awayId);
-  return m.lineups[side].map(id=>getPlayer(team,id)?.[attr] ?? 60).reduce((a,b)=>a+b,0)/11;
+  const picks = m.lineups[side].map(id=>getPlayer(team,id)).filter(Boolean);
+  if (!picks.length) return 65;
+  return picks.map(p => p[attr] ?? 60).reduce((a,b)=>a+b,0)/picks.length;
 }
+
+function teamStrength(m, side) {
+  const team = getTeam(side === 'home' ? m.homeId : m.awayId);
+  const picks = m.lineups[side].map(id => getPlayer(team, id)).filter(Boolean);
+  if (!picks.length) return 70;
+  const avgOvr = picks.reduce((acc, p) => acc + (p.overall || p.ovr || 70), 0) / picks.length;
+  const gk = picks.find(p => p.role === 'GK') || picks[0];
+  const gkBonus = ((gk?.keeping || gk?.overall || 75) - 75) * 0.12;
+  const reds = m.stats?.[side]?.red || 0;
+  return avgOvr + gkBonus - (reds * 7);
+}
+
 function attackFactor(m,side) {
   const {tempo,pressing,mentality}=m.tactics[side];
-  return (average(m,side,'passing')*.28+average(m,side,'shooting')*.38+average(m,side,'pace')*.34)/75
+  const str = teamStrength(m, side);
+  return (str / 75)
     + (tempo-50)*0.003 + (pressing-50)*0.001
     + (mentality==='Attacking' ? .15 : mentality==='Defensive' ? -.12 : 0);
 }
@@ -8828,8 +8884,13 @@ function advanceMinute(m) {
     }
   }
 
-  const homeBias=clamp(0.5+(attackFactor(m,'home')-attackFactor(m,'away'))*.13, .36, .64);
-  const possessHome=clamp(homeBias + between(m,-.21,.21),.19,.81);
+  const sHome = teamStrength(m, 'home'), sAway = teamStrength(m, 'away');
+  const tactHome = (m.tactics.home.mentality === 'Attacking' ? 3 : m.tactics.home.mentality === 'Defensive' ? -3 : 0) + (m.tactics.home.pressing - 50) * 0.04 + (m.tactics.home.tempo - 50) * 0.04;
+  const tactAway = (m.tactics.away.mentality === 'Attacking' ? 3 : m.tactics.away.mentality === 'Defensive' ? -3 : 0) + (m.tactics.away.pressing - 50) * 0.04 + (m.tactics.away.tempo - 50) * 0.04;
+  const netEdge = (sHome + tactHome) - (sAway + tactAway);
+  // Authentic football home ground advantage (+4-6% baseline edge for hosts)
+  const homeBias = clamp(0.535 + netEdge * 0.007, 0.18, 0.82);
+  const possessHome = clamp(homeBias + between(m,-.18,.18),.15,.85);
   m.stats.home.possession+=possessHome*60;
   m.stats.away.possession+=(1-possessHome)*60;
 
@@ -8853,10 +8914,17 @@ function advanceMinute(m) {
   // Deliberately lightweight event model, with tactic- and ability-sensitive outcomes.
   const attacking=m.tactics[side];
   const defending=m.tactics[opponent];
+  const sideStrength = side === 'home' ? sHome : sAway;
+  const oppStrength = side === 'home' ? sAway : sHome;
+  const oppDefending=average(m, opponent, 'defending');
   const eventRoll=rand(m);
+  const homeShotBonus = side === 'home' ? 0.015 : 0;
   const shotProbability=clamp(.205+(attacking.tempo-50)*.0009
     +(attacking.mentality==='Attacking'?.055:attacking.mentality==='Defensive'?-.04:0)
-    +(attackFactor(m,side)-attackFactor(m,opponent))*.04,.13,.34);
+    +(sideStrength - oppStrength)*.0032
+    +homeShotBonus
+    -(oppDefending-70)*.0015,.09,.39);
+
   if(eventRoll<shotProbability){
     const shooter=selectAttacker(m,side,'shoot');
     const goalDistance=between(m,9,34);
@@ -8865,7 +8933,8 @@ function advanceMinute(m) {
     const shotLocation={x:m.ball.x,y:m.ball.y};
     const rawXg=clamp((inBox ? .16 : .044)+(shooter.shooting-70)*.0028
       +(attacking.mentality==='Attacking'?.015:0)
-      -(defending.pressing-50)*.00038+between(m,-.03,.08),.025,.39);
+      -(defending.pressing-50)*.00038
+      -(oppDefending-70)*.0012+between(m,-.03,.08),.025,.42);
     const xg=round2(rawXg);
     m.stats[side].shots+=1;
     m.stats[side].xg=round2(m.stats[side].xg+xg);
@@ -8874,33 +8943,79 @@ function advanceMinute(m) {
     if(onTarget){
       m.stats[side].onTarget+=1;
       const goalkeeper=getPlayer(getTeam(opponent==='home'?m.homeId:m.awayId),m.lineups[opponent][0])?.keeping ?? 80;
-      // Conditional conversion calibrated so per-shot goal likelihood roughly follows xG.
-      const goalChance=clamp(rawXg/accuracy*(1-(goalkeeper-80)*.004),.018,.82);
+      // Conditional conversion calibrated so per-shot goal likelihood roughly follows xG and GK quality.
+      const goalChance=clamp((rawXg/accuracy)*(1+(shooter.shooting-75)*0.005-(goalkeeper-75)*0.0065),.018,.86);
       if(chance(m,goalChance)){
         m.score[side]+=1;
         m.ball={x:side==='home'?99:1,y:50};
-        addEvent(m,'goal',side,`${shooter.name} finds the net!`,{playerId:shooter.id,xg,location:shotLocation});
+        const assister = chance(m, 0.72) ? selectAttacker(m, side, 'pass', shooter.id) : null;
+        const assistText = assister ? ` (Assist: ${assister.name})` : '';
+        addEvent(m,'goal',side,`${shooter.name} finds the net!${assistText}`,{playerId:shooter.id,assistId:assister?.id,assistName:assister?.name,xg,location:shotLocation});
       } else {
         m.stats[opponent].saves+=1;
         addEvent(m,'save',side,`${shooter.name} forces a sharp save.`,{playerId:shooter.id,xg,location:shotLocation});
-        if(chance(m,.37)) m.stats[side].corners+=1;
+        if(chance(m,.42)) m.stats[side].corners+=1;
       }
     } else {
       addEvent(m,'shot',side,`${shooter.name} sends the effort ${chance(m,.6)?'wide':'over the bar'}.`,{playerId:shooter.id,xg,location:shotLocation});
     }
-  } else if(eventRoll<shotProbability+.072){
+  } else if(eventRoll<shotProbability+.075){
     m.stats[opponent].fouls+=1;
     const offender=selectAttacker(m,opponent,'defend');
-    const booking=chance(m,.21);
-    if(booking) m.stats[opponent].yellow+=1;
-    addEvent(m,booking?'card':'foul',opponent,`${offender.name} ${booking?'goes into the book':'concedes a free kick'}.`,{playerId:offender.id});
-  } else if(eventRoll<shotProbability+.105) {
+    const inBoxPenalty = chance(m, 0.095);
+
+    if (inBoxPenalty) {
+      // In-regulation penalty kick
+      const taker = selectAttacker(m, side, 'shoot');
+      const gk = getPlayer(getTeam(opponent==='home'?m.homeId:m.awayId),m.lineups[opponent][0]);
+      m.stats[side].shots+=1;
+      m.stats[side].onTarget+=1;
+      const penXg = 0.79;
+      m.stats[side].xg = round2(m.stats[side].xg + penXg);
+      const conversion = clamp(0.76 + ((taker.shooting - 75) * 0.003) - (((gk?.keeping ?? 75) - 75) * 0.003), 0.58, 0.90);
+      const scored = chance(m, conversion);
+      const shotLocation = { x: side==='home' ? 88 : 12, y: 50 };
+      if (scored) {
+        m.score[side]+=1;
+        m.ball={x:side==='home'?99:1,y:50};
+        addEvent(m,'goal',side,`⚽ PENALTY! ${taker.name} calmly converts from the spot!`,{playerId:taker.id,xg:penXg,location:shotLocation,isPenalty:true});
+      } else {
+        m.stats[opponent].saves+=1;
+        addEvent(m,'save',side,`🧤 PENALTY SAVED! Keeper guesses right to deny ${taker.name} from the spot!`,{playerId:taker.id,xg:penXg,location:shotLocation,isPenalty:true});
+        if (chance(m, 0.45)) m.stats[side].corners+=1;
+      }
+    } else {
+      const straightRed = chance(m, 0.015);
+      const booking = chance(m, 0.22);
+      if (!m.bookings) m.bookings = { home: {}, away: {} };
+
+      if (straightRed) {
+        m.stats[opponent].red += 1;
+        m.bookings[opponent][offender.id] = (m.bookings[opponent][offender.id] || 0) + 2;
+        addEvent(m,'card',opponent,`🔴 DIRECT RED CARD! Dangerous foul by ${offender.name} — straight dismissal!`,{playerId:offender.id,card:'red'});
+      } else if (booking) {
+        const prior = m.bookings[opponent][offender.id] || 0;
+        if (prior >= 1) {
+          m.stats[opponent].yellow += 1;
+          m.stats[opponent].red += 1;
+          m.bookings[opponent][offender.id] = prior + 1;
+          addEvent(m,'card',opponent,`🔴 SECOND YELLOW CARD! ${offender.name} receives his marching orders and is sent off!`,{playerId:offender.id,card:'second_yellow'});
+        } else {
+          m.stats[opponent].yellow += 1;
+          m.bookings[opponent][offender.id] = 1;
+          addEvent(m,'card',opponent,`🟨 BOOKING: ${offender.name} goes into the referee's notebook.`,{playerId:offender.id,card:'yellow'});
+        }
+      } else {
+        addEvent(m,'foul',opponent,`${offender.name} concedes a tactical free kick.`,{playerId:offender.id});
+      }
+    }
+  } else if(eventRoll<shotProbability+.108) {
     m.stats[side].offsides+=1;
     addEvent(m,'offside',side,`${selectAttacker(m,side,'shoot').name} is caught offside.`);
-  } else if(eventRoll<shotProbability+.135) {
+  } else if(eventRoll<shotProbability+.145) {
     m.stats[side].corners+=1;
     addEvent(m,'corner',side,`${side==='home'?getTeam(m.homeId).short:getTeam(m.awayId).short} win a corner.`);
-  } else if(eventRoll<shotProbability+.23) {
+  } else if(eventRoll<shotProbability+.24) {
     const maker=selectAttacker(m,side,'pass');
     const comment=chance(m,.5)?`${maker.name} breaks the line with a pass.`:`${maker.name} carries into the final third.`;
     addEvent(m,'build',side,comment,{playerId:maker.id});
@@ -8976,27 +9091,31 @@ function simulatePenaltyShootout(m) {
   const awayKickers = m.lineups.away.slice(1, 6);
 
   for (let r = 0; r < 5; r++) {
-    const hk = getPlayer(homeTeam, homeKickers[r]) || { name: `Home #${r+1}`, shooting: 80 };
+    const hk = getPlayer(homeTeam, homeKickers[r]) || { id: `hk_${r}`, name: `Home #${r+1}`, shooting: 80 };
     const hScore = chance(m, clamp(0.74 + (hk.shooting - 75) * 0.003, 0.60, 0.90));
     if (hScore) shootout.home++;
     shootout.kicks.push({ side: 'home', round: r + 1, scored: hScore, player: hk.name });
+    addEvent(m, 'shootout', 'home', `${hScore ? '⚽' : '❌'} Shootout [Round ${r+1}]: ${hk.name} ${hScore ? 'SCORES!' : 'denied by keeper!'} (${shootout.home}-${shootout.away})`, { playerId: hk.id, scored: hScore, round: r+1 });
 
-    const ak = getPlayer(awayTeam, awayKickers[r]) || { name: `Away #${r+1}`, shooting: 80 };
+    const ak = getPlayer(awayTeam, awayKickers[r]) || { id: `ak_${r}`, name: `Away #${r+1}`, shooting: 80 };
     const aScore = chance(m, clamp(0.74 + (ak.shooting - 75) * 0.003, 0.60, 0.90));
     if (aScore) shootout.away++;
     shootout.kicks.push({ side: 'away', round: r + 1, scored: aScore, player: ak.name });
+    addEvent(m, 'shootout', 'away', `${aScore ? '⚽' : '❌'} Shootout [Round ${r+1}]: ${ak.name} ${aScore ? 'SCORES!' : 'denied by keeper!'} (${shootout.home}-${shootout.away})`, { playerId: ak.id, scored: aScore, round: r+1 });
   }
 
   let round = 6;
   while (shootout.home === shootout.away && round <= 11) {
-    const hk = getPlayer(homeTeam, m.lineups.home[round - 1] || m.lineups.home[1]);
-    const ak = getPlayer(awayTeam, m.lineups.away[round - 1] || m.lineups.away[1]);
+    const hk = getPlayer(homeTeam, m.lineups.home[round - 1] || m.lineups.home[1]) || { id: `hk_sd`, name: 'Home Kicker', shooting: 75 };
+    const ak = getPlayer(awayTeam, m.lineups.away[round - 1] || m.lineups.away[1]) || { id: `ak_sd`, name: 'Away Kicker', shooting: 75 };
     const hScore = chance(m, 0.72);
     const aScore = chance(m, 0.72);
     if (hScore) shootout.home++;
     if (aScore) shootout.away++;
-    shootout.kicks.push({ side: 'home', round, scored: hScore, player: hk?.name || 'Kicker' });
-    shootout.kicks.push({ side: 'away', round, scored: aScore, player: ak?.name || 'Kicker' });
+    shootout.kicks.push({ side: 'home', round, scored: hScore, player: hk.name });
+    addEvent(m, 'shootout', 'home', `${hScore ? '⚽' : '❌'} Sudden Death [Round ${round}]: ${hk.name} ${hScore ? 'SCORES!' : 'misses!'} (${shootout.home}-${shootout.away})`, { playerId: hk.id, scored: hScore, round });
+    shootout.kicks.push({ side: 'away', round, scored: aScore, player: ak.name });
+    addEvent(m, 'shootout', 'away', `${aScore ? '⚽' : '❌'} Sudden Death [Round ${round}]: ${ak.name} ${aScore ? 'SCORES!' : 'misses!'} (${shootout.home}-${shootout.away})`, { playerId: ak.id, scored: aScore, round });
     round++;
   }
   if (shootout.home === shootout.away) {
@@ -9063,7 +9182,7 @@ function playFullMatch(m) {
 function matchFromFrame(base, index) {
   const frame=base.frames[clamp(index,0,base.frames.length-1)];
   if(!frame) return base;
-  return {...copy(frame),version:base.version,seed:base.seed,homeId:base.homeId,awayId:base.awayId,frames:base.frames};
+  return {...copy(frame),version:base.version,seed:base.seed,homeId:base.homeId,awayId:base.awayId,knockout:base.knockout,frames:base.frames};
 }
 function resultLabel(m){const h=m.score.home,a=m.score.away;return h===a?'Draw':h>a?'Home win':'Away win';}
 
@@ -9404,6 +9523,19 @@ function renderPitch(canvas,match,t=0) {
         ctx.fillRect(barX, barY, Math.max(1, barW * (stam / 100)), barH);
       }
 
+      // Yellow/Red Card Discipline Badge
+      const cardCount = match.bookings?.[name]?.[p.id] || 0;
+      if (cardCount > 0) {
+        const cardW = 5, cardH = 7.5;
+        const cardX = pt.x + r - 3;
+        const cardY = pt.y - r - 2;
+        ctx.fillStyle = cardCount >= 2 ? '#ff3838' : '#ffd32a';
+        ctx.strokeStyle = '#1e272e';
+        ctx.lineWidth = 1;
+        ctx.fillRect(cardX, cardY, cardW, cardH);
+        ctx.strokeRect(cardX, cardY, cardW, cardH);
+      }
+
       if(W>620 && (i===9||i===0||i===8||i===10)){
         const label=pl.name.split(' ').at(-1).toUpperCase();
         setText(ctx,'rgba(236,249,222,.77)',`700 ${Math.max(7,W*.008)}px Arial`);
@@ -9438,7 +9570,7 @@ const STORAGE='touchline-xi-replays-v1';
 const PREFS='touchline-xi-prefs-v1';
 const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const formatStat=(key,value)=>key==='possession'?`${Math.round(value)}%`:key==='xg'?Number(value).toFixed(2):Number(value).toLocaleString('en-GB');
-const keyEvents=new Set(['goal','save','shot','card','half','full','sub','tactic','talk']);
+const keyEvents=new Set(['goal','save','shot','card','half','full','sub','tactic','talk','shootout']);
 const savedPrefs=(()=>{try{return JSON.parse(localStorage.getItem(PREFS))||{}}catch{return {}}})();
 
 // Initialize match
@@ -9451,6 +9583,8 @@ let match=createMatch({
 });
 
 let running=false,replay=null,speed=1,accumulator=0,lastRenderAt=0,selectedStarter=null,feedFilter='all',toastTimeout=null,goalTimeout=null;
+let scoutPage = 1;
+const SCOUT_PAGE_SIZE = 72;
 
 // Master player pool indexing all 2,750+ players across clubs, national teams & peak legends
 const ALL_PLAYERS_POOL = (() => {
@@ -9831,10 +9965,10 @@ function renderScoutingHub() {
     return b.ovr - a.ovr;
   });
 
-  const displayList = pool.slice(0, 72);
+  const displayList = pool.slice(0, scoutPage * SCOUT_PAGE_SIZE);
   $('#scoutingResultCount').textContent = `Showing ${displayList.length} of ${pool.length.toLocaleString('en-GB')} players`;
 
-  $('#scoutingPlayerGrid').innerHTML = displayList.map(p => `
+  let cardsHtml = displayList.map(p => `
     <div class="scouting-card" data-fut-id="${p.id}">
       <div>
         <div class="scouting-card-top">
@@ -9856,6 +9990,17 @@ function renderScoutingHub() {
       </div>
     </div>
   `).join('') || '<div style="grid-column:1/-1;text-align:center;padding:48px;color:#888;">No players found matching your criteria.</div>';
+
+  if (pool.length > displayList.length) {
+    cardsHtml += `
+      <div style="grid-column:1/-1;text-align:center;padding:24px 0 12px;">
+        <button class="secondary-button" id="loadMoreScoutBtn" style="padding:10px 28px;font-size:13px;cursor:pointer;">
+          Load More Players (+${Math.min(SCOUT_PAGE_SIZE, pool.length - displayList.length)}) ↓
+        </button>
+      </div>
+    `;
+  }
+  $('#scoutingPlayerGrid').innerHTML = cardsHtml;
 }
 
 function openFutCardModal(playerId) {
@@ -10165,13 +10310,28 @@ function renderStats(){
   const s=match.stats;
   const totals={
     possession:match.minute===0? [50,50]:[s.home.possession/(match.minute*60)*100,s.away.possession/(match.minute*60)*100],
+    xg:[s.home.xg,s.away.xg],
     shots:[s.home.shots,s.away.shots],
     onTarget:[s.home.onTarget,s.away.onTarget],
-    xg:[s.home.xg,s.away.xg],
+    saves:[s.home.saves,s.away.saves],
+    corners:[s.home.corners,s.away.corners],
     passes:[s.home.passes,s.away.passes],
-    fouls:[s.home.fouls,s.away.fouls]
+    fouls:[s.home.fouls,s.away.fouls],
+    yellow:[s.home.yellow,s.away.yellow],
+    red:[s.home.red || 0, s.away.red || 0]
   };
-  const labels={possession:'Possession',shots:'Shots',onTarget:'Shots on target',xg:'Expected goals (xG)',passes:'Total passes',fouls:'Fouls conceded'};
+  const labels={
+    possession:'Possession',
+    xg:'Expected goals (xG)',
+    shots:'Total shots',
+    onTarget:'Shots on target',
+    saves:'Goalkeeper saves',
+    corners:'Corner kicks',
+    passes:'Total passes',
+    fouls:'Fouls conceded',
+    yellow:'Yellow cards',
+    red:'Red cards'
+  };
   $('#statsRows').innerHTML=Object.entries(totals).map(([key,[a,b]])=>{
     const denom=Math.max(a+b,.0001);
     const left=Math.round(a/denom*100),right=100-left;
@@ -10180,12 +10340,12 @@ function renderStats(){
 }
 
 function renderFeed(){
-  const events=[...match.events].reverse().filter(e=>feedFilter==='all'||keyEvents.has(e.type)).slice(0,30);
+  const events=[...match.events].reverse().filter(e=>feedFilter==='all'||keyEvents.has(e.type)).slice(0,36);
   $('#eventFeed').innerHTML=events.map(e=>`
     <div class="feed-item ${escapeHtml(e.type)}">
       <div class="feed-time">${String(e.minute).padStart(2,'0')}′</div>
       <div class="feed-copy">
-        <b>${e.type==='goal'?'GOAL ⚽':e.type==='save'?'SHOT ON TARGET':e.type==='shot'?'SHOT':e.type==='card'?'BOOKING':e.type==='foul'?'FREE KICK':e.type==='offside'?'OFFSIDE':e.type==='corner'?'CORNER':e.type==='half'?'INTERVAL':e.type==='full'?'FINAL WHISTLE':e.type==='sub'?'SUBSTITUTION':e.type==='tactic'?'TOUCHLINE SHOUT':e.type==='talk'?'DRESSING ROOM TALK':e.type==='kickoff'?'MATCHDAY':'OPEN PLAY'}${e.side?' / '+getTeam(e.side==='home'?match.homeId:match.awayId).short:''}</b>
+        <b>${e.type==='goal'?(e.isPenalty?'PENALTY GOAL ⚽':'GOAL ⚽'):e.type==='shootout'?'PENALTY SHOOTOUT 🎯':e.type==='save'?(e.isPenalty?'PENALTY SAVED 🧤':'SHOT ON TARGET 🧤'):e.type==='shot'?'SHOT':e.type==='card'?(e.card==='red'||e.card==='second_yellow'?'RED CARD 🔴':'BOOKING 🟨'):e.type==='foul'?'FREE KICK':e.type==='offside'?'OFFSIDE':e.type==='corner'?'CORNER':e.type==='half'?'INTERVAL':e.type==='full'?'FINAL WHISTLE':e.type==='sub'?'SUBSTITUTION':e.type==='tactic'?'TOUCHLINE SHOUT':e.type==='talk'?'DRESSING ROOM TALK':e.type==='kickoff'?'MATCHDAY':'OPEN PLAY'}${e.side?' / '+getTeam(e.side==='home'?match.homeId:match.awayId).short:''}</b>
         ${escapeHtml(e.text)}
       </div>
     </div>
@@ -10271,20 +10431,22 @@ function renderFlow(){
   $('#homeLegendDot').style.background='#578750';$('#homeLegendDot').style.border='none';
   $('#awayLegendDot').style.background='#8da4b1';$('#awayLegendDot').style.border='none';
   $('#flowHomeName').textContent=home.name.toUpperCase();$('#flowAwayName').textContent=away.name.toUpperCase();
+  const maxMins = (match.knockout || (replay && replay.source.knockout)) ? 120 : 90;
   const frames=match.frames.slice(0,match.minute+1);const w=640,h=139,x0=43,y0=17;
   const mx=Math.max(1,...frames.flatMap(f=>[f.stats.home.xg,f.stats.away.xg]));const yMax=Math.ceil(mx*2)/2;
-  const px=m=>x0+(m/90)*w,py=v=>y0+h-(v/yMax)*h;
+  const px=m=>x0+(m/maxMins)*w,py=v=>y0+h-(v/yMax)*h;
   let svg='';
   for(let i=0;i<=4;i++){let val=yMax*i/4,y=py(val);svg+=`<line x1="43" y1="${y}" x2="683" y2="${y}" stroke="#e6ece5" stroke-width="1" stroke-dasharray="3 5"/><text x="35" y="${y+3}" text-anchor="end" fill="#96a399" font-family="Arial" font-size="9" font-weight="700">${val.toFixed(1)}</text>`;}
-  for(let i=0;i<=90;i+=15){svg+=`<text x="${px(i)}" y="179" text-anchor="middle" fill="#96a399" font-family="Arial" font-size="9" font-weight="700">${i}′</text>`;}
+  const step = maxMins > 90 ? 20 : 15;
+  for(let i=0;i<=maxMins;i+=step){svg+=`<text x="${px(i)}" y="179" text-anchor="middle" fill="#96a399" font-family="Arial" font-size="9" font-weight="700">${i}′</text>`;}
   for(const [side,color] of [['home','#578750'],['away','#8da4b1']]){
     const pts=frames.map(f=>`${px(f.minute)},${py(f.stats[side].xg)}`).join(' ');
     svg+=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
     const last=frames.at(-1);if(last)svg+=`<circle cx="${px(last.minute)}" cy="${py(last.stats[side].xg)}" r="4" fill="${color}" stroke="#fff" stroke-width="2"/>`;
   }
   $('#flowChart').innerHTML=svg;
-  const moment=[...match.events].reverse().find(e=>['goal','save','shot','card'].includes(e.type));
-  $('#flowMoment').textContent=moment?moment.type==='goal'?`Goal · ${moment.minute}′`:moment.type==='save'?`Crucial save · ${moment.minute}′`:moment.type==='shot'?`Shot off target · ${moment.minute}′`:`Booking · ${moment.minute}′`:'Kick-off awaits';
+  const moment=[...match.events].reverse().find(e=>['goal','save','shot','card','shootout'].includes(e.type));
+  $('#flowMoment').textContent=moment?moment.type==='goal'?`Goal · ${moment.minute}′`:moment.type==='shootout'?`Shootout · 120′`:moment.type==='save'?`Crucial save · ${moment.minute}′`:moment.type==='shot'?`Shot off target · ${moment.minute}′`:`Booking · ${moment.minute}′`:'Kick-off awaits';
   $('#flowMomentNote').textContent=moment?moment.text:'The first chance is still to come.';
   const hPct=match.minute===0?50:Math.round(match.stats.home.possession/(match.minute*60)*100);
   const edge=hPct>=54?home.name:hPct<=46?away.name:'Evenly matched';
@@ -10440,6 +10602,32 @@ function bind(){
 
   $('#newMatchBtn').addEventListener('click',startMatch);
 
+  $('#randomSeedBtn')?.addEventListener('click', () => {
+    const randomSeed = `MATCH-${Math.floor(Math.random() * 90000 + 10000)}`;
+    $('#seedInput').value = randomSeed;
+    match.seed = randomSeed;
+    toast(`🎲 Seed randomized: ${randomSeed}`);
+  });
+
+  // Timeline scrub seeking for replays and match review
+  $('#timelineTrack')?.addEventListener('click', e => {
+    if (!replay && match.phase !== 'FULL_TIME') return;
+    const rect = $('#timelineTrack').getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const maxMins = (match.knockout || (replay && replay.source.knockout)) ? 120 : 90;
+    const targetMin = Math.round(pct * maxMins);
+    if (replay) {
+      replay.index = Math.min(targetMin, replay.source.frames.length - 1);
+      match = matchFromFrame(replay.source, replay.index);
+      render();
+    } else if (match.phase === 'FULL_TIME') {
+      startReplay({ match });
+      replay.index = Math.min(targetMin, replay.source.frames.length - 1);
+      match = matchFromFrame(replay.source, replay.index);
+      render();
+    }
+  });
+
   $('#homeSelect').addEventListener('change',()=>{
     if($('#homeSelect').value===$('#awaySelect').value){
       $('#awaySelect').value=TEAMS.find(t=>t.id!==$('#homeSelect').value).id;
@@ -10527,6 +10715,35 @@ function bind(){
   }));
 
   $('#saveBtn').addEventListener('click',()=>saveVault());
+
+  $('#importReplayBtn')?.addEventListener('click', () => {
+    $('#replayFileInput')?.click();
+  });
+
+  $('#replayFileInput')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const targetMatch = data.match || data;
+        if (!targetMatch.frames || !targetMatch.score || !targetMatch.seed) {
+          toast('Invalid replay format: missing frames or match data.');
+          return;
+        }
+        const id = `${targetMatch.seed}-${Date.now()}`;
+        vault = [{ id, savedAt: data.savedAt || new Date().toISOString(), match: targetMatch }, ...vault].slice(0, 12);
+        localStorage.setItem(STORAGE, JSON.stringify(vault));
+        renderVault();
+        toast(`Replay "${targetMatch.seed}" imported to vault!`);
+      } catch (err) {
+        toast('Failed to parse replay JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
 
   $('#clearVaultBtn').addEventListener('click',()=>{
     if(!vault.length) return;
@@ -10659,13 +10876,20 @@ function bind(){
   });
 
   // Scouting Hub Filters
-  $('#scoutSearchInput').addEventListener('input', renderScoutingHub);
-  $('#scoutRoleFilter').addEventListener('change', renderScoutingHub);
-  $('#scoutTierFilter').addEventListener('change', renderScoutingHub);
-  $('#scoutTeamFilter').addEventListener('change', renderScoutingHub);
-  $('#scoutSortFilter').addEventListener('change', renderScoutingHub);
+  const resetAndScout = () => { scoutPage = 1; renderScoutingHub(); };
+  $('#scoutSearchInput').addEventListener('input', resetAndScout);
+  $('#scoutRoleFilter').addEventListener('change', resetAndScout);
+  $('#scoutTierFilter').addEventListener('change', resetAndScout);
+  $('#scoutTeamFilter').addEventListener('change', resetAndScout);
+  $('#scoutSortFilter').addEventListener('change', resetAndScout);
 
   $('#scoutingPlayerGrid').addEventListener('click', e => {
+    const loadMoreBtn = e.target.closest('#loadMoreScoutBtn');
+    if (loadMoreBtn) {
+      scoutPage++;
+      renderScoutingHub();
+      return;
+    }
     const card = e.target.closest('[data-fut-id]');
     if (!card) return;
     openFutCardModal(card.dataset.futId);
@@ -10707,11 +10931,27 @@ function bind(){
     }
   });
 
-  // Global spacebar shortcut
-  document.addEventListener('keydown',e=>{
-    if(e.code==='Space'&&!(e.target instanceof HTMLInputElement)&&!(e.target instanceof HTMLButtonElement)&&!(e.target instanceof HTMLSelectElement)){
+  // Accessible keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLSelectElement) return;
+    if (e.code === 'Space') {
       e.preventDefault();
-      $('#playBtn').click();
+      $('#playBtn')?.click();
+    } else if (e.code === 'KeyS' || e.code === 'ArrowRight') {
+      e.preventDefault();
+      $('#stepBtn')?.click();
+    } else if (e.code === 'KeyF') {
+      e.preventDefault();
+      $('#fullTimeBtn')?.click();
+    } else if (e.code === 'KeyM') {
+      e.preventDefault();
+      $('#soundToggleBtn')?.click();
+    } else if (e.key === '1') {
+      $('[data-speed="1"]')?.click();
+    } else if (e.key === '2') {
+      $('[data-speed="2"]')?.click();
+    } else if (e.key === '5') {
+      $('[data-speed="5"]')?.click();
     }
   });
 }

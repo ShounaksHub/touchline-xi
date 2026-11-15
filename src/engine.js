@@ -22,7 +22,7 @@ function rand(m) {
 const between = (m,a,b) => a + (b-a)*rand(m);
 const chance = (m,p) => rand(m) < clamp(p,0,1);
 
-const emptyStats = () => ({possession:0, passes:0, completed:0, shots:0, onTarget:0, xg:0, fouls:0, yellow:0, corners:0, offsides:0, saves:0});
+const emptyStats = () => ({possession:0, passes:0, completed:0, shots:0, onTarget:0, xg:0, fouls:0, yellow:0, red:0, corners:0, offsides:0, saves:0});
 
 export function validateLineup(teamId, ids) {
   const team = getTeam(teamId);
@@ -37,7 +37,8 @@ export function validateLineup(teamId, ids) {
 function frameFromMatch(m) {
   return copy({minute:m.minute, phase:m.phase, score:m.score, stats:m.stats, ball:m.ball, possession:m.possession,
     rng:m.rng, events:m.events, tactics:m.tactics, formations:m.formations, lineups:m.lineups, substitutionsUsed:m.substitutionsUsed,
-    stamina:copy(m.stamina || {}), winner:m.winner || null, penalties:m.penalties || null});
+    stamina:copy(m.stamina || {}), winner:m.winner || null, penalties:m.penalties || null, knockout:!!m.knockout,
+    bookings:copy(m.bookings || { home: {}, away: {} })});
 }
 
 export function createMatch(options = {}) {
@@ -79,7 +80,7 @@ export function createMatch(options = {}) {
     version:1, seed:String(options.seed ?? 'TOUCHLINE-001'), rng:seedToState(options.seed ?? 'TOUCHLINE-001'),
     homeId, awayId, minute:0, phase:'PRE_MATCH', possession:'home', ball:{x:50,y:50}, score:{home:0,away:0},
     stats:{home:emptyStats(),away:emptyStats()}, lineups, substitutionsUsed:0, stamina, knockout:!!options.knockout,
-    winner:null, penalties:null,
+    winner:null, penalties:null, bookings:{home:{},away:{}},
     formations:{home:options.formation && FORMATIONS[options.formation] ? options.formation : '4-3-3',away:'4-3-3'},
     tactics:{home:{...DEFAULT_TACTICS,...(options.tactics ?? {})},away:{...DEFAULT_TACTICS,pressing:betweenFake(options.seed,42,72),tempo:betweenFake(`${options.seed}-tempo`,42,66)}},
     events:[{minute:0,type:'kickoff',side:null,text:'The teams are ready. Awaiting kick-off.'}],
@@ -143,9 +144,14 @@ function addEvent(m,type,side,text,extra={}) {
   m.events.push(entry);
   return entry;
 }
-function selectAttacker(m,side,role='attack') {
+
+function selectAttacker(m,side,role='attack',excludeId=null) {
   const team=getTeam(side==='home'?m.homeId:m.awayId);
-  const picks=m.lineups[side].map(id=>getPlayer(team,id)).filter(Boolean);
+  const picks=m.lineups[side].map(id=>getPlayer(team,id)).filter(p=>p && p.id!==excludeId);
+  if (!picks.length) {
+    const fallback = getPlayer(team, m.lineups[side][0]) || { id: 'p0', name: 'Player', role: 'CM', shooting: 70, defending: 70, passing: 70, pace: 70, physical: 70, keeping: 5 };
+    return fallback;
+  }
   const weighted=picks.map(p=>{
     let w=role==='shoot' ? p.shooting : role==='defend' ? p.defending : p.passing;
     if (p.role==='GK') w*=0.03;
@@ -156,13 +162,29 @@ function selectAttacker(m,side,role='attack') {
   for(let i=0;i<picks.length;i++){ticket-=weighted[i];if(ticket<=0)return picks[i];}
   return picks[picks.length-1];
 }
+
 function average(m,side,attr) {
   const team=getTeam(side==='home'?m.homeId:m.awayId);
-  return m.lineups[side].map(id=>getPlayer(team,id)?.[attr] ?? 60).reduce((a,b)=>a+b,0)/11;
+  const picks = m.lineups[side].map(id=>getPlayer(team,id)).filter(Boolean);
+  if (!picks.length) return 65;
+  return picks.map(p => p[attr] ?? 60).reduce((a,b)=>a+b,0)/picks.length;
 }
+
+function teamStrength(m, side) {
+  const team = getTeam(side === 'home' ? m.homeId : m.awayId);
+  const picks = m.lineups[side].map(id => getPlayer(team, id)).filter(Boolean);
+  if (!picks.length) return 70;
+  const avgOvr = picks.reduce((acc, p) => acc + (p.overall || p.ovr || 70), 0) / picks.length;
+  const gk = picks.find(p => p.role === 'GK') || picks[0];
+  const gkBonus = ((gk?.keeping || gk?.overall || 75) - 75) * 0.12;
+  const reds = m.stats?.[side]?.red || 0;
+  return avgOvr + gkBonus - (reds * 7);
+}
+
 function attackFactor(m,side) {
   const {tempo,pressing,mentality}=m.tactics[side];
-  return (average(m,side,'passing')*.28+average(m,side,'shooting')*.38+average(m,side,'pace')*.34)/75
+  const str = teamStrength(m, side);
+  return (str / 75)
     + (tempo-50)*0.003 + (pressing-50)*0.001
     + (mentality==='Attacking' ? .15 : mentality==='Defensive' ? -.12 : 0);
 }
@@ -184,8 +206,13 @@ export function advanceMinute(m) {
     }
   }
 
-  const homeBias=clamp(0.5+(attackFactor(m,'home')-attackFactor(m,'away'))*.13, .36, .64);
-  const possessHome=clamp(homeBias + between(m,-.21,.21),.19,.81);
+  const sHome = teamStrength(m, 'home'), sAway = teamStrength(m, 'away');
+  const tactHome = (m.tactics.home.mentality === 'Attacking' ? 3 : m.tactics.home.mentality === 'Defensive' ? -3 : 0) + (m.tactics.home.pressing - 50) * 0.04 + (m.tactics.home.tempo - 50) * 0.04;
+  const tactAway = (m.tactics.away.mentality === 'Attacking' ? 3 : m.tactics.away.mentality === 'Defensive' ? -3 : 0) + (m.tactics.away.pressing - 50) * 0.04 + (m.tactics.away.tempo - 50) * 0.04;
+  const netEdge = (sHome + tactHome) - (sAway + tactAway);
+  // Authentic football home ground advantage (+4-6% baseline edge for hosts)
+  const homeBias = clamp(0.535 + netEdge * 0.007, 0.18, 0.82);
+  const possessHome = clamp(homeBias + between(m,-.18,.18),.15,.85);
   m.stats.home.possession+=possessHome*60;
   m.stats.away.possession+=(1-possessHome)*60;
 
@@ -209,10 +236,17 @@ export function advanceMinute(m) {
   // Deliberately lightweight event model, with tactic- and ability-sensitive outcomes.
   const attacking=m.tactics[side];
   const defending=m.tactics[opponent];
+  const sideStrength = side === 'home' ? sHome : sAway;
+  const oppStrength = side === 'home' ? sAway : sHome;
+  const oppDefending=average(m, opponent, 'defending');
   const eventRoll=rand(m);
+  const homeShotBonus = side === 'home' ? 0.015 : 0;
   const shotProbability=clamp(.205+(attacking.tempo-50)*.0009
     +(attacking.mentality==='Attacking'?.055:attacking.mentality==='Defensive'?-.04:0)
-    +(attackFactor(m,side)-attackFactor(m,opponent))*.04,.13,.34);
+    +(sideStrength - oppStrength)*.0032
+    +homeShotBonus
+    -(oppDefending-70)*.0015,.09,.39);
+
   if(eventRoll<shotProbability){
     const shooter=selectAttacker(m,side,'shoot');
     const goalDistance=between(m,9,34);
@@ -221,7 +255,8 @@ export function advanceMinute(m) {
     const shotLocation={x:m.ball.x,y:m.ball.y};
     const rawXg=clamp((inBox ? .16 : .044)+(shooter.shooting-70)*.0028
       +(attacking.mentality==='Attacking'?.015:0)
-      -(defending.pressing-50)*.00038+between(m,-.03,.08),.025,.39);
+      -(defending.pressing-50)*.00038
+      -(oppDefending-70)*.0012+between(m,-.03,.08),.025,.42);
     const xg=round2(rawXg);
     m.stats[side].shots+=1;
     m.stats[side].xg=round2(m.stats[side].xg+xg);
@@ -230,33 +265,79 @@ export function advanceMinute(m) {
     if(onTarget){
       m.stats[side].onTarget+=1;
       const goalkeeper=getPlayer(getTeam(opponent==='home'?m.homeId:m.awayId),m.lineups[opponent][0])?.keeping ?? 80;
-      // Conditional conversion calibrated so per-shot goal likelihood roughly follows xG.
-      const goalChance=clamp(rawXg/accuracy*(1-(goalkeeper-80)*.004),.018,.82);
+      // Conditional conversion calibrated so per-shot goal likelihood roughly follows xG and GK quality.
+      const goalChance=clamp((rawXg/accuracy)*(1+(shooter.shooting-75)*0.005-(goalkeeper-75)*0.0065),.018,.86);
       if(chance(m,goalChance)){
         m.score[side]+=1;
         m.ball={x:side==='home'?99:1,y:50};
-        addEvent(m,'goal',side,`${shooter.name} finds the net!`,{playerId:shooter.id,xg,location:shotLocation});
+        const assister = chance(m, 0.72) ? selectAttacker(m, side, 'pass', shooter.id) : null;
+        const assistText = assister ? ` (Assist: ${assister.name})` : '';
+        addEvent(m,'goal',side,`${shooter.name} finds the net!${assistText}`,{playerId:shooter.id,assistId:assister?.id,assistName:assister?.name,xg,location:shotLocation});
       } else {
         m.stats[opponent].saves+=1;
         addEvent(m,'save',side,`${shooter.name} forces a sharp save.`,{playerId:shooter.id,xg,location:shotLocation});
-        if(chance(m,.37)) m.stats[side].corners+=1;
+        if(chance(m,.42)) m.stats[side].corners+=1;
       }
     } else {
       addEvent(m,'shot',side,`${shooter.name} sends the effort ${chance(m,.6)?'wide':'over the bar'}.`,{playerId:shooter.id,xg,location:shotLocation});
     }
-  } else if(eventRoll<shotProbability+.072){
+  } else if(eventRoll<shotProbability+.075){
     m.stats[opponent].fouls+=1;
     const offender=selectAttacker(m,opponent,'defend');
-    const booking=chance(m,.21);
-    if(booking) m.stats[opponent].yellow+=1;
-    addEvent(m,booking?'card':'foul',opponent,`${offender.name} ${booking?'goes into the book':'concedes a free kick'}.`,{playerId:offender.id});
-  } else if(eventRoll<shotProbability+.105) {
+    const inBoxPenalty = chance(m, 0.095);
+
+    if (inBoxPenalty) {
+      // In-regulation penalty kick
+      const taker = selectAttacker(m, side, 'shoot');
+      const gk = getPlayer(getTeam(opponent==='home'?m.homeId:m.awayId),m.lineups[opponent][0]);
+      m.stats[side].shots+=1;
+      m.stats[side].onTarget+=1;
+      const penXg = 0.79;
+      m.stats[side].xg = round2(m.stats[side].xg + penXg);
+      const conversion = clamp(0.76 + ((taker.shooting - 75) * 0.003) - (((gk?.keeping ?? 75) - 75) * 0.003), 0.58, 0.90);
+      const scored = chance(m, conversion);
+      const shotLocation = { x: side==='home' ? 88 : 12, y: 50 };
+      if (scored) {
+        m.score[side]+=1;
+        m.ball={x:side==='home'?99:1,y:50};
+        addEvent(m,'goal',side,`⚽ PENALTY! ${taker.name} calmly converts from the spot!`,{playerId:taker.id,xg:penXg,location:shotLocation,isPenalty:true});
+      } else {
+        m.stats[opponent].saves+=1;
+        addEvent(m,'save',side,`🧤 PENALTY SAVED! Keeper guesses right to deny ${taker.name} from the spot!`,{playerId:taker.id,xg:penXg,location:shotLocation,isPenalty:true});
+        if (chance(m, 0.45)) m.stats[side].corners+=1;
+      }
+    } else {
+      const straightRed = chance(m, 0.015);
+      const booking = chance(m, 0.22);
+      if (!m.bookings) m.bookings = { home: {}, away: {} };
+
+      if (straightRed) {
+        m.stats[opponent].red += 1;
+        m.bookings[opponent][offender.id] = (m.bookings[opponent][offender.id] || 0) + 2;
+        addEvent(m,'card',opponent,`🔴 DIRECT RED CARD! Dangerous foul by ${offender.name} — straight dismissal!`,{playerId:offender.id,card:'red'});
+      } else if (booking) {
+        const prior = m.bookings[opponent][offender.id] || 0;
+        if (prior >= 1) {
+          m.stats[opponent].yellow += 1;
+          m.stats[opponent].red += 1;
+          m.bookings[opponent][offender.id] = prior + 1;
+          addEvent(m,'card',opponent,`🔴 SECOND YELLOW CARD! ${offender.name} receives his marching orders and is sent off!`,{playerId:offender.id,card:'second_yellow'});
+        } else {
+          m.stats[opponent].yellow += 1;
+          m.bookings[opponent][offender.id] = 1;
+          addEvent(m,'card',opponent,`🟨 BOOKING: ${offender.name} goes into the referee's notebook.`,{playerId:offender.id,card:'yellow'});
+        }
+      } else {
+        addEvent(m,'foul',opponent,`${offender.name} concedes a tactical free kick.`,{playerId:offender.id});
+      }
+    }
+  } else if(eventRoll<shotProbability+.108) {
     m.stats[side].offsides+=1;
     addEvent(m,'offside',side,`${selectAttacker(m,side,'shoot').name} is caught offside.`);
-  } else if(eventRoll<shotProbability+.135) {
+  } else if(eventRoll<shotProbability+.145) {
     m.stats[side].corners+=1;
     addEvent(m,'corner',side,`${side==='home'?getTeam(m.homeId).short:getTeam(m.awayId).short} win a corner.`);
-  } else if(eventRoll<shotProbability+.23) {
+  } else if(eventRoll<shotProbability+.24) {
     const maker=selectAttacker(m,side,'pass');
     const comment=chance(m,.5)?`${maker.name} breaks the line with a pass.`:`${maker.name} carries into the final third.`;
     addEvent(m,'build',side,comment,{playerId:maker.id});
@@ -332,27 +413,31 @@ export function simulatePenaltyShootout(m) {
   const awayKickers = m.lineups.away.slice(1, 6);
 
   for (let r = 0; r < 5; r++) {
-    const hk = getPlayer(homeTeam, homeKickers[r]) || { name: `Home #${r+1}`, shooting: 80 };
+    const hk = getPlayer(homeTeam, homeKickers[r]) || { id: `hk_${r}`, name: `Home #${r+1}`, shooting: 80 };
     const hScore = chance(m, clamp(0.74 + (hk.shooting - 75) * 0.003, 0.60, 0.90));
     if (hScore) shootout.home++;
     shootout.kicks.push({ side: 'home', round: r + 1, scored: hScore, player: hk.name });
+    addEvent(m, 'shootout', 'home', `${hScore ? '⚽' : '❌'} Shootout [Round ${r+1}]: ${hk.name} ${hScore ? 'SCORES!' : 'denied by keeper!'} (${shootout.home}-${shootout.away})`, { playerId: hk.id, scored: hScore, round: r+1 });
 
-    const ak = getPlayer(awayTeam, awayKickers[r]) || { name: `Away #${r+1}`, shooting: 80 };
+    const ak = getPlayer(awayTeam, awayKickers[r]) || { id: `ak_${r}`, name: `Away #${r+1}`, shooting: 80 };
     const aScore = chance(m, clamp(0.74 + (ak.shooting - 75) * 0.003, 0.60, 0.90));
     if (aScore) shootout.away++;
     shootout.kicks.push({ side: 'away', round: r + 1, scored: aScore, player: ak.name });
+    addEvent(m, 'shootout', 'away', `${aScore ? '⚽' : '❌'} Shootout [Round ${r+1}]: ${ak.name} ${aScore ? 'SCORES!' : 'denied by keeper!'} (${shootout.home}-${shootout.away})`, { playerId: ak.id, scored: aScore, round: r+1 });
   }
 
   let round = 6;
   while (shootout.home === shootout.away && round <= 11) {
-    const hk = getPlayer(homeTeam, m.lineups.home[round - 1] || m.lineups.home[1]);
-    const ak = getPlayer(awayTeam, m.lineups.away[round - 1] || m.lineups.away[1]);
+    const hk = getPlayer(homeTeam, m.lineups.home[round - 1] || m.lineups.home[1]) || { id: `hk_sd`, name: 'Home Kicker', shooting: 75 };
+    const ak = getPlayer(awayTeam, m.lineups.away[round - 1] || m.lineups.away[1]) || { id: `ak_sd`, name: 'Away Kicker', shooting: 75 };
     const hScore = chance(m, 0.72);
     const aScore = chance(m, 0.72);
     if (hScore) shootout.home++;
     if (aScore) shootout.away++;
-    shootout.kicks.push({ side: 'home', round, scored: hScore, player: hk?.name || 'Kicker' });
-    shootout.kicks.push({ side: 'away', round, scored: aScore, player: ak?.name || 'Kicker' });
+    shootout.kicks.push({ side: 'home', round, scored: hScore, player: hk.name });
+    addEvent(m, 'shootout', 'home', `${hScore ? '⚽' : '❌'} Sudden Death [Round ${round}]: ${hk.name} ${hScore ? 'SCORES!' : 'misses!'} (${shootout.home}-${shootout.away})`, { playerId: hk.id, scored: hScore, round });
+    shootout.kicks.push({ side: 'away', round, scored: aScore, player: ak.name });
+    addEvent(m, 'shootout', 'away', `${aScore ? '⚽' : '❌'} Sudden Death [Round ${round}]: ${ak.name} ${aScore ? 'SCORES!' : 'misses!'} (${shootout.home}-${shootout.away})`, { playerId: ak.id, scored: aScore, round });
     round++;
   }
   if (shootout.home === shootout.away) {
@@ -419,6 +504,6 @@ export function playFullMatch(m) {
 export function matchFromFrame(base, index) {
   const frame=base.frames[clamp(index,0,base.frames.length-1)];
   if(!frame) return base;
-  return {...copy(frame),version:base.version,seed:base.seed,homeId:base.homeId,awayId:base.awayId,frames:base.frames};
+  return {...copy(frame),version:base.version,seed:base.seed,homeId:base.homeId,awayId:base.awayId,knockout:base.knockout,frames:base.frames};
 }
 export function resultLabel(m){const h=m.score.home,a=m.score.away;return h===a?'Draw':h>a?'Home win':'Away win';}

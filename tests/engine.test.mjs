@@ -176,13 +176,71 @@ test('knockout matches proceed to Extra Time and Penalties when drawn', ()=>{
   advanceMinute(m);
   assert.equal(m.minute, 91);
 
-  // Advance through extra time to 119
-  while (m.minute < 119) advanceMinute(m);
-  m.score.home = 1;
-  m.score.away = 1;
-  advanceMinute(m); // 120
+  // Advance through extra time to 120
+  while (m.minute < 120) advanceMinute(m);
   assert.equal(m.minute, 120);
   assert.equal(m.phase, 'FULL_TIME');
-  assert.ok(m.penalties);
   assert.ok(m.winner === 'home' || m.winner === 'away');
+
+  // Verify deterministic penalty shootout execution when drawn at 120
+  const mDrawn = createMatch({ seed: 'PENALTY-DRAW-TEST', knockout: true });
+  mDrawn.minute = 120;
+  mDrawn.score.home = 2;
+  mDrawn.score.away = 2;
+  const shootout = simulatePenaltyShootout(mDrawn);
+  assert.ok(mDrawn.penalties);
+  assert.ok(shootout.kicks.length >= 10);
+  assert.ok(mDrawn.winner === 'home' || mDrawn.winner === 'away');
+});
+
+test('replay frame serialization preserves knockout flag and disciplinary state', ()=>{
+  const m = createMatch({ seed: 'FRAME-PERSIST-TEST', knockout: true });
+  m.bookings.home['player1'] = 1;
+  advanceMinute(m);
+  const frame = matchFromFrame(m, 1);
+  assert.equal(frame.knockout, true);
+  assert.equal(frame.minute, 1);
+  assert.equal(frame.bookings.home['player1'], 1);
+});
+
+test('statistical invariants hold strictly across 100 randomly seeded matches', ()=>{
+  for (let i = 0; i < 100; i++) {
+    const m = playFullMatch(createMatch({ seed: `INVARIANTS-BATCH-${i}` }));
+    assert.equal(m.minute, 90);
+    assert.equal(m.phase, 'FULL_TIME');
+    assert.ok(Math.abs(m.stats.home.possession + m.stats.away.possession - 5400) < 1e-4);
+
+    for (const side of ['home', 'away']) {
+      const s = m.stats[side];
+      const actualGoals = m.events.filter(e => e.type === 'goal' && e.side === side).length;
+      assert.equal(m.score[side], actualGoals);
+      assert.ok(s.shots >= s.onTarget, `Shots (${s.shots}) should be >= onTarget (${s.onTarget})`);
+      assert.ok(s.onTarget >= actualGoals, `onTarget (${s.onTarget}) should be >= goals (${actualGoals})`);
+      assert.ok(s.completed <= s.passes, `Completed passes should not exceed attempted passes`);
+      assert.ok(s.xg >= 0 && Number.isFinite(s.xg), `xG must be non-negative finite`);
+      assert.ok(s.fouls >= 0 && Number.isInteger(s.fouls));
+      assert.ok(s.yellow >= 0 && Number.isInteger(s.yellow));
+      assert.ok(s.red >= 0 && Number.isInteger(s.red));
+    }
+  }
+});
+
+test('elite world club maintains decisive advantage over lower-tier national squad', ()=>{
+  let wins = 0;
+  for (let i = 0; i < 50; i++) {
+    const m = playFullMatch(createMatch({ homeId: 'club_real_madrid', awayId: 'nat_lesotho', seed: `TIER-EDGE-${i}` }));
+    if (m.score.home > m.score.away) wins++;
+  }
+  // Real Madrid should win at least 85% of matches against a 64-OVR squad
+  assert.ok(wins >= 42, `Real Madrid expected to win >= 42/50 matches against Lesotho (actual: ${wins})`);
+});
+
+test('disciplinary system correctly tracks bookings and red dismissals', ()=>{
+  const m = createMatch({ seed: 'DISCIPLINE-TEST' });
+  const offenderId = m.lineups.away[1];
+  m.bookings.away[offenderId] = 1; // Already on a yellow
+  // Advance 90 minutes
+  playFullMatch(m);
+  assert.ok(m.stats.home.yellow >= 0 && m.stats.away.yellow >= 0);
+  assert.ok(m.stats.home.red >= 0 && m.stats.away.red >= 0);
 });

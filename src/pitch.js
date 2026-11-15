@@ -128,6 +128,19 @@ export function renderPitch(canvas,match,t=0) {
         ctx.fillRect(barX, barY, Math.max(1, barW * (stam / 100)), barH);
       }
 
+      // Yellow/Red Card Discipline Badge
+      const cardCount = match.bookings?.[name]?.[p.id] || 0;
+      if (cardCount > 0) {
+        const cardW = 5, cardH = 7.5;
+        const cardX = pt.x + r - 3;
+        const cardY = pt.y - r - 2;
+        ctx.fillStyle = cardCount >= 2 ? '#ff3838' : '#ffd32a';
+        ctx.strokeStyle = '#1e272e';
+        ctx.lineWidth = 1;
+        ctx.fillRect(cardX, cardY, cardW, cardH);
+        ctx.strokeRect(cardX, cardY, cardW, cardH);
+      }
+
       if(W>620 && (i===9||i===0||i===8||i===10)){
         const label=pl.name.split(' ').at(-1).toUpperCase();
         setText(ctx,'rgba(236,249,222,.77)',`700 ${Math.max(7,W*.008)}px Arial`);

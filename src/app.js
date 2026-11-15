@@ -10,7 +10,7 @@ const STORAGE='touchline-xi-replays-v1';
 const PREFS='touchline-xi-prefs-v1';
 const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const formatStat=(key,value)=>key==='possession'?`${Math.round(value)}%`:key==='xg'?Number(value).toFixed(2):Number(value).toLocaleString('en-GB');
-const keyEvents=new Set(['goal','save','shot','card','half','full','sub','tactic','talk']);
+const keyEvents=new Set(['goal','save','shot','card','half','full','sub','tactic','talk','shootout']);
 const savedPrefs=(()=>{try{return JSON.parse(localStorage.getItem(PREFS))||{}}catch{return {}}})();
 
 // Initialize match
@@ -23,6 +23,8 @@ let match=createMatch({
 });
 
 let running=false,replay=null,speed=1,accumulator=0,lastRenderAt=0,selectedStarter=null,feedFilter='all',toastTimeout=null,goalTimeout=null;
+let scoutPage = 1;
+const SCOUT_PAGE_SIZE = 72;
 
 // Master player pool indexing all 2,750+ players across clubs, national teams & peak legends
 const ALL_PLAYERS_POOL = (() => {
@@ -403,10 +405,10 @@ function renderScoutingHub() {
     return b.ovr - a.ovr;
   });
 
-  const displayList = pool.slice(0, 72);
+  const displayList = pool.slice(0, scoutPage * SCOUT_PAGE_SIZE);
   $('#scoutingResultCount').textContent = `Showing ${displayList.length} of ${pool.length.toLocaleString('en-GB')} players`;
 
-  $('#scoutingPlayerGrid').innerHTML = displayList.map(p => `
+  let cardsHtml = displayList.map(p => `
     <div class="scouting-card" data-fut-id="${p.id}">
       <div>
         <div class="scouting-card-top">
@@ -428,6 +430,17 @@ function renderScoutingHub() {
       </div>
     </div>
   `).join('') || '<div style="grid-column:1/-1;text-align:center;padding:48px;color:#888;">No players found matching your criteria.</div>';
+
+  if (pool.length > displayList.length) {
+    cardsHtml += `
+      <div style="grid-column:1/-1;text-align:center;padding:24px 0 12px;">
+        <button class="secondary-button" id="loadMoreScoutBtn" style="padding:10px 28px;font-size:13px;cursor:pointer;">
+          Load More Players (+${Math.min(SCOUT_PAGE_SIZE, pool.length - displayList.length)}) ↓
+        </button>
+      </div>
+    `;
+  }
+  $('#scoutingPlayerGrid').innerHTML = cardsHtml;
 }
 
 function openFutCardModal(playerId) {
@@ -737,13 +750,28 @@ function renderStats(){
   const s=match.stats;
   const totals={
     possession:match.minute===0? [50,50]:[s.home.possession/(match.minute*60)*100,s.away.possession/(match.minute*60)*100],
+    xg:[s.home.xg,s.away.xg],
     shots:[s.home.shots,s.away.shots],
     onTarget:[s.home.onTarget,s.away.onTarget],
-    xg:[s.home.xg,s.away.xg],
+    saves:[s.home.saves,s.away.saves],
+    corners:[s.home.corners,s.away.corners],
     passes:[s.home.passes,s.away.passes],
-    fouls:[s.home.fouls,s.away.fouls]
+    fouls:[s.home.fouls,s.away.fouls],
+    yellow:[s.home.yellow,s.away.yellow],
+    red:[s.home.red || 0, s.away.red || 0]
   };
-  const labels={possession:'Possession',shots:'Shots',onTarget:'Shots on target',xg:'Expected goals (xG)',passes:'Total passes',fouls:'Fouls conceded'};
+  const labels={
+    possession:'Possession',
+    xg:'Expected goals (xG)',
+    shots:'Total shots',
+    onTarget:'Shots on target',
+    saves:'Goalkeeper saves',
+    corners:'Corner kicks',
+    passes:'Total passes',
+    fouls:'Fouls conceded',
+    yellow:'Yellow cards',
+    red:'Red cards'
+  };
   $('#statsRows').innerHTML=Object.entries(totals).map(([key,[a,b]])=>{
     const denom=Math.max(a+b,.0001);
     const left=Math.round(a/denom*100),right=100-left;
@@ -752,12 +780,12 @@ function renderStats(){
 }
 
 function renderFeed(){
-  const events=[...match.events].reverse().filter(e=>feedFilter==='all'||keyEvents.has(e.type)).slice(0,30);
+  const events=[...match.events].reverse().filter(e=>feedFilter==='all'||keyEvents.has(e.type)).slice(0,36);
   $('#eventFeed').innerHTML=events.map(e=>`
     <div class="feed-item ${escapeHtml(e.type)}">
       <div class="feed-time">${String(e.minute).padStart(2,'0')}′</div>
       <div class="feed-copy">
-        <b>${e.type==='goal'?'GOAL ⚽':e.type==='save'?'SHOT ON TARGET':e.type==='shot'?'SHOT':e.type==='card'?'BOOKING':e.type==='foul'?'FREE KICK':e.type==='offside'?'OFFSIDE':e.type==='corner'?'CORNER':e.type==='half'?'INTERVAL':e.type==='full'?'FINAL WHISTLE':e.type==='sub'?'SUBSTITUTION':e.type==='tactic'?'TOUCHLINE SHOUT':e.type==='talk'?'DRESSING ROOM TALK':e.type==='kickoff'?'MATCHDAY':'OPEN PLAY'}${e.side?' / '+getTeam(e.side==='home'?match.homeId:match.awayId).short:''}</b>
+        <b>${e.type==='goal'?(e.isPenalty?'PENALTY GOAL ⚽':'GOAL ⚽'):e.type==='shootout'?'PENALTY SHOOTOUT 🎯':e.type==='save'?(e.isPenalty?'PENALTY SAVED 🧤':'SHOT ON TARGET 🧤'):e.type==='shot'?'SHOT':e.type==='card'?(e.card==='red'||e.card==='second_yellow'?'RED CARD 🔴':'BOOKING 🟨'):e.type==='foul'?'FREE KICK':e.type==='offside'?'OFFSIDE':e.type==='corner'?'CORNER':e.type==='half'?'INTERVAL':e.type==='full'?'FINAL WHISTLE':e.type==='sub'?'SUBSTITUTION':e.type==='tactic'?'TOUCHLINE SHOUT':e.type==='talk'?'DRESSING ROOM TALK':e.type==='kickoff'?'MATCHDAY':'OPEN PLAY'}${e.side?' / '+getTeam(e.side==='home'?match.homeId:match.awayId).short:''}</b>
         ${escapeHtml(e.text)}
       </div>
     </div>
@@ -843,20 +871,22 @@ function renderFlow(){
   $('#homeLegendDot').style.background='#578750';$('#homeLegendDot').style.border='none';
   $('#awayLegendDot').style.background='#8da4b1';$('#awayLegendDot').style.border='none';
   $('#flowHomeName').textContent=home.name.toUpperCase();$('#flowAwayName').textContent=away.name.toUpperCase();
+  const maxMins = (match.knockout || (replay && replay.source.knockout)) ? 120 : 90;
   const frames=match.frames.slice(0,match.minute+1);const w=640,h=139,x0=43,y0=17;
   const mx=Math.max(1,...frames.flatMap(f=>[f.stats.home.xg,f.stats.away.xg]));const yMax=Math.ceil(mx*2)/2;
-  const px=m=>x0+(m/90)*w,py=v=>y0+h-(v/yMax)*h;
+  const px=m=>x0+(m/maxMins)*w,py=v=>y0+h-(v/yMax)*h;
   let svg='';
   for(let i=0;i<=4;i++){let val=yMax*i/4,y=py(val);svg+=`<line x1="43" y1="${y}" x2="683" y2="${y}" stroke="#e6ece5" stroke-width="1" stroke-dasharray="3 5"/><text x="35" y="${y+3}" text-anchor="end" fill="#96a399" font-family="Arial" font-size="9" font-weight="700">${val.toFixed(1)}</text>`;}
-  for(let i=0;i<=90;i+=15){svg+=`<text x="${px(i)}" y="179" text-anchor="middle" fill="#96a399" font-family="Arial" font-size="9" font-weight="700">${i}′</text>`;}
+  const step = maxMins > 90 ? 20 : 15;
+  for(let i=0;i<=maxMins;i+=step){svg+=`<text x="${px(i)}" y="179" text-anchor="middle" fill="#96a399" font-family="Arial" font-size="9" font-weight="700">${i}′</text>`;}
   for(const [side,color] of [['home','#578750'],['away','#8da4b1']]){
     const pts=frames.map(f=>`${px(f.minute)},${py(f.stats[side].xg)}`).join(' ');
     svg+=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
     const last=frames.at(-1);if(last)svg+=`<circle cx="${px(last.minute)}" cy="${py(last.stats[side].xg)}" r="4" fill="${color}" stroke="#fff" stroke-width="2"/>`;
   }
   $('#flowChart').innerHTML=svg;
-  const moment=[...match.events].reverse().find(e=>['goal','save','shot','card'].includes(e.type));
-  $('#flowMoment').textContent=moment?moment.type==='goal'?`Goal · ${moment.minute}′`:moment.type==='save'?`Crucial save · ${moment.minute}′`:moment.type==='shot'?`Shot off target · ${moment.minute}′`:`Booking · ${moment.minute}′`:'Kick-off awaits';
+  const moment=[...match.events].reverse().find(e=>['goal','save','shot','card','shootout'].includes(e.type));
+  $('#flowMoment').textContent=moment?moment.type==='goal'?`Goal · ${moment.minute}′`:moment.type==='shootout'?`Shootout · 120′`:moment.type==='save'?`Crucial save · ${moment.minute}′`:moment.type==='shot'?`Shot off target · ${moment.minute}′`:`Booking · ${moment.minute}′`:'Kick-off awaits';
   $('#flowMomentNote').textContent=moment?moment.text:'The first chance is still to come.';
   const hPct=match.minute===0?50:Math.round(match.stats.home.possession/(match.minute*60)*100);
   const edge=hPct>=54?home.name:hPct<=46?away.name:'Evenly matched';
@@ -1012,6 +1042,32 @@ function bind(){
 
   $('#newMatchBtn').addEventListener('click',startMatch);
 
+  $('#randomSeedBtn')?.addEventListener('click', () => {
+    const randomSeed = `MATCH-${Math.floor(Math.random() * 90000 + 10000)}`;
+    $('#seedInput').value = randomSeed;
+    match.seed = randomSeed;
+    toast(`🎲 Seed randomized: ${randomSeed}`);
+  });
+
+  // Timeline scrub seeking for replays and match review
+  $('#timelineTrack')?.addEventListener('click', e => {
+    if (!replay && match.phase !== 'FULL_TIME') return;
+    const rect = $('#timelineTrack').getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const maxMins = (match.knockout || (replay && replay.source.knockout)) ? 120 : 90;
+    const targetMin = Math.round(pct * maxMins);
+    if (replay) {
+      replay.index = Math.min(targetMin, replay.source.frames.length - 1);
+      match = matchFromFrame(replay.source, replay.index);
+      render();
+    } else if (match.phase === 'FULL_TIME') {
+      startReplay({ match });
+      replay.index = Math.min(targetMin, replay.source.frames.length - 1);
+      match = matchFromFrame(replay.source, replay.index);
+      render();
+    }
+  });
+
   $('#homeSelect').addEventListener('change',()=>{
     if($('#homeSelect').value===$('#awaySelect').value){
       $('#awaySelect').value=TEAMS.find(t=>t.id!==$('#homeSelect').value).id;
@@ -1099,6 +1155,35 @@ function bind(){
   }));
 
   $('#saveBtn').addEventListener('click',()=>saveVault());
+
+  $('#importReplayBtn')?.addEventListener('click', () => {
+    $('#replayFileInput')?.click();
+  });
+
+  $('#replayFileInput')?.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        const targetMatch = data.match || data;
+        if (!targetMatch.frames || !targetMatch.score || !targetMatch.seed) {
+          toast('Invalid replay format: missing frames or match data.');
+          return;
+        }
+        const id = `${targetMatch.seed}-${Date.now()}`;
+        vault = [{ id, savedAt: data.savedAt || new Date().toISOString(), match: targetMatch }, ...vault].slice(0, 12);
+        localStorage.setItem(STORAGE, JSON.stringify(vault));
+        renderVault();
+        toast(`Replay "${targetMatch.seed}" imported to vault!`);
+      } catch (err) {
+        toast('Failed to parse replay JSON file.');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  });
 
   $('#clearVaultBtn').addEventListener('click',()=>{
     if(!vault.length) return;
@@ -1231,13 +1316,20 @@ function bind(){
   });
 
   // Scouting Hub Filters
-  $('#scoutSearchInput').addEventListener('input', renderScoutingHub);
-  $('#scoutRoleFilter').addEventListener('change', renderScoutingHub);
-  $('#scoutTierFilter').addEventListener('change', renderScoutingHub);
-  $('#scoutTeamFilter').addEventListener('change', renderScoutingHub);
-  $('#scoutSortFilter').addEventListener('change', renderScoutingHub);
+  const resetAndScout = () => { scoutPage = 1; renderScoutingHub(); };
+  $('#scoutSearchInput').addEventListener('input', resetAndScout);
+  $('#scoutRoleFilter').addEventListener('change', resetAndScout);
+  $('#scoutTierFilter').addEventListener('change', resetAndScout);
+  $('#scoutTeamFilter').addEventListener('change', resetAndScout);
+  $('#scoutSortFilter').addEventListener('change', resetAndScout);
 
   $('#scoutingPlayerGrid').addEventListener('click', e => {
+    const loadMoreBtn = e.target.closest('#loadMoreScoutBtn');
+    if (loadMoreBtn) {
+      scoutPage++;
+      renderScoutingHub();
+      return;
+    }
     const card = e.target.closest('[data-fut-id]');
     if (!card) return;
     openFutCardModal(card.dataset.futId);
@@ -1279,11 +1371,27 @@ function bind(){
     }
   });
 
-  // Global spacebar shortcut
-  document.addEventListener('keydown',e=>{
-    if(e.code==='Space'&&!(e.target instanceof HTMLInputElement)&&!(e.target instanceof HTMLButtonElement)&&!(e.target instanceof HTMLSelectElement)){
+  // Accessible keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLSelectElement) return;
+    if (e.code === 'Space') {
       e.preventDefault();
-      $('#playBtn').click();
+      $('#playBtn')?.click();
+    } else if (e.code === 'KeyS' || e.code === 'ArrowRight') {
+      e.preventDefault();
+      $('#stepBtn')?.click();
+    } else if (e.code === 'KeyF') {
+      e.preventDefault();
+      $('#fullTimeBtn')?.click();
+    } else if (e.code === 'KeyM') {
+      e.preventDefault();
+      $('#soundToggleBtn')?.click();
+    } else if (e.key === '1') {
+      $('[data-speed="1"]')?.click();
+    } else if (e.key === '2') {
+      $('[data-speed="2"]')?.click();
+    } else if (e.key === '5') {
+      $('[data-speed="5"]')?.click();
     }
   });
 }

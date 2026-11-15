@@ -3014,3 +3014,29 @@ footer span {
     min-width: 650px;
   }
 }
+
+@media(max-width: 640px) {
+  .scouting-toolbar {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .seed-box {
+    width: 100%;
+  }
+  .intro-actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .vault-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .topbar-right {
+    gap: 6px;
+  }
+  .audio-toggle-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+  }
+}
