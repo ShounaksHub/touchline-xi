@@ -139,7 +139,9 @@ let activeTournamentMatchId = null;
 // ==========================================
 // Team Selector Categories Helper
 // ==========================================
-function buildTeamOptionsHtml(selectedId, includeAllOption = false) {
+let teamFilterQuery = '';
+
+function buildTeamOptionsHtml(selectedId, includeAllOption = false, filterQuery = '') {
   const continents = [
     { key: 'Europe', label: '🏆 European Clubs (UEFA)' },
     { key: 'South America', label: '🔥 South American Clubs (CONMEBOL)' },
@@ -148,31 +150,73 @@ function buildTeamOptionsHtml(selectedId, includeAllOption = false) {
     { key: 'Africa', label: '🦁 African Clubs (CAF)' }
   ];
 
+  const q = (filterQuery || '').trim().toLowerCase();
+  const matchesQuery = (t) => {
+    if (!q) return true;
+    return (
+      (t.name && t.name.toLowerCase().includes(q)) ||
+      (t.short && t.short.toLowerCase().includes(q)) ||
+      (t.city && t.city.toLowerCase().includes(q)) ||
+      (t.official_name && t.official_name.toLowerCase().includes(q))
+    );
+  };
+
   let html = '';
   if (includeAllOption) {
     html += '<option value="ALL">All Clubs & National Teams (5,700+ Players)</option>';
   }
 
+  let totalMatches = 0;
+  let selectedMatched = false;
+
   for (const c of continents) {
-    const clubsInContinent = TEAMS.filter(t => (t.isClub || !t.fifa_rank) && t.continent === c.key);
+    const clubsInContinent = TEAMS.filter(t => (t.isClub || !t.fifa_rank) && t.continent === c.key && matchesQuery(t));
     if (clubsInContinent.length > 0) {
-      html += `<optgroup label="${c.label}">`;
-      html += clubsInContinent.map(t => `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join('');
+      totalMatches += clubsInContinent.length;
+      html += `<optgroup label="${c.label}${q ? ` (${clubsInContinent.length})` : ''}">`;
+      html += clubsInContinent.map(t => {
+        const isSel = t.id === selectedId;
+        if (isSel) selectedMatched = true;
+        return `<option value="${t.id}" ${isSel ? 'selected' : ''}>${escapeHtml(t.name)}</option>`;
+      }).join('');
       html += '</optgroup>';
     }
   }
 
-  const otherClubs = TEAMS.filter(t => (t.isClub || !t.fifa_rank) && !t.continent);
+  const otherClubs = TEAMS.filter(t => (t.isClub || !t.fifa_rank) && !t.continent && matchesQuery(t));
   if (otherClubs.length > 0) {
-    html += '<optgroup label="🌐 Other World Clubs">';
-    html += otherClubs.map(t => `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>${escapeHtml(t.name)}</option>`).join('');
+    totalMatches += otherClubs.length;
+    html += `<optgroup label="🌐 Other World Clubs${q ? ` (${otherClubs.length})` : ''}">`;
+    html += otherClubs.map(t => {
+      const isSel = t.id === selectedId;
+      if (isSel) selectedMatched = true;
+      return `<option value="${t.id}" ${isSel ? 'selected' : ''}>${escapeHtml(t.name)}</option>`;
+    }).join('');
     html += '</optgroup>';
   }
 
-  const nations = TEAMS.filter(t => t.fifa_rank);
-  html += '<optgroup label="🌍 FIFA Senior National Teams (Top 150)">';
-  html += nations.map(t => `<option value="${t.id}" ${t.id === selectedId ? 'selected' : ''}>#${t.fifa_rank} ${escapeHtml(t.name)}</option>`).join('');
-  html += '</optgroup>';
+  const nations = TEAMS.filter(t => t.fifa_rank && matchesQuery(t));
+  if (nations.length > 0) {
+    totalMatches += nations.length;
+    html += `<optgroup label="🌍 FIFA Senior National Teams${q ? ` (${nations.length})` : ' (Top 150)'}">`;
+    html += nations.map(t => {
+      const isSel = t.id === selectedId;
+      if (isSel) selectedMatched = true;
+      return `<option value="${t.id}" ${isSel ? 'selected' : ''}>#${t.fifa_rank} ${escapeHtml(t.name)}</option>`;
+    }).join('');
+    html += '</optgroup>';
+  }
+
+  if (q && selectedId && !selectedMatched) {
+    const selTeam = getTeam(selectedId);
+    if (selTeam) {
+      html = `<optgroup label="📌 Currently Selected"><option value="${selTeam.id}" selected>${escapeHtml(selTeam.name)}</option></optgroup>` + html;
+    }
+  }
+
+  if (q && totalMatches === 0) {
+    html = `<option value="${selectedId || ''}" disabled ${!selectedId ? 'selected' : ''}>No teams matching "${escapeHtml(q)}"</option>` + (html || '');
+  }
 
   return html;
 }
@@ -521,7 +565,18 @@ function renderScoutingHub() {
         <div class="scouting-stat-col"><span>PHY</span><b>${p.physical}</b></div>
       </div>
     </div>
-  `).join('') || '<div style="grid-column:1/-1;text-align:center;padding:48px;color:#888;">No players found matching your criteria.</div>';
+  `).join('');
+
+  if (pool.length === 0) {
+    cardsHtml = `
+      <div class="scout-empty-state">
+        <div style="font-size:36px;margin-bottom:12px;">🔍</div>
+        <h3 style="margin:0 0 8px;font-size:17px;font-weight:700;">No players match your active filters</h3>
+        <p style="margin:0 0 18px;color:var(--text-sub, #666);font-size:13px;">Try clearing search keywords or resetting tier, position, or team filters.</p>
+        <button type="button" class="secondary-button scout-reset-btn" id="scoutEmptyResetBtn" style="padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;">Reset All Filters ↻</button>
+      </div>
+    `;
+  }
 
   if (pool.length > displayList.length) {
     cardsHtml += `
@@ -774,10 +829,30 @@ function updatePlayButton(){
   $('#playGlyph').setAttribute('d',running?'M6 5h4v14H6zm8 0h4v14h-4z':'M8 5v14l11-7z');
 }
 
+function showPauseBanner(icon, title, sub, btnText) {
+  const banner = $('#matchPauseBanner');
+  if (!banner) return;
+  const iconEl = $('#pauseBannerIcon');
+  const titleEl = $('#pauseBannerTitle');
+  const subEl = $('#pauseBannerSub');
+  const btnEl = $('#pauseResumeBtn');
+  if (iconEl) iconEl.textContent = icon;
+  if (titleEl) titleEl.textContent = title;
+  if (subEl) subEl.textContent = sub;
+  if (btnEl) btnEl.textContent = btnText;
+  banner.style.display = 'block';
+}
+
+function hidePauseBanner() {
+  const banner = $('#matchPauseBanner');
+  if (banner) banner.style.display = 'none';
+}
+
 function renderSelects(){
   const home=$('#homeSelect'),away=$('#awaySelect');
-  home.innerHTML = buildTeamOptionsHtml(match.homeId);
-  away.innerHTML = buildTeamOptionsHtml(match.awayId);
+  if (!home || !away) return;
+  home.innerHTML = buildTeamOptionsHtml(match.homeId, false, teamFilterQuery);
+  away.innerHTML = buildTeamOptionsHtml(match.awayId, false, teamFilterQuery);
   home.value=match.homeId;
   away.value=match.awayId;
   $('#seedInput').value=match.seed;
@@ -785,6 +860,7 @@ function renderSelects(){
 
 function startMatch(){
   stop();replay=null;selectedStarter=null;
+  hidePauseBanner();
   const homeId=$('#homeSelect').value;
   let awayId=$('#awaySelect').value;
   if(homeId===awayId) awayId=TEAMS.find(t=>t.id!==homeId)?.id??'club_man_city';
@@ -974,6 +1050,10 @@ function renderSquad(){
   const team=getTeam(match.homeId);
   const lineup=match.lineups.home;
   const slots=FORMATIONS[match.formations.home] || FORMATIONS['4-3-3'];
+  const indicator = $('#squadTeamIndicator');
+  if (indicator) {
+    indicator.textContent = `Tactical roster for ${team.name} · Inspect ratings, monitor stamina, and make substitutions.`;
+  }
 
   $('#squadList').innerHTML=lineup.map((id,i)=>{
     const p=getPlayer(team,id);
@@ -1125,7 +1205,14 @@ function newTick(){
     // Auto-pause match upon goal for tactical and squad adjustments
     stop();
     const scoringTeam = getTeam(goal.side==='home'?match.homeId:match.awayId);
-    toast(`⚽ GOAL (${scoringTeam.short})! Match auto-paused for tactical changes.`);
+    const scorerName = goal.detail?.scorer || 'Goal';
+    showPauseBanner(
+      '⚽',
+      `GOAL! ${scorerName} (${goal.minute}′)`,
+      `${scoringTeam.name} scored! Match paused for tactical adjustments & substitutions.`,
+      'Resume Match ␣'
+    );
+    toast(`⚽ GOAL! ${scorerName} (${goal.minute}′) — Match paused for tactics.`);
   } else {
     const shot=nextEvents.find(e=>e.type==='shot'||e.type==='save');
     if(shot) sound.playKick();
@@ -1135,6 +1222,12 @@ function newTick(){
     sound.playWhistle(0.3);
     // Auto-pause match at half-time for team talk & tactical changes
     stop();
+    showPauseBanner(
+      '⏸',
+      'HALF-TIME (45′) — Tactical Interval',
+      'First half completed. Review match stats, swap players in Squad Lab, or give a team talk.',
+      'Kick Off 2nd Half ␣'
+    );
     toast('🗣️ Half-time reached! Match auto-paused for team talk & tactical adjustments.');
   }
 
@@ -1166,6 +1259,7 @@ function flashGoal(e){
 
 function startReplay(item){
   stop();
+  hidePauseBanner();
   replay={source:item.match,index:0};
   match=matchFromFrame(item.match,0);
   selectedStarter=null;
@@ -1191,13 +1285,23 @@ function bind(){
   $('#playBtn').addEventListener('click',()=>{
     if(match.phase==='FULL_TIME'&&!replay) return;
     running=!running;
+    if(running) hidePauseBanner();
     if(running && match.minute===0) sound.playWhistle(0.25);
     accumulator=0;
     updatePlayButton();
   });
 
+  $('#pauseResumeBtn')?.addEventListener('click', () => {
+    hidePauseBanner();
+    if (match.phase === 'FULL_TIME' && !replay) return;
+    running = true;
+    accumulator = 0;
+    updatePlayButton();
+  });
+
   $('#stepBtn').addEventListener('click',()=>{
     if(match.phase==='FULL_TIME'&&!replay) return;
+    hidePauseBanner();
     stop();
     newTick();
   });
@@ -1209,6 +1313,7 @@ function bind(){
   });
 
   $('#fullTimeBtn').addEventListener('click',()=>{
+    hidePauseBanner();
     if(replay){
       replay.index=replay.source.frames.length-1;
       match=matchFromFrame(replay.source,replay.index);
@@ -1251,6 +1356,22 @@ function bind(){
       match = matchFromFrame(replay.source, replay.index);
       render();
     }
+  });
+
+  $('#teamFilterInput')?.addEventListener('input', e => {
+    teamFilterQuery = e.target.value.trim();
+    const clearBtn = $('#teamFilterClearBtn');
+    if (clearBtn) clearBtn.style.display = teamFilterQuery ? 'block' : 'none';
+    renderSelects();
+  });
+
+  $('#teamFilterClearBtn')?.addEventListener('click', () => {
+    teamFilterQuery = '';
+    const input = $('#teamFilterInput');
+    if (input) input.value = '';
+    const clearBtn = $('#teamFilterClearBtn');
+    if (clearBtn) clearBtn.style.display = 'none';
+    renderSelects();
   });
 
   $('#homeSelect').addEventListener('change',()=>{
@@ -1565,7 +1686,23 @@ function bind(){
   $('#scoutTeamFilter').addEventListener('change', resetAndScout);
   $('#scoutSortFilter').addEventListener('change', resetAndScout);
 
+  const resetAllScoutingFilters = () => {
+    $('#scoutSearchInput').value = '';
+    $('#scoutRoleFilter').value = 'ALL';
+    $('#scoutTierFilter').value = 'ALL';
+    $('#scoutTeamFilter').value = 'ALL';
+    $('#scoutSortFilter').value = 'ovr';
+    scoutPage = 1;
+    renderScoutingHub();
+    toast('Scouting filters reset');
+  };
+  $('#scoutResetBtn')?.addEventListener('click', resetAllScoutingFilters);
+
   $('#scoutingPlayerGrid').addEventListener('click', e => {
+    if (e.target.closest('#scoutEmptyResetBtn')) {
+      resetAllScoutingFilters();
+      return;
+    }
     const loadMoreBtn = e.target.closest('#loadMoreScoutBtn');
     if (loadMoreBtn) {
       scoutPage++;
@@ -1650,10 +1787,22 @@ function bind(){
 
   // Accessible keyboard shortcuts
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && welcomeModal?.classList.contains('is-open')) {
-      welcomeModal.classList.remove('is-open');
-      welcomeModal.setAttribute('aria-hidden', 'true');
-      return;
+    if (e.key === 'Escape') {
+      let closed = false;
+      if ($('#futCardModal')?.classList.contains('is-open')) {
+        $('#futCardModal').classList.remove('is-open');
+        closed = true;
+      }
+      if ($('#playerPickerModal')?.classList.contains('is-open')) {
+        $('#playerPickerModal').classList.remove('is-open');
+        closed = true;
+      }
+      if (welcomeModal?.classList.contains('is-open')) {
+        welcomeModal.classList.remove('is-open');
+        welcomeModal.setAttribute('aria-hidden', 'true');
+        closed = true;
+      }
+      if (closed) return;
     }
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLSelectElement) return;
     if (e.code === 'Space') {

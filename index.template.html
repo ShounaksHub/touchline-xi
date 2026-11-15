@@ -133,6 +133,16 @@
                   <b>GOAL!</b>
                   <span id="goalFlashWho">REAL MADRID</span>
                 </div>
+                <div class="match-pause-banner" id="matchPauseBanner" aria-live="polite" style="display:none;">
+                  <div class="pause-banner-content">
+                    <span class="pause-icon" id="pauseBannerIcon">⏸</span>
+                    <div class="pause-text-wrap">
+                      <strong id="pauseBannerTitle">Match Paused</strong>
+                      <span id="pauseBannerSub">Tactical interval. Review positions and shouts.</span>
+                    </div>
+                    <button type="button" class="pause-resume-btn" id="pauseResumeBtn">Resume Match ␣</button>
+                  </div>
+                </div>
                 <div class="quick-sub-alert" id="quickSubAlert" role="status" aria-live="polite">
                   <div><strong>QUICK SUB RECOMMENDED</strong><span id="quickSubText">A tired player is losing energy.</span></div>
                   <button type="button" id="quickSubBtn">Open squad</button>
@@ -281,6 +291,13 @@
 
               <section class="control-card team-control">
                 <div class="control-card-heading"><span>01</span><h3>Match setup</h3></div>
+                <div class="field">
+                  <label for="teamFilterInput">QUICK SEARCH (350+ TEAMS)</label>
+                  <div class="team-filter-wrap">
+                    <input type="text" id="teamFilterInput" class="team-filter-input" placeholder="🔍 Filter teams by name or city..." aria-label="Filter clubs and nations">
+                    <button type="button" class="team-filter-clear-btn" id="teamFilterClearBtn" title="Clear filter" style="display:none;">✕</button>
+                  </div>
+                </div>
                 <div class="field"><label for="homeSelect">YOUR CLUB / NATION</label><div class="select-wrap"><select id="homeSelect"></select></div></div>
                 <div class="field"><label for="awaySelect">OPPOSITION</label><div class="select-wrap"><select id="awaySelect"></select></div></div>
                 <p class="field-hint">Switching clubs or opponents begins a fresh fixture.</p>
@@ -308,7 +325,7 @@
               <section class="manager-header" style="background:#e4ede0;">
                 <div class="aside-topline"><span>ROSTER MANAGEMENT</span><span class="panel-number">02 /</span></div>
                 <h2>Starting XI &amp; Substitutes</h2>
-                <p>Inspect ratings, monitor stamina, and make substitutions.</p>
+                <p id="squadTeamIndicator" class="squad-team-indicator">Tactical roster for Real Madrid CF · Inspect ratings, monitor stamina, and make substitutions.</p>
               </section>
 
               <section class="control-card squad-card">
@@ -488,7 +505,7 @@
             <div>
               <span class="section-num">05 / SCOUTING &amp; ALL PLAYERS DATABASE</span>
               <h2>Global Football Scout Hub</h2>
-              <p class="section-sub">Browse, inspect, and analyze over 2,750+ real footballers with authentic FIFA &amp; FM-style cards, ratings, and stats.</p>
+              <p class="section-sub">Browse, inspect, and analyze over 5,700+ real footballers with authentic FIFA &amp; FM-style cards, ratings, and stats.</p>
             </div>
           </div>
 
@@ -518,6 +535,7 @@
               <option value="passing">Sort: Best Playmakers</option>
               <option value="defending">Sort: Best Defenders</option>
             </select>
+            <button type="button" class="secondary-button scout-reset-btn" id="scoutResetBtn" style="padding:8px 14px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;" title="Reset all filters">Reset ↻</button>
           </div>
 
           <div class="scouting-stats-bar">
