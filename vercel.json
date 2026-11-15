@@ -1,4 +1,10 @@
 {
   "buildCommand": "node tools/build-standalone.mjs",
-  "cleanUrls": true
+  "outputDirectory": ".",
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    }
+  ]
 }
