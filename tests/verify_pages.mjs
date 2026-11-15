@@ -169,6 +169,38 @@ try {
   }
   console.log('✓ Initial page is page-matchday and all other pages are hidden (display: none)');
 
+  // Test 1.5: Verify Official Badges Rendering (India vs Argentina test)
+  const badgeCheck = await evaluate(`(() => {
+    // Select India as Home, Argentina as Away
+    const homeSel = document.getElementById('homeSelect');
+    const awaySel = document.getElementById('awaySelect');
+    if (homeSel && awaySel) {
+      homeSel.value = 'nat_india';
+      homeSel.dispatchEvent(new Event('change'));
+      awaySel.value = 'nat_argentina';
+      awaySel.dispatchEvent(new Event('change'));
+    }
+    const homeSvg = document.querySelector('#homeCrest svg');
+    const awaySvg = document.querySelector('#awayCrest svg');
+    return {
+      hasHomeSvg: !!homeSvg,
+      hasAwaySvg: !!awaySvg,
+      homeText: homeSvg?.textContent?.replace(/\\s+/g, ' ').trim(),
+      awayText: awaySvg?.textContent?.replace(/\\s+/g, ' ').trim()
+    };
+  })()`);
+  console.log('Official Badges Test (India vs Argentina):', badgeCheck);
+  if (!badgeCheck.hasHomeSvg || !badgeCheck.hasAwaySvg) {
+    throw new Error('Official SVG Badges failed to render in scoreboard!');
+  }
+  if (!badgeCheck.homeText.includes('INDIA') || !badgeCheck.homeText.includes('AIFF')) {
+    throw new Error('India Official Badge missing expected emblems: ' + badgeCheck.homeText);
+  }
+  if (!badgeCheck.awayText.includes('AFA')) {
+    throw new Error('Argentina Official Badge missing AFA emblem: ' + badgeCheck.awayText);
+  }
+  console.log('✓ Official badges for India and Argentina verified with authentic vector emblems & crests!');
+
   // Test 2: Click each nav link and test page switching
   const testNavs = [
     { section: 'tournament', expectedPageId: 'page-tournament' },

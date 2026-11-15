@@ -435,11 +435,15 @@ select:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  clip-path: polygon(8% 0, 92% 0, 100% 12%, 100% 73%, 50% 100%, 0 73%, 0 12%);
-  font-size: 30px;
-  font-weight: 900;
-  letter-spacing: -.07em;
-  border: 1px solid rgba(255, 255, 255, .1)
+  background: transparent !important;
+  border: 0;
+}
+
+.crest svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.4));
 }
 
 .crest-home {

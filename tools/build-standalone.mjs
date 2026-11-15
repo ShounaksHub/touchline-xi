@@ -14,6 +14,7 @@ const strip = code => code
 const nationalData = strip(read('src/data/national_teams.js'));
 const clubsData = strip(read('src/data/clubs.js'));
 const soundData = strip(read('src/sound.js'));
+const badgesModule = strip(read('src/badges.js'));
 const dataModule = strip(read('src/data.js'));
 const engineModule = strip(read('src/engine.js'));
 const tournamentModule = strip(read('src/tournament.js'));
@@ -23,6 +24,11 @@ const appModule = strip(read('src/app.js'));
 const bundledJs = `
 ${nationalData}
 ${clubsData}
+
+const Badges = (() => {
+  ${badgesModule}
+  return { getTeamBadgeSvg };
+})();
 
 const Data = (() => {
   ${dataModule}
@@ -61,10 +67,11 @@ const Pitch = (({ getTeam, getPlayer, FORMATIONS }) => {
   { createMatch, advanceMinute, playFullMatch, matchFromFrame, applyTactic, changeFormation, swapPlayer, resetStartingXI, resultLabel, applyShout, applyTeamTalk, simulatePenaltyShootout },
   { renderPitch },
   { sound },
-  { createTournament, loadTournament, saveTournament, clearTournament, simulateAIMatch, recordTournamentResult, getLeaderboard, TOURNAMENT_PRESETS }
+  { createTournament, loadTournament, saveTournament, clearTournament, simulateAIMatch, recordTournamentResult, getLeaderboard, TOURNAMENT_PRESETS },
+  { getTeamBadgeSvg }
 ) => {
   ${appModule}
-})(Data, Engine, Pitch, Sound, Tournament);
+})(Data, Engine, Pitch, Sound, Tournament, Badges);
 `;
 
 const template = read('index.template.html');

@@ -3,6 +3,7 @@ import {createMatch, advanceMinute, playFullMatch, matchFromFrame, applyTactic, 
 import {renderPitch} from './pitch.js';
 import {sound} from './sound.js';
 import {createTournament, loadTournament, saveTournament, clearTournament, simulateAIMatch, recordTournamentResult, getLeaderboard, TOURNAMENT_PRESETS} from './tournament.js';
+import {getTeamBadgeSvg} from './badges.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
@@ -561,11 +562,11 @@ function renderTournament() {
       <div class="bracket-match-card ${isUser ? 'is-user' : ''} ${isChamp ? 'is-champion' : ''}">
         <div style="font-size:10px;font-weight:800;color:var(--muted);margin-bottom:6px;">${escapeHtml(m.round)} ${isUser ? '· YOUR FIXTURE' : ''}</div>
         <div class="bracket-team-row ${homeWon ? 'is-winner' : m.played ? 'is-loser' : ''}">
-          <span>${home.crest} ${escapeHtml(home.name)}</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;">${getTeamBadgeSvg(home, 16, 17)} ${escapeHtml(home.name)}</span>
           ${m.played ? `<b>${m.score.home}</b>` : ''}
         </div>
         <div class="bracket-team-row ${awayWon ? 'is-winner' : m.played ? 'is-loser' : ''}">
-          <span>${away.crest} ${escapeHtml(away.name)}</span>
+          <span style="display:inline-flex;align-items:center;gap:6px;">${getTeamBadgeSvg(away, 16, 17)} ${escapeHtml(away.name)}</span>
           ${m.played ? `<b>${m.score.away}</b>` : ''}
         </div>
         ${scorePill ? `<div style="text-align:right;margin-top:4px;">${scorePill}</div>` : ''}
@@ -730,12 +731,10 @@ function startMatch(){
 
 function renderScoreboard(){
   const home=getTeam(match.homeId),away=getTeam(match.awayId);
-  $('#homeCrest').textContent=home.crest || '★';
-  $('#awayCrest').textContent=away.crest || '★';
-  $('#homeCrest').style.background=home.primary || '#183d2f';
-  $('#homeCrest').style.color=home.secondary || '#ffffff';
-  $('#awayCrest').style.background=away.primary || '#ffffff';
-  $('#awayCrest').style.color=away.secondary || '#183d2f';
+  $('#homeCrest').innerHTML=getTeamBadgeSvg(home, 66, 71);
+  $('#awayCrest').innerHTML=getTeamBadgeSvg(away, 66, 71);
+  $('#homeCrest').style.background='transparent';
+  $('#awayCrest').style.background='transparent';
   $('#homeName').textContent=home.name || 'Home Team';
   $('#awayName').textContent=away.name || 'Away Team';
   $('#homeCity').textContent=(home.city || home.official_name || home.name || '').toUpperCase();
