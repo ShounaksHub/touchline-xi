@@ -19,24 +19,27 @@
         <span class="brand-name">TOUCHLINE<span class="brand-slash">/</span><b>XI</b></span>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
-        <button class="nav-link is-active" data-section="matchday" data-page="page-matchday"><span class="nav-icon">01</span><span>Match centre</span></button>
-        <button class="nav-link" data-section="squad" data-page="page-squad"><span class="nav-icon">02</span><span>Squad lab</span></button>
-        <button class="nav-link" data-section="tournament" data-page="page-tournament"><span class="nav-icon">03</span><span>Tournament cup</span></button>
-        <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam"><span class="nav-icon">04</span><span>Dream team studio</span></button>
-        <button class="nav-link" data-section="scouting" data-page="page-scouting"><span class="nav-icon">05</span><span>Scouting &amp; database</span></button>
-        <button class="nav-link" data-section="vault" data-page="page-vault"><span class="nav-icon">06</span><span>Replay vault</span></button>
+        <button class="nav-link is-active" data-section="matchday" data-page="page-matchday">Match Centre</button>
+        <button class="nav-link" data-section="squad" data-page="page-squad">Squad Lab</button>
+        <button class="nav-link" data-section="tournament" data-page="page-tournament">Tournament</button>
+        <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam">Dream Team</button>
+        <button class="nav-link" data-section="scouting" data-page="page-scouting">Scouting</button>
+        <button class="nav-link" data-section="vault" data-page="page-vault">Replay Vault</button>
       </nav>
       <div class="topbar-right">
         <div class="music-controls" aria-label="Matchday music controls">
-          <button id="musicPlayBtn" class="music-control-btn" type="button" aria-label="Play matchday music">Play music</button>
-          <select id="musicTrackSelect" aria-label="Choose matchday song"></select>
-          <label class="music-volume" for="musicVolume">Volume <input id="musicVolume" type="range" min="0" max="1" step="0.05" value="0.45" /></label>
+          <button id="musicPlayBtn" class="music-control-btn" type="button" aria-label="Play matchday music" title="Play / Pause soundtrack">▶ Play</button>
+          <div class="music-track-wrap">
+            <span class="music-note-glyph">🎵</span>
+            <select id="musicTrackSelect" aria-label="Choose matchday soundtrack" title="Select song"></select>
+          </div>
+          <label class="music-volume" for="musicVolume" title="Music Volume">
+            <span class="vol-glyph">🔉</span>
+            <input id="musicVolume" type="range" min="0" max="1" step="0.05" value="0.45" />
+          </label>
         </div>
-        <button id="helpModalBtn" class="audio-toggle-btn" aria-label="Game rules and guide" style="cursor:pointer;">📖 How to Play</button>
-        <button id="soundToggleBtn" class="audio-toggle-btn" aria-label="Toggle stadium sound">🔊 Sound: <span id="soundStatusText">OFF</span></button>
-        <span class="topbar-mark"><span class="signal-dot"></span> OFFLINE READY</span>
-        <span class="header-rule"></span>
-        <span class="topbar-version">SIM ENGINE 02</span>
+        <button id="helpModalBtn" class="audio-toggle-btn" aria-label="Game rules and guide" style="cursor:pointer;" title="View game guide and rules">📖 Guide</button>
+        <button id="soundToggleBtn" class="audio-toggle-btn" aria-label="Toggle stadium sound" title="Toggle stadium SFX audio">🔊 SFX: <span id="soundStatusText">OFF</span></button>
       </div>
     </header>
 

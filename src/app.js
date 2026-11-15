@@ -27,6 +27,7 @@ const MUSIC_TRACKS = [
   ['La La La 2014', 'La la la 2014.mp3'],
   ['Wavin’ Flag', 'K\'NAAN - Wavin\' Flag (Coca-Cola Celebration Mix).mp3'],
   ['Oh Kevin De Bruyne', 'Oh Kevin De Bruyne.mp3'],
+  ['One Kiss', 'Calvin Harris, Dua Lipa - One Kiss (Official Video).mp3'],
   ['The Cup of Life', 'Ricky Martin - The Cup of Life.mp3'],
   ['Waka Waka', 'Waka Waka.mp3']
 ];
@@ -1382,7 +1383,10 @@ function bind(){
     musicTrackSelect.innerHTML = musicPlayer.tracks.map(([title], index) => `<option value="${index}">${escapeHtml(title)}</option>`).join('');
     musicTrackSelect.value = String(musicPlayer.index);
     musicVolume.value = String(Number(localStorage.getItem('touchline_music_volume') ?? 0.45));
-    const updateMusicButton = () => { musicPlayBtn.textContent = musicPlayer.playing ? 'Pause music' : 'Play music'; };
+    const updateMusicButton = () => {
+      musicPlayBtn.textContent = musicPlayer.playing ? '⏸ Pause' : '▶ Play';
+      musicPlayBtn.classList.toggle('is-playing', musicPlayer.playing);
+    };
     musicPlayBtn.addEventListener('click', () => { musicPlayer.toggle(); updateMusicButton(); });
     musicTrackSelect.addEventListener('change', e => { musicPlayer.setTrack(e.target.value); updateMusicButton(); });
     musicVolume.addEventListener('input', e => musicPlayer.setVolume(e.target.value));
@@ -1593,7 +1597,10 @@ function bind(){
     $('#startPlayingBtn')?.addEventListener('click', () => {
       closeWelcome();
       musicPlayer.play();
-      $('#musicPlayBtn') && ($('#musicPlayBtn').textContent = 'Pause music');
+      if ($('#musicPlayBtn')) {
+        $('#musicPlayBtn').textContent = '⏸ Pause';
+        $('#musicPlayBtn').classList.add('is-playing');
+      }
       toast('Welcome to the Touchline. Best of luck today');
     });
     welcomeModal.addEventListener('click', (e) => {
