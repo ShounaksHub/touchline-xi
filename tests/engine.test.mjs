@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {TEAMS,getTeam} from '../src/data.js';
-import {createMatch,advanceMinute,playFullMatch,matchFromFrame,swapPlayer,changeFormation,applyTactic,validateLineup,resetStartingXI} from '../src/engine.js';
+import {createMatch,advanceMinute,playFullMatch,matchFromFrame,swapPlayer,changeFormation,applyTactic,validateLineup,resetStartingXI,applyShout,applyTeamTalk,simulatePenaltyShootout} from '../src/engine.js';
 
 test('clubs and top 150 national teams contain unique sixteen-player rosters',()=>{
-  assert.equal(TEAMS.length, 154);
+  assert.equal(TEAMS.length, 170);
   for(const team of TEAMS){assert.equal(team.players.length,16);assert.equal(new Set(team.players.map(p=>p.id)).size,16);assert.equal(team.starting.length,11);assert.equal(team.substitutes.length,5)}
 });
 test('same seed and inputs produce deterministic 90-minute outcomes',()=>{
@@ -138,4 +138,51 @@ test('Step 3: AI Manager adapts tactics at minute 45 and 70 based on scoreline',
   assert.equal(m.tactics.away.mentality, 'Defensive');
   assert.ok(m.tactics.away.pressing <= 50);
   assert.ok(m.events.some(e => e.minute === 70 && e.type === 'tactic' && e.side === 'away'));
+});
+
+test('stamina decreases during play and is restored on demand-more team talk', ()=>{
+  const m = createMatch({ seed: 'STAMINA-TEST' });
+  const starterId = m.lineups.home[0];
+  assert.equal(m.stamina[starterId], 100);
+  
+  // Advance 45 minutes
+  while (m.minute < 45) advanceMinute(m);
+  assert.ok(m.stamina[starterId] < 100);
+  const staminaAtHalf = m.stamina[starterId];
+
+  // Apply half-time team talk
+  applyTeamTalk(m, 'demand_more');
+  assert.ok(m.stamina[starterId] > staminaAtHalf);
+});
+
+test('manager shouts immediately adjust tactical state and log events', ()=>{
+  const m = createMatch({ seed: 'SHOUT-TEST' });
+  advanceMinute(m);
+  assert.equal(applyShout(m, 'high_press'), true);
+  assert.ok(m.tactics.home.pressing >= 70);
+  assert.ok(m.events.some(e => e.type === 'tactic' && e.text.includes('HIGH PRESS')));
+});
+
+test('knockout matches proceed to Extra Time and Penalties when drawn', ()=>{
+  const m = createMatch({ seed: 'KNOCKOUT-TEST', knockout: true });
+  while (m.minute < 90) advanceMinute(m);
+  
+  // Set equal score at 90'
+  m.score.home = 1;
+  m.score.away = 1;
+  m.phase = 'EXTRA_TIME';
+
+  // Advance into Extra Time (minute 91)
+  advanceMinute(m);
+  assert.equal(m.minute, 91);
+
+  // Advance through extra time to 119
+  while (m.minute < 119) advanceMinute(m);
+  m.score.home = 1;
+  m.score.away = 1;
+  advanceMinute(m); // 120
+  assert.equal(m.minute, 120);
+  assert.equal(m.phase, 'FULL_TIME');
+  assert.ok(m.penalties);
+  assert.ok(m.winner === 'home' || m.winner === 'away');
 });

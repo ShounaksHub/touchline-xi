@@ -36,7 +36,8 @@ export function validateLineup(teamId, ids) {
 
 function frameFromMatch(m) {
   return copy({minute:m.minute, phase:m.phase, score:m.score, stats:m.stats, ball:m.ball, possession:m.possession,
-    rng:m.rng, events:m.events, tactics:m.tactics, formations:m.formations, lineups:m.lineups, substitutionsUsed:m.substitutionsUsed});
+    rng:m.rng, events:m.events, tactics:m.tactics, formations:m.formations, lineups:m.lineups, substitutionsUsed:m.substitutionsUsed,
+    stamina:copy(m.stamina || {}), winner:m.winner || null, penalties:m.penalties || null});
 }
 
 export function createMatch(options = {}) {
@@ -66,10 +67,19 @@ export function createMatch(options = {}) {
     home: validateLineup(homeId, options.homeLineup) ? [...options.homeLineup] : [...home.starting],
     away: [...away.starting]
   };
+
+  const stamina = {};
+  for (const side of ['home', 'away']) {
+    for (const id of lineups[side]) stamina[id] = 100;
+    const team = getTeam(side === 'home' ? homeId : awayId);
+    for (const id of team.substitutes || []) stamina[id] = 100;
+  }
+
   const m = {
     version:1, seed:String(options.seed ?? 'TOUCHLINE-001'), rng:seedToState(options.seed ?? 'TOUCHLINE-001'),
     homeId, awayId, minute:0, phase:'PRE_MATCH', possession:'home', ball:{x:50,y:50}, score:{home:0,away:0},
-    stats:{home:emptyStats(),away:emptyStats()}, lineups, substitutionsUsed:0,
+    stats:{home:emptyStats(),away:emptyStats()}, lineups, substitutionsUsed:0, stamina, knockout:!!options.knockout,
+    winner:null, penalties:null,
     formations:{home:options.formation && FORMATIONS[options.formation] ? options.formation : '4-3-3',away:'4-3-3'},
     tactics:{home:{...DEFAULT_TACTICS,...(options.tactics ?? {})},away:{...DEFAULT_TACTICS,pressing:betweenFake(options.seed,42,72),tempo:betweenFake(`${options.seed}-tempo`,42,66)}},
     events:[{minute:0,type:'kickoff',side:null,text:'The teams are ready. Awaiting kick-off.'}],
@@ -158,9 +168,22 @@ function attackFactor(m,side) {
 }
 
 export function advanceMinute(m) {
-  if (m.phase==='FULL_TIME' || m.minute>=90) return null;
+  if (m.phase==='FULL_TIME' || (!m.knockout && m.minute>=90) || (m.knockout && m.minute>=120)) return null;
   m.phase='LIVE';
   m.minute+=1;
+
+  // Dynamic stamina fatigue
+  if (m.stamina) {
+    const drainHome = 0.45 + (m.tactics.home.pressing > 70 ? 0.25 : 0) + (m.tactics.home.tempo > 70 ? 0.20 : 0);
+    const drainAway = 0.45 + (m.tactics.away.pressing > 70 ? 0.25 : 0) + (m.tactics.away.tempo > 70 ? 0.20 : 0);
+    for (const id of m.lineups.home) {
+      m.stamina[id] = clamp(round2((m.stamina[id] ?? 100) - drainHome), 25, 100);
+    }
+    for (const id of m.lineups.away) {
+      m.stamina[id] = clamp(round2((m.stamina[id] ?? 100) - drainAway), 25, 100);
+    }
+  }
+
   const homeBias=clamp(0.5+(attackFactor(m,'home')-attackFactor(m,'away'))*.13, .36, .64);
   const possessHome=clamp(homeBias + between(m,-.21,.21),.19,.81);
   m.stats.home.possession+=possessHome*60;
@@ -267,15 +290,131 @@ export function advanceMinute(m) {
     m.phase='HALF_TIME';
     addEvent(m,'half',null,'Half-time. The coaches have work to do.');
   }
-  if(m.minute===90){
-    m.phase='FULL_TIME';
-    addEvent(m,'full',null,'Full-time. The final whistle blows.');
+
+  if (!m.knockout) {
+    if (m.minute >= 90) {
+      m.phase = 'FULL_TIME';
+      addEvent(m, 'full', null, 'Full-time. The final whistle blows.');
+    }
+  } else {
+    if (m.minute === 90) {
+      if (m.score.home === m.score.away) {
+        m.phase = 'EXTRA_TIME';
+        addEvent(m, 'half', null, 'Full-time: 90′ level! Moving into Extra Time.');
+      } else {
+        m.phase = 'FULL_TIME';
+        m.winner = m.score.home > m.score.away ? 'home' : 'away';
+        addEvent(m, 'full', null, `Full-time. ${getTeam(m.winner === 'home' ? m.homeId : m.awayId).name} advances!`);
+      }
+    } else if (m.minute === 105) {
+      addEvent(m, 'half', null, 'Extra Time Half-time. 15 minutes left to decide the contest.');
+    } else if (m.minute >= 120) {
+      if (m.score.home === m.score.away) {
+        m.phase = 'PENALTIES';
+        addEvent(m, 'full', null, '120′ exhausted! Deciding the tie with a penalty shootout.');
+        simulatePenaltyShootout(m);
+      } else {
+        m.phase = 'FULL_TIME';
+        m.winner = m.score.home > m.score.away ? 'home' : 'away';
+        addEvent(m, 'full', null, `Full-time (AET). ${getTeam(m.winner === 'home' ? m.homeId : m.awayId).name} advances!`);
+      }
+    }
   }
+
   m.frames.push(frameFromMatch(m));
   return m.events[m.events.length-1] ?? null;
 }
 
-export function playFullMatch(m) {while(m.minute<90)advanceMinute(m);return m;}
+export function simulatePenaltyShootout(m) {
+  const homeTeam = getTeam(m.homeId), awayTeam = getTeam(m.awayId);
+  const shootout = { home: 0, away: 0, kicks: [] };
+  const homeKickers = m.lineups.home.slice(1, 6);
+  const awayKickers = m.lineups.away.slice(1, 6);
+
+  for (let r = 0; r < 5; r++) {
+    const hk = getPlayer(homeTeam, homeKickers[r]) || { name: `Home #${r+1}`, shooting: 80 };
+    const hScore = chance(m, clamp(0.74 + (hk.shooting - 75) * 0.003, 0.60, 0.90));
+    if (hScore) shootout.home++;
+    shootout.kicks.push({ side: 'home', round: r + 1, scored: hScore, player: hk.name });
+
+    const ak = getPlayer(awayTeam, awayKickers[r]) || { name: `Away #${r+1}`, shooting: 80 };
+    const aScore = chance(m, clamp(0.74 + (ak.shooting - 75) * 0.003, 0.60, 0.90));
+    if (aScore) shootout.away++;
+    shootout.kicks.push({ side: 'away', round: r + 1, scored: aScore, player: ak.name });
+  }
+
+  let round = 6;
+  while (shootout.home === shootout.away && round <= 11) {
+    const hk = getPlayer(homeTeam, m.lineups.home[round - 1] || m.lineups.home[1]);
+    const ak = getPlayer(awayTeam, m.lineups.away[round - 1] || m.lineups.away[1]);
+    const hScore = chance(m, 0.72);
+    const aScore = chance(m, 0.72);
+    if (hScore) shootout.home++;
+    if (aScore) shootout.away++;
+    shootout.kicks.push({ side: 'home', round, scored: hScore, player: hk?.name || 'Kicker' });
+    shootout.kicks.push({ side: 'away', round, scored: aScore, player: ak?.name || 'Kicker' });
+    round++;
+  }
+  if (shootout.home === shootout.away) {
+    shootout.home++;
+  }
+  m.penalties = shootout;
+  m.winner = shootout.home > shootout.away ? 'home' : 'away';
+  m.phase = 'FULL_TIME';
+  const winningTeam = getTeam(m.winner === 'home' ? m.homeId : m.awayId);
+  addEvent(m, 'full', m.winner, `Shootout ends: ${shootout.home}-${shootout.away}. ${winningTeam.name} wins on penalties!`);
+  updateCurrentFrame(m);
+  return shootout;
+}
+
+export function applyShout(m, shout) {
+  if (m.phase === 'FULL_TIME') return false;
+  if (shout === 'high_press') {
+    m.tactics.home.pressing = clamp(m.tactics.home.pressing + 20, 60, 98);
+    m.tactics.home.tempo = clamp(m.tactics.home.tempo + 15, 60, 95);
+    addEvent(m, 'tactic', 'home', 'Manager shout: HIGH PRESS! Suffocate them high up the pitch.');
+  } else if (shout === 'park_bus') {
+    m.tactics.home.mentality = 'Defensive';
+    m.tactics.home.pressing = clamp(m.tactics.home.pressing - 20, 15, 40);
+    m.tactics.home.width = clamp(m.tactics.home.width - 15, 25, 45);
+    addEvent(m, 'tactic', 'home', 'Manager shout: PARK THE BUS! Compact deep defensive fortress.');
+  } else if (shout === 'shoot_sight') {
+    addEvent(m, 'tactic', 'home', 'Manager shout: SHOOT ON SIGHT! Test their keeper every chance you get.');
+  } else if (shout === 'work_box') {
+    m.tactics.home.tempo = clamp(m.tactics.home.tempo - 15, 30, 50);
+    addEvent(m, 'tactic', 'home', 'Manager shout: WORK BALL INTO BOX! Patient build-up, wait for the clear chance.');
+  } else if (shout === 'demand_more') {
+    addEvent(m, 'tactic', 'home', 'Manager shout: DEMAND MORE! Increase your work rate and intensity.');
+  }
+  updateCurrentFrame(m);
+  return true;
+}
+
+export function applyTeamTalk(m, talk) {
+  if (m.phase !== 'HALF_TIME') return false;
+  if (talk === 'fire_up') {
+    addEvent(m, 'talk', 'home', 'Half-time speech: "Show them who we are! Leave everything out on the pitch!" (Team motivated 🔥)');
+  } else if (talk === 'demand_more') {
+    for (const id of m.lineups.home) {
+      if (m.stamina && m.stamina[id]) m.stamina[id] = clamp(m.stamina[id] + 8, 30, 100);
+    }
+    m.tactics.home.pressing = clamp(m.tactics.home.pressing + 10, 50, 95);
+    addEvent(m, 'talk', 'home', 'Half-time speech: "Demand more! Our standards must be higher in the second half." (+Stamina recovery)');
+  } else if (talk === 'praise') {
+    addEvent(m, 'talk', 'home', 'Half-time speech: "Superb execution, lads. Keep the rhythm and trust our quality." (Confidence high)');
+  } else if (talk === 'focus') {
+    m.tactics.home.mentality = 'Balanced';
+    addEvent(m, 'talk', 'home', 'Half-time speech: "Stay disciplined and organized. Give them no openings." (Defensive focus)');
+  }
+  updateCurrentFrame(m);
+  return true;
+}
+
+export function playFullMatch(m) {
+  const maxMins = m.knockout ? 120 : 90;
+  while(m.phase !== 'FULL_TIME' && m.minute < maxMins) advanceMinute(m);
+  return m;
+}
 
 export function matchFromFrame(base, index) {
   const frame=base.frames[clamp(index,0,base.frames.length-1)];

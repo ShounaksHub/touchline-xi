@@ -1,0 +1,196 @@
+import { TEAMS, getTeam } from './data.js';
+import { createMatch, playFullMatch } from './engine.js';
+
+const STORAGE_KEY = 'touchline_tournament_v2';
+
+export const TOURNAMENT_PRESETS = [
+  {
+    id: 'champions_cup',
+    name: 'Champions Cup 🏆',
+    description: 'The pinnacle of club football. 8 European heavyweight giants battle in a direct knockout bracket.',
+    type: 'club',
+    teams: [
+      'club_real_madrid', 'club_man_city', 'club_barcelona', 'club_bayern',
+      'club_psg', 'club_liverpool', 'club_arsenal', 'club_inter'
+    ]
+  },
+  {
+    id: 'world_trophy',
+    name: 'World International Trophy 🌍',
+    description: 'The biggest stage on Earth. Top FIFA Senior National Teams fighting for national immortality.',
+    type: 'national',
+    teams: [
+      'nat_spain', 'nat_argentina', 'nat_france', 'nat_england',
+      'nat_portugal', 'nat_brazil', 'nat_netherlands', 'nat_germany'
+    ]
+  },
+  {
+    id: 'super_cup',
+    name: 'Galácticos Super Cup ⭐',
+    description: 'Open world invitational tournament pitting your squad against the best of the best.',
+    type: 'any',
+    teams: [
+      'club_real_madrid', 'nat_argentina', 'club_man_city', 'nat_france',
+      'club_barcelona', 'nat_brazil', 'club_bayern', 'nat_spain'
+    ]
+  }
+];
+
+export function createTournament(presetId, userTeamId) {
+  const preset = TOURNAMENT_PRESETS.find(p => p.id === presetId) || TOURNAMENT_PRESETS[0];
+  let participants = [...preset.teams];
+
+  // If user team is not in list, replace the first team or add
+  if (userTeamId && !participants.includes(userTeamId)) {
+    participants[0] = userTeamId;
+  }
+
+  // Shuffle remaining 7 teams deterministically
+  const userTeam = participants.find(t => t === userTeamId) || participants[0];
+  const others = participants.filter(t => t !== userTeam);
+  
+  // Deterministic seed
+  const bracket = {
+    qf: [
+      { id: 'qf1', round: 'Quarter-Final', homeId: userTeam, awayId: others[0], played: false, score: null, winner: null, penaltyScore: null, scorers: [] },
+      { id: 'qf2', round: 'Quarter-Final', homeId: others[1], awayId: others[2], played: false, score: null, winner: null, penaltyScore: null, scorers: [] },
+      { id: 'qf3', round: 'Quarter-Final', homeId: others[3], awayId: others[4], played: false, score: null, winner: null, penaltyScore: null, scorers: [] },
+      { id: 'qf4', round: 'Quarter-Final', homeId: others[5], awayId: others[6], played: false, score: null, winner: null, penaltyScore: null, scorers: [] }
+    ],
+    sf: [
+      { id: 'sf1', round: 'Semi-Final', homeId: null, awayId: null, played: false, score: null, winner: null, penaltyScore: null, scorers: [] },
+      { id: 'sf2', round: 'Semi-Final', homeId: null, awayId: null, played: false, score: null, winner: null, penaltyScore: null, scorers: [] }
+    ],
+    final: { id: 'final', round: 'Grand Final', homeId: null, awayId: null, played: false, score: null, winner: null, penaltyScore: null, scorers: [] }
+  };
+
+  const tournament = {
+    presetId,
+    title: preset.name,
+    userTeamId,
+    stage: 'QF',
+    champion: null,
+    bracket,
+    scorersMap: {}
+  };
+
+  saveTournament(tournament);
+  return tournament;
+}
+
+export function saveTournament(tournament) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tournament));
+  } catch {}
+}
+
+export function loadTournament() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearTournament() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {}
+}
+
+export function simulateAIMatch(matchObj, seed = `AI-KNOCKOUT-${Date.now()}`) {
+  if (matchObj.played) return matchObj;
+  const m = createMatch({
+    homeId: matchObj.homeId,
+    awayId: matchObj.awayId,
+    seed,
+    knockout: true
+  });
+  playFullMatch(m);
+
+  const goalEvents = m.events.filter(e => e.type === 'goal');
+  const scorers = goalEvents.map(e => ({
+    name: e.text.split(' finds the net!')[0] || 'Scorer',
+    side: e.side,
+    teamId: e.side === 'home' ? m.homeId : m.awayId,
+    minute: e.minute
+  }));
+
+  const winner = m.winner || (m.score.home > m.score.away ? 'home' : m.score.away > m.score.home ? 'away' : (m.penalties?.home > m.penalties?.away ? 'home' : 'away'));
+
+  matchObj.played = true;
+  matchObj.score = { ...m.score };
+  matchObj.winner = winner === 'home' ? matchObj.homeId : matchObj.awayId;
+  matchObj.penaltyScore = m.penalties ? { home: m.penalties.home, away: m.penalties.away } : null;
+  matchObj.scorers = scorers;
+
+  return matchObj;
+}
+
+export function recordTournamentResult(tournament, matchId, match) {
+  // Find match in bracket
+  let target = tournament.bracket.qf.find(m => m.id === matchId);
+  let roundType = 'qf';
+  if (!target) {
+    target = tournament.bracket.sf.find(m => m.id === matchId);
+    roundType = 'sf';
+  }
+  if (!target && tournament.bracket.final.id === matchId) {
+    target = tournament.bracket.final;
+    roundType = 'final';
+  }
+  if (!target) return;
+
+  const winner = match.winner ? (match.winner === 'home' ? target.homeId : target.awayId) : (match.score.home > match.score.away ? target.homeId : target.awayId);
+
+  target.played = true;
+  target.score = { ...match.score };
+  target.winner = winner;
+  target.penaltyScore = match.penalties ? { home: match.penalties.home, away: match.penalties.away } : null;
+  target.scorers = match.events.filter(e => e.type === 'goal').map(e => ({
+    name: e.text.split(' finds the net!')[0] || 'Scorer',
+    side: e.side,
+    teamId: e.side === 'home' ? target.homeId : target.awayId,
+    minute: e.minute
+  }));
+
+  // Update top scorers leaderboard
+  for (const s of target.scorers) {
+    tournament.scorersMap[s.name] = (tournament.scorersMap[s.name] || 0) + 1;
+  }
+
+  // Auto simulate remaining matches in this round if any
+  if (roundType === 'qf') {
+    for (const qf of tournament.bracket.qf) {
+      if (!qf.played) simulateAIMatch(qf, `QF-AI-${qf.id}-${Date.now()}`);
+    }
+    // Advance winners to Semi-Finals
+    tournament.bracket.sf[0].homeId = tournament.bracket.qf[0].winner;
+    tournament.bracket.sf[0].awayId = tournament.bracket.qf[1].winner;
+    tournament.bracket.sf[1].homeId = tournament.bracket.qf[2].winner;
+    tournament.bracket.sf[1].awayId = tournament.bracket.qf[3].winner;
+    tournament.stage = 'SF';
+  } else if (roundType === 'sf') {
+    for (const sf of tournament.bracket.sf) {
+      if (!sf.played) simulateAIMatch(sf, `SF-AI-${sf.id}-${Date.now()}`);
+    }
+    // Advance winners to Final
+    tournament.bracket.final.homeId = tournament.bracket.sf[0].winner;
+    tournament.bracket.final.awayId = tournament.bracket.sf[1].winner;
+    tournament.stage = 'FINAL';
+  } else if (roundType === 'final') {
+    tournament.champion = target.winner;
+    tournament.stage = 'COMPLETED';
+  }
+
+  saveTournament(tournament);
+}
+
+export function getLeaderboard(tournament) {
+  if (!tournament || !tournament.scorersMap) return [];
+  return Object.entries(tournament.scorersMap)
+    .map(([name, goals]) => ({ name, goals }))
+    .sort((a, b) => b.goals - a.goals)
+    .slice(0, 8);
+}

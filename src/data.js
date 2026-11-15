@@ -1,6 +1,9 @@
 import { NATIONAL_TEAMS } from './data/national_teams.js';
+import { CLUBS } from './data/clubs.js';
 
-/** Fictional clubs + Real Senior National Teams (Top 150 FIFA Member Associations) */
+export { CLUBS };
+
+/** Real World Elite Football Clubs + Domestic Clubs + Top 150 FIFA Senior National Teams */
 
 const TEAM_DEFINITIONS = [
   {
@@ -70,8 +73,8 @@ const BASE_TEAMS = TEAM_DEFINITIONS.map((team, teamIndex) => ({
   substitutes: Array.from({length:5},(_,i) => `${team.id}-${i+11}`)
 }));
 
-// Export all clubs and the Top 150 Senior National Teams
-export const TEAMS = [...BASE_TEAMS, ...NATIONAL_TEAMS];
+// Export all world elite clubs, domestic clubs, and the Top 150 Senior National Teams
+export const TEAMS = [...CLUBS, ...BASE_TEAMS, ...NATIONAL_TEAMS];
 
 // Coordinates in a 100x100 tactical grid. Home attacks left to right.
 export const FORMATIONS = {
@@ -90,6 +93,15 @@ export const FORMATIONS = {
   '3-5-2': [
     ['GK',7,50], ['CB',24,21], ['CB',21,50], ['CB',24,79], ['RWB',45,88],
     ['CDM',39,51], ['CM',48,31], ['CM',48,70], ['LWB',45,12], ['ST',74,36], ['ST',74,64]
+  ],
+  '5-3-2': [
+    ['GK',7,50], ['LWB',30,12], ['CB',24,28], ['CB',21,50], ['CB',24,72], ['RWB',30,88],
+    ['CM',48,30], ['CDM',42,50], ['CM',48,70], ['ST',75,38], ['ST',75,62]
+  ],
+  '3-4-3': [
+    ['GK',7,50], ['CB',24,22], ['CB',21,50], ['CB',24,78],
+    ['LM',48,14], ['CM',46,38], ['CM',46,62], ['RM',48,86],
+    ['LW',72,18], ['ST',78,50], ['RW',72,82]
   ],
 };
 

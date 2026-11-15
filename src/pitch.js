@@ -114,10 +114,24 @@ export function renderPitch(canvas,match,t=0) {
         ctx.strokeStyle='rgba(237,255,188,.95)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(pt.x,pt.y,r+4,0,Math.PI*2);ctx.stroke();
       }
       setText(ctx,team.secondary,`800 ${Math.max(8,Math.round(r*.96))}px Arial`);ctx.fillText(String(pl.number),pt.x,pt.y+.5);
+      
+      // Mini stamina bar below player marker
+      if (match.stamina && match.stamina[p.id] !== undefined) {
+        const stam = match.stamina[p.id];
+        const barW = r * 1.5;
+        const barH = 2.2;
+        const barX = pt.x - barW / 2;
+        const barY = pt.y + r + 2.5;
+        ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx.fillRect(barX, barY, barW, barH);
+        ctx.fillStyle = stam > 65 ? '#55efc4' : stam > 40 ? '#fdcb6e' : '#ff7675';
+        ctx.fillRect(barX, barY, Math.max(1, barW * (stam / 100)), barH);
+      }
+
       if(W>620 && (i===9||i===0||i===8||i===10)){
         const label=pl.name.split(' ').at(-1).toUpperCase();
         setText(ctx,'rgba(236,249,222,.77)',`700 ${Math.max(7,W*.008)}px Arial`);
-        ctx.fillText(label,pt.x,pt.y+r+10);
+        ctx.fillText(label,pt.x,pt.y+r+11);
       }
       ctx.restore();
     });
