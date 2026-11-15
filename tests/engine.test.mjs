@@ -1,0 +1,74 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {TEAMS,getTeam} from '../src/data.js';
+import {createMatch,advanceMinute,playFullMatch,matchFromFrame,swapPlayer,changeFormation,applyTactic,validateLineup,resetStartingXI} from '../src/engine.js';
+
+test('clubs and top 150 national teams contain unique sixteen-player rosters',()=>{
+  assert.equal(TEAMS.length, 154);
+  for(const team of TEAMS){assert.equal(team.players.length,16);assert.equal(new Set(team.players.map(p=>p.id)).size,16);assert.equal(team.starting.length,11);assert.equal(team.substitutes.length,5)}
+});
+test('same seed and inputs produce deterministic 90-minute outcomes',()=>{
+  const a=playFullMatch(createMatch({seed:'FOREVER-FC'}));
+  const b=playFullMatch(createMatch({seed:'FOREVER-FC'}));
+  assert.deepEqual(a.score,b.score);assert.deepEqual(a.stats,b.stats);assert.deepEqual(a.events,b.events);assert.equal(a.frames.length,91);
+});
+test('simulation ends at 90 and cannot run beyond full time',()=>{
+  const m=playFullMatch(createMatch({seed:'MIDFIELD'}));
+  assert.equal(m.minute,90);assert.equal(m.phase,'FULL_TIME');
+  assert.equal(advanceMinute(m),null);assert.equal(m.minute,90);assert.equal(m.frames.length,91);
+});
+test('frames replay exactly to the same score and event history',()=>{
+  const full=playFullMatch(createMatch({seed:'REPLAY'}));
+  for(const i of [0,1,45,46,67,90]){
+    const frame=matchFromFrame(full,i);
+    assert.equal(frame.minute,i);assert.deepEqual(frame.score,full.frames[i].score);assert.deepEqual(frame.events,full.frames[i].events);
+  }
+});
+test('goals and shots remain internally consistent',()=>{
+  for(const seed of ['ONE','TWO','THREE','FOUR']){
+    const m=playFullMatch(createMatch({seed}));
+    for(const side of ['home','away']){
+      const s=m.stats[side];const goals=m.events.filter(e=>e.type==='goal'&&e.side===side).length;
+      assert.equal(goals,m.score[side]);assert.ok(s.onTarget>=goals);assert.ok(s.shots>=s.onTarget);
+      assert.ok(s.completed<=s.passes);assert.ok(s.xg>=0);
+      assert.ok(s.possession>=0&&s.possession<=5400);
+    }
+    assert.ok(Math.abs(m.stats.home.possession+m.stats.away.possession-5400)<1e-6);
+  }
+});
+test('formation changes and tactics are applied to live state',()=>{
+  const m=createMatch();assert.equal(changeFormation(m,'4-4-2'),true);assert.equal(m.formations.home,'4-4-2');
+  applyTactic(m,'pressing',99);applyTactic(m,'mentality','Attacking');
+  assert.equal(m.tactics.home.pressing,99);assert.equal(m.tactics.home.mentality,'Attacking');
+  assert.equal(changeFormation(m,'7-7-7'),false);
+});
+test('starting player can swap with a bench player, preserving eleven',()=>{
+  const m=createMatch();const starter=m.lineups.home[9],incoming=getTeam(m.homeId).substitutes[3];
+  assert.equal(swapPlayer(m,starter,incoming),true);assert.ok(!m.lineups.home.includes(starter));
+  assert.ok(m.lineups.home.includes(incoming));assert.equal(validateLineup(m.homeId,m.lineups.home),true);
+  assert.equal(swapPlayer(m,m.lineups.home[0],incoming),false);
+});
+test('goalkeeper swaps can only be goalkeeper for goalkeeper',()=>{
+  const m=createMatch();const team=getTeam(m.homeId);
+  assert.equal(swapPlayer(m,team.starting[0],team.substitutes[4]),false);
+  assert.equal(swapPlayer(m,team.starting[0],team.substitutes[0]),true);
+});
+
+test('current replay frame captures substitutions and tactical changes',()=>{
+  const m=createMatch();advanceMinute(m);
+  changeFormation(m,'4-4-2');applyTactic(m,'pressing',91);
+  const starter=m.lineups.home[9],incoming=getTeam(m.homeId).substitutes[3];
+  assert.equal(swapPlayer(m,starter,incoming),true);
+  assert.equal(m.frames[1].formations.home,'4-4-2');
+  assert.equal(m.frames[1].tactics.home.pressing,91);
+  assert.equal(m.frames[1].substitutionsUsed,1);
+  assert.ok(m.frames[1].lineups.home.includes(incoming));
+  assert.equal(resetStartingXI(m),false);
+});
+
+test('resetting a pre-match lineup updates its replay frame',()=>{
+  const m=createMatch();const team=getTeam(m.homeId);
+  assert.equal(swapPlayer(m,team.starting[9],team.substitutes[3]),true);
+  assert.equal(resetStartingXI(m),true);
+  assert.deepEqual(m.frames[0].lineups.home,team.starting);
+});

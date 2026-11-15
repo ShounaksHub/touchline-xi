@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#eef0e8" />
+  <meta name="description" content="Build your eleven. Make the call. Watch it play out. A deterministic, offline-first football simulation studio." />
+  <title>Touchline XI — Football Simulation Studio</title>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="styles.css" />
+  <script type="module" src="src/app.js"></script>
+</head>
+<body>
+  <div class="site-shell">
+    <header class="topbar">
+      <a href="#matchday" class="brand" aria-label="Touchline XI home">
+        <span class="brand-symbol" aria-hidden="true"><span class="brand-dot"></span><span class="brand-line"></span><span class="brand-dot"></span></span>
+        <span class="brand-name">TOUCHLINE<span class="brand-slash">/</span><b>XI</b></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <button class="nav-link is-active" data-section="matchday">Match centre</button>
+        <button class="nav-link" data-section="dreamteam">Dream Team Studio ✨</button>
+        <button class="nav-link" data-section="squad">Squad lab</button>
+        <button class="nav-link" data-section="vault">Replay vault</button>
+      </nav>
+      <div class="topbar-right"><span class="topbar-mark"><span class="signal-dot"></span> OFFLINE READY</span><span class="header-rule"></span><span class="topbar-version">SIM ENGINE 01</span></div>
+    </header>
+
+    <main>
+      <section class="intro" id="matchday">
+        <div>
+          <div class="eyebrow"><span class="eyebrow-index">01 /</span> YOUR MATCHDAY DESK <span class="eyebrow-line"></span> THE GAME, YOUR WAY</div>
+          <h1>Make the call.<br><em>Watch it play out.</em></h1>
+          <p class="intro-copy">Pick the eleven. Set the system. Then see what ninety minutes make of it.</p>
+        </div>
+        <div class="intro-actions">
+          <div class="seed-box"><label for="seedInput">MATCH SEED</label><input id="seedInput" value="KICKOFF-26" maxlength="28" spellcheck="false" aria-label="Match seed"/></div>
+          <button class="primary-button" id="newMatchBtn"><span>↗</span> New fixture</button>
+        </div>
+      </section>
+
+      <!-- Dream Team Builder Section -->
+      <section class="dream-team-section" id="dreamteam" aria-label="Dream Team Studio">
+        <div class="panel-heading">
+          <div>
+            <span class="section-num">02 / DREAM TEAM STUDIO</span>
+            <h2>Build Your Ultimate XI</h2>
+            <p class="section-sub">Select your formation, define your playing style, draft world-class stars, and take on the AI.</p>
+          </div>
+          <div class="dream-actions">
+            <button class="secondary-button" id="randomizeDreamBtn">🎲 Auto-Draft Galácticos</button>
+            <button class="primary-button" id="deployDreamBtn">⚔️ Deploy Dream Team & Play</button>
+          </div>
+        </div>
+
+        <div class="wizard-grid">
+          <!-- Step 1: Formation -->
+          <div class="wizard-card">
+            <div class="wizard-card-header">
+              <span class="step-badge">STEP 1</span>
+              <h3>Tactical Formation</h3>
+            </div>
+            <p class="wizard-desc">Set the tactical blueprint and pitch geometry for your eleven.</p>
+            <div class="formation-grid" id="dreamFormationButtons"></div>
+            <div class="mini-pitch">
+              <div class="mini-pitch-line"></div>
+              <div id="dreamFormationDots" class="formation-dots"></div>
+            </div>
+          </div>
+
+          <!-- Step 2: Play Style -->
+          <div class="wizard-card">
+            <div class="wizard-card-header">
+              <span class="step-badge">STEP 2</span>
+              <h3>Philosophy & Play Style</h3>
+            </div>
+            <p class="wizard-desc">Choose a world-class tactical identity that dictates your tempo and pressing.</p>
+            <div class="style-cards" id="dreamStyleCards"></div>
+            <div class="style-stats-preview" id="dreamStylePreview"></div>
+          </div>
+
+          <!-- Step 3: Opposition AI -->
+          <div class="wizard-card">
+            <div class="wizard-card-header">
+              <span class="step-badge">STEP 3</span>
+              <h3>Choose Opposition AI</h3>
+            </div>
+            <p class="wizard-desc">Challenge any of the Top 150 FIFA Senior National Teams or Domestic Clubs.</p>
+            <div class="field">
+              <label for="dreamOpponentSelect">OPPONENT NATION / CLUB</label>
+              <div class="select-wrap">
+                <select id="dreamOpponentSelect"></select>
+              </div>
+            </div>
+            <div class="ai-difficulty-box">
+              <label>AI MANAGER DIFFICULTY</label>
+              <div class="mentality-buttons" id="aiDifficultyButtons">
+                <button class="is-active" data-difficulty="Standard">Standard AI</button>
+                <button data-difficulty="Tactician">Tactician AI</button>
+                <button data-difficulty="WorldClass">World Class AI</button>
+              </div>
+            </div>
+            <div class="opponent-preview" id="dreamOpponentPreview"></div>
+          </div>
+        </div>
+
+        <!-- Step 4: Player Selection Grid -->
+        <div class="roster-builder-card">
+          <div class="roster-builder-header">
+            <div>
+              <span class="step-badge">STEP 4</span>
+              <h3>Draft Your Starting XI & Bench (16 Players)</h3>
+              <p class="wizard-desc">Click any slot to swap in any player from all 150 FIFA Nations, historical Icons, or domestic clubs.</p>
+            </div>
+            <div class="roster-stats-banner" id="dreamTeamStatsBanner"></div>
+          </div>
+
+          <div class="dream-slots-layout">
+            <div class="dream-starters-column">
+              <h4>STARTING XI</h4>
+              <div class="dream-slots-grid" id="dreamStartersGrid"></div>
+            </div>
+            <div class="dream-bench-column">
+              <h4>BENCH (5 SUBSTITUTES)</h4>
+              <div class="dream-slots-grid" id="dreamBenchGrid"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Player Picker Modal -->
+      <div class="player-modal" id="playerPickerModal" aria-hidden="true" role="dialog" aria-label="Select Player">
+        <div class="player-modal-backdrop" id="playerModalBackdrop"></div>
+        <div class="player-modal-sheet">
+          <div class="player-modal-header">
+            <div>
+              <h3 id="modalSlotTitle">Select Player for ST</h3>
+              <span class="modal-sub">Filter from thousands of international and club players</span>
+            </div>
+            <button class="modal-close-btn" id="closePlayerModalBtn">✕</button>
+          </div>
+          <div class="modal-search-bar">
+            <input type="text" id="playerSearchInput" placeholder="Search by player name or nation..." spellcheck="false" />
+            <select id="modalRoleFilter">
+              <option value="ALL">All Roles</option>
+              <option value="GK">Goalkeepers (GK)</option>
+              <option value="DEF">Defenders (CB, LB, RB)</option>
+              <option value="MID">Midfielders (CDM, CM, CAM)</option>
+              <option value="FWD">Attackers (ST, LW, RW)</option>
+            </select>
+          </div>
+          <div class="modal-player-list" id="modalPlayerList"></div>
+        </div>
+      </div>
+
+      <div class="workspace">
+        <div class="main-column">
+          <section class="scoreboard" aria-label="Match scoreboard">
+            <div class="scoreboard-top"><span><span class="scoreboard-spark"></span> <span id="fixtureLabel">EXHIBITION / MATCH 001</span></span><span id="matchState" class="match-state">PRE-MATCH</span></div>
+            <div class="scoreboard-content">
+              <div class="score-team score-team-home"><div class="crest crest-home" id="homeCrest">M</div><div class="team-wordmark"><span class="team-place" id="homeCity">NORTH LONDON</span><strong id="homeName">Meridian FC</strong><span class="team-side">HOME</span></div></div>
+              <div class="score-middle"><div class="score-figures"><span id="homeScore">0</span><span class="score-colon">:</span><span id="awayScore">0</span></div><span class="clock-wrap"><span id="matchMinute">00</span><span class="clock-apostrophe">′</span><span id="clockHalf">FIRST HALF</span></span></div>
+              <div class="score-team score-team-away"><div class="team-wordmark"><span class="team-place" id="awayCity">SOUTH LONDON</span><strong id="awayName">Borough Athletic</strong><span class="team-side">AWAY</span></div><div class="crest crest-away" id="awayCrest">B</div></div>
+            </div>
+            <div class="scoreboard-bottom"><span>90 MINUTE SIMULATION</span><span class="scoreboard-separator">/</span><span id="scoreNote">READY FOR KICK-OFF</span><span class="scoreboard-last">NO LIVE DATA REQUIRED</span></div>
+          </section>
+
+          <section class="pitch-panel" aria-label="Live pitch visualisation">
+            <div class="panel-heading pitch-heading"><div><span class="section-num">01.1</span><h2>Match visualiser</h2><span class="live-indicator" id="liveIndicator">READY</span></div><div class="pitch-heading-meta">TOP-DOWN VIEW <span class="dot-divide">·</span> <span id="pitchStatus">22 PLAYERS</span></div></div>
+            <div class="pitch-surface" id="pitchSurface">
+              <canvas id="pitchCanvas" width="1120" height="660" role="img" aria-label="Top-down animated football pitch showing both teams and the match ball"></canvas>
+              <div class="pitch-overlay pitch-overlay-top"><span class="pitch-brand">TXI <i>·</i> LIVE</span><span class="pitch-compass">N <span>↑</span></span></div>
+              <div class="pitch-overlay pitch-overlay-bottom"><span id="pitchPossession">MER IN POSSESSION</span><span class="pitch-scale">105 × 68 M</span></div>
+              <div class="pitch-goal-flash" id="goalFlash" aria-hidden="true"><b>GOAL!</b><span id="goalFlashWho">MERIDIAN FC</span></div>
+            </div>
+            <div class="playback-controls">
+              <div class="playback-main">
+                <button class="play-button" id="playBtn" title="Start or pause match"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor"><path id="playGlyph" d="M8 5v14l11-7z"/></svg><span id="playText">Kick off</span></button>
+                <button class="square-button" id="stepBtn" title="Advance one minute" aria-label="Next minute"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 4 10 8-10 8V4Z"/><path d="M19 5v14"/></svg></button>
+                <div class="timeline"><span class="timecode" id="timelineStart">00:00</span><div class="timeline-track" role="progressbar" aria-label="Match progress" aria-valuemin="0" aria-valuemax="90" aria-valuenow="0" id="timelineTrack"><span id="timelineFill"></span></div><span class="timecode">90:00</span></div>
+              </div>
+              <div class="playback-side"><span class="mini-label">PACE</span><div class="speed-controls" id="speedControls"><button class="speed-button is-active" data-speed="1">1×</button><button class="speed-button" data-speed="2">2×</button><button class="speed-button" data-speed="4">4×</button></div><button class="text-button skip-button" id="fullTimeBtn">Sim to FT <span>↗</span></button></div>
+            </div>
+          </section>
+
+          <div class="analysis-grid">
+            <section class="analysis-card stats-card" id="statistics" aria-label="Match statistics">
+              <div class="panel-heading small-panel-heading"><div><span class="section-num">01.2</span><h2>Match numbers</h2></div><span class="panel-tag">LIVE STATS</span></div>
+              <div class="stats-head"><span id="statsHomeLabel">MER</span><span>HEAD TO HEAD</span><span id="statsAwayLabel">BOR</span></div>
+              <div id="statsRows" class="stat-rows"></div>
+              <div class="stat-footnote">xG is a lightweight simulation estimate, not a trained prediction model.</div>
+            </section>
+            <section class="analysis-card commentary-card" aria-label="Match events">
+              <div class="panel-heading small-panel-heading"><div><span class="section-num">01.3</span><h2>On the wire</h2></div><div class="feed-filters"><button class="feed-filter is-active" data-filter="all">All</button><button class="feed-filter" data-filter="key">Key</button></div></div>
+              <div class="feed" id="eventFeed" role="log" aria-live="polite"><div class="feed-placeholder">The referee checks the watch. We're nearly there.</div></div>
+            </section>
+          </div>
+          <section class="flow-panel" aria-label="Chance creation over time">
+            <div class="panel-heading small-panel-heading"><div><span class="section-num">01.4</span><h2>Chance creation</h2></div><span class="panel-tag">CUMULATIVE xG / 90 MIN</span></div>
+            <div class="flow-legend"><span><i class="legend-dot" id="homeLegendDot"></i><b id="flowHomeName">MERIDIAN FC</b></span><span><i class="legend-dot" id="awayLegendDot"></i><b id="flowAwayName">BOROUGH ATHLETIC</b></span></div>
+            <div class="flow-plot" id="flowPlot"><svg id="flowChart" viewBox="0 0 700 190" aria-label="Cumulative expected goals chart"></svg></div>
+            <div class="flow-insights"><div><span class="insight-label">BIGGEST MOMENT</span><b id="flowMoment">Kick-off awaits</b><small id="flowMomentNote">The first chance is still to come.</small></div><div><span class="insight-label">POSSESSION EDGE</span><b id="flowEdge">Evenly matched</b><small id="flowEdgeNote">Nothing between the sides yet.</small></div></div>
+          </section>
+        </div>
+
+        <aside class="control-column" id="squad" aria-label="Team manager">
+          <section class="manager-header"><div class="aside-topline"><span>THE MANAGER'S DESK</span><span class="panel-number">02 /</span></div><h2>Your touchline.<br><em>Your decisions.</em></h2><p>Manage the home side. Every change feeds into the simulation.</p></section>
+          <section class="control-card team-control"><div class="control-card-heading"><span>01</span><h3>Match setup</h3></div><div class="field"><label for="homeSelect">YOUR CLUB</label><div class="select-wrap"><select id="homeSelect"></select></div></div><div class="field"><label for="awaySelect">OPPOSITION</label><div class="select-wrap"><select id="awaySelect"></select></div></div><p class="field-hint">Club changes begin a new fixture.</p></section>
+          <section class="control-card"><div class="control-card-heading"><span>02</span><h3>Formation & shape</h3></div><div class="formation-summary"><span>STARTING SYSTEM</span><b id="formationReadout">4-3-3</b></div><div class="formation-grid" id="formationButtons"></div><div class="mini-pitch"><div class="mini-pitch-line"></div><div id="formationDots" class="formation-dots"></div></div></section>
+          <section class="control-card tactics-card"><div class="control-card-heading"><span>03</span><h3>Tactical instructions</h3></div><div class="tactic-row"><div class="tactic-label"><label for="pressingRange">Pressing intensity</label><b id="pressingValue">52</b></div><input id="pressingRange" type="range" min="0" max="100" value="52"/><div class="range-ends"><span>LOW BLOCK</span><span>HIGH PRESS</span></div></div><div class="tactic-row"><div class="tactic-label"><label for="tempoRange">Passing tempo</label><b id="tempoValue">55</b></div><input id="tempoRange" type="range" min="0" max="100" value="55"/><div class="range-ends"><span>PATIENT</span><span>DIRECT</span></div></div><div class="tactic-row"><div class="tactic-label"><label for="widthRange">Attacking width</label><b id="widthValue">58</b></div><input id="widthRange" type="range" min="0" max="100" value="58"/><div class="range-ends"><span>NARROW</span><span>WIDE</span></div></div><div class="mentality-label">TEAM MENTALITY</div><div class="mentality-buttons" id="mentalityButtons"><button data-mentality="Defensive">Defensive</button><button data-mentality="Balanced" class="is-active">Balanced</button><button data-mentality="Attacking">Attacking</button></div></section>
+          <section class="control-card squad-card"><div class="control-card-heading"><span>04</span><h3>Matchday squad</h3></div><div class="squad-top"><span>STARTING XI</span><button class="text-button" id="resetLineupBtn">Reset XI ↺</button></div><div id="squadList" class="squad-list"></div><div class="bench-heading"><span>SUBSTITUTES</span><span id="benchCount">05 AVAILABLE</span></div><div id="benchList" class="bench-list"></div><p class="squad-hint" id="squadHint">Select a starter, then choose a substitute to swap.</p></section>
+        </aside>
+      </div>
+
+      <section class="vault" id="vault"><div class="vault-heading"><div><div class="eyebrow"><span class="eyebrow-index">03 /</span> THE ARCHIVE</div><h2>Replay vault<span class="vault-period">.</span></h2><p>Keep the moments worth revisiting. Everything stays on this device.</p></div><div class="vault-actions"><button class="secondary-button" id="saveBtn">＋ Save this match</button><button class="text-button" id="clearVaultBtn">Clear vault</button></div></div><div id="vaultList" class="vault-list"><div class="empty-vault">No saved fixtures yet. Play a match and hit “Save this match”.</div></div></section>
+    </main>
+    <footer><div class="footer-brand">TOUCHLINE / XI</div><div>ENGINEERED FOR THE BEAUTIFUL GAME <span>—</span> MADE TO BE PLAYED</div><div>LOCAL FIRST <span>·</span> V1.0</div></footer>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
