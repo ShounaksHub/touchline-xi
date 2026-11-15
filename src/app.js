@@ -777,7 +777,7 @@ function startMatch(){
   const homeId=$('#homeSelect').value;
   let awayId=$('#awaySelect').value;
   if(homeId===awayId) awayId=TEAMS.find(t=>t.id!==homeId)?.id??'club_man_city';
-  const seed=$('#seedInput').value.trim()||'TOUCHLINE-001';
+  const seed=`MATCH-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random()*9000+1000)}`;
   match=createMatch({
     homeId,
     awayId,
@@ -1190,13 +1190,6 @@ function bind(){
   });
 
   $('#newMatchBtn').addEventListener('click',startMatch);
-
-  $('#randomSeedBtn')?.addEventListener('click', () => {
-    const randomSeed = `MATCH-${Math.floor(Math.random() * 90000 + 10000)}`;
-    $('#seedInput').value = randomSeed;
-    match.seed = randomSeed;
-    toast(`Seed randomized: ${randomSeed}`);
-  });
 
   // Timeline scrub seeking for replays and match review
   $('#timelineTrack')?.addEventListener('click', e => {

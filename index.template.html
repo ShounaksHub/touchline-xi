@@ -55,13 +55,7 @@
             <p class="intro-copy">Pick the eleven. Set the system. Issue real-time touchline shouts, manage stamina, and lead your team to victory.</p>
           </div>
           <div class="intro-actions">
-            <div class="seed-box">
-              <label for="seedInput">MATCH SEED</label>
-              <div style="display:flex;align-items:center;gap:6px;">
-                <input id="seedInput" value="KICKOFF-26" maxlength="28" spellcheck="false" aria-label="Match seed"/>
-                <button class="text-button" id="randomSeedBtn" title="Generate random seed" style="padding:4px 8px;font-size:14px;cursor:pointer;">🎲</button>
-              </div>
-            </div>
+            <input id="seedInput" type="hidden" value="" aria-hidden="true" />
             <button class="secondary-button" id="openSquadLabBtn">📋 Squad Lab &amp; Tactics</button>
             <button class="primary-button" id="newMatchBtn"><span>↗</span> New fixture</button>
           </div>

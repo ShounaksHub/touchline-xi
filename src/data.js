@@ -59,7 +59,9 @@ function hash(str) {
   return h >>> 0;
 }
 
-const BASE_TEAMS = TEAM_DEFINITIONS.map((team, teamIndex) => ({
+const BASE_TEAMS = [];
+/* Legacy fictional fallback definitions remain above only for migration context; they are not exported or selectable. */
+/* const LEGACY_BASE_TEAMS = TEAM_DEFINITIONS.map((team, teamIndex) => ({
   ...team,
   players: team.roster.map(([name,role], i) => {
     const base = BASE[role];
@@ -71,10 +73,10 @@ const BASE_TEAMS = TEAM_DEFINITIONS.map((team, teamIndex) => ({
   }),
   starting: Array.from({length:11},(_,i) => `${team.id}-${i}`),
   substitutes: Array.from({length:5},(_,i) => `${team.id}-${i+11}`)
-}));
+})); */
 
 // Export all world elite clubs, domestic clubs, and the Top 150 Senior National Teams
-export const TEAMS = [...CLUBS, ...BASE_TEAMS, ...NATIONAL_TEAMS];
+export const TEAMS = [...CLUBS, ...NATIONAL_TEAMS];
 
 // Coordinates in a 100x100 tactical grid. Home attacks left to right.
 export const FORMATIONS = {

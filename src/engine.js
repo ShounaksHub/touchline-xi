@@ -61,8 +61,8 @@ export function createMatch(options = {}) {
     }
   }
 
-  const homeId = options.homeId ?? (options.customHomeTeam ? options.customHomeTeam.id : 'meridian');
-  let awayId = options.awayId ?? (options.customAwayTeam ? options.customAwayTeam.id : 'borough');
+  const homeId = options.homeId ?? (options.customHomeTeam ? options.customHomeTeam.id : 'club_real_madrid');
+  let awayId = options.awayId ?? (options.customAwayTeam ? options.customAwayTeam.id : 'club_man_city');
   if (homeId === awayId) awayId = TEAMS.find(t => t.id !== homeId)?.id ?? 'club_man_city';
   const home = getTeam(homeId), away = getTeam(awayId);
   const lineups = {
