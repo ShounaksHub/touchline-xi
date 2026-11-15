@@ -88,11 +88,6 @@ fs.writeFileSync(path.join(distDir, 'touchline-xi-standalone.html'), standaloneH
 if (fs.existsSync(path.join(root, 'styles.css'))) {
   fs.copyFileSync(path.join(root, 'styles.css'), path.join(distDir, 'styles.css'));
 }
-const assetsDir = path.join(distDir, 'assets');
-if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
-if (fs.existsSync(path.join(root, 'assets', 'favicon.svg'))) {
-  fs.copyFileSync(path.join(root, 'assets', 'favicon.svg'), path.join(assetsDir, 'favicon.svg'));
-}
 
 // Also generate public/ directory for universal zero-config host fallback
 const publicDir = path.join(root, 'public');
@@ -102,10 +97,18 @@ fs.writeFileSync(path.join(publicDir, 'touchline-xi-standalone.html'), standalon
 if (fs.existsSync(path.join(root, 'styles.css'))) {
   fs.copyFileSync(path.join(root, 'styles.css'), path.join(publicDir, 'styles.css'));
 }
-const publicAssetsDir = path.join(publicDir, 'assets');
-if (!fs.existsSync(publicAssetsDir)) fs.mkdirSync(publicAssetsDir, { recursive: true });
-if (fs.existsSync(path.join(root, 'assets', 'favicon.svg'))) {
-  fs.copyFileSync(path.join(root, 'assets', 'favicon.svg'), path.join(publicAssetsDir, 'favicon.svg'));
-}
+
+const copyAssets = (targetDir) => {
+  const srcAssets = path.join(root, 'assets');
+  if (!fs.existsSync(srcAssets)) return;
+  const dest = path.join(targetDir, 'assets');
+  if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
+  for (const file of fs.readdirSync(srcAssets)) {
+    fs.copyFileSync(path.join(srcAssets, file), path.join(dest, file));
+  }
+};
+
+copyAssets(distDir);
+copyAssets(publicDir);
 
 console.log(`✓ Standalone bundle generated: touchline-xi-standalone.html, index.html, dist/ & public/ (${Math.round(Buffer.byteLength(standaloneHtml)/1024)} KiB)`);

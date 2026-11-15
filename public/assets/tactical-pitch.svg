@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 360" width="100%" height="auto">
+  <defs>
+    <linearGradient id="pGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e2318"/>
+      <stop offset="100%" stop-color="#06120b"/>
+    </linearGradient>
+    <filter id="pGlow">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <rect width="900" height="360" rx="12" fill="url(#pGrad)" stroke="#1f442e" stroke-width="1.5"/>
+
+  <!-- Pitch markings -->
+  <rect x="40" y="30" width="820" height="300" rx="6" fill="none" stroke="#1c472d" stroke-width="2"/>
+  <line x1="450" y1="30" x2="450" y2="330" stroke="#1c472d" stroke-width="2"/>
+  <circle cx="450" cy="180" r="65" fill="none" stroke="#1c472d" stroke-width="2"/>
+  <circle cx="450" cy="180" r="3" fill="#38ef7d"/>
+  
+  <rect x="40" y="90" width="120" height="180" fill="none" stroke="#1c472d" stroke-width="1.5"/>
+  <rect x="740" y="90" width="120" height="180" fill="none" stroke="#1c472d" stroke-width="1.5"/>
+
+  <!-- Pressing line overlay -->
+  <line x1="530" y1="30" x2="530" y2="330" stroke="#e8bf56" stroke-width="1.5" stroke-dasharray="5 3" opacity="0.7"/>
+  <text x="535" y="50" fill="#e8bf56" font-family="monospace" font-size="11" font-weight="bold">HIGH PRESS LINE (PPDA 8.4)</text>
+
+  <!-- Pass flow vectors -->
+  <path d="M 180 180 Q 280 100 380 90" fill="none" stroke="#38ef7d" stroke-width="2" stroke-dasharray="4 3"/>
+  <path d="M 380 90 Q 520 80 660 130" fill="none" stroke="#38ef7d" stroke-width="2" stroke-dasharray="4 3"/>
+  <path d="M 660 130 L 760 175" fill="none" stroke="#fff" stroke-width="2.5" filter="url(#pGlow)"/>
+  <polygon points="765,178 750,172 754,183" fill="#fff"/>
+
+  <!-- Player Dots Home -->
+  <circle cx="100" cy="180" r="8" fill="#38ef7d" filter="url(#pGlow)"/><!-- GK -->
+  <text x="100" y="200" fill="#a3cfb5" font-family="sans-serif" font-size="10" text-anchor="middle">GK</text>
+
+  <circle cx="220" cy="70" r="7" fill="#38ef7d"/><!-- LB -->
+  <circle cx="190" cy="140" r="7" fill="#38ef7d"/><!-- CB -->
+  <circle cx="190" cy="220" r="7" fill="#38ef7d"/><!-- CB -->
+  <circle cx="220" cy="290" r="7" fill="#38ef7d"/><!-- RB -->
+
+  <circle cx="340" cy="180" r="8" fill="#38ef7d" filter="url(#pGlow)"/><!-- DM -->
+  <circle cx="430" cy="120" r="7" fill="#38ef7d"/><!-- CM -->
+  <circle cx="430" cy="240" r="7" fill="#38ef7d"/><!-- CM -->
+
+  <circle cx="660" cy="90" r="7" fill="#38ef7d"/><!-- LW -->
+  <circle cx="700" cy="180" r="8" fill="#38ef7d" filter="url(#pGlow)"/><!-- ST -->
+  <text x="700" y="166" fill="#38ef7d" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">ST (0.76 xG)</text>
+  <circle cx="660" cy="270" r="7" fill="#38ef7d"/><!-- RW -->
+
+  <!-- Match Ball -->
+  <circle cx="755" cy="176" r="5" fill="#fff" filter="url(#pGlow)"/>
+
+  <!-- Callout annotation box 1 -->
+  <rect x="60" y="275" width="220" height="42" rx="6" fill="#081810cc" stroke="#2a5a3c"/>
+  <text x="72" y="293" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="11">🗣️ TOUCHLINE SHOUTS</text>
+  <text x="72" y="307" fill="#88b598" font-family="sans-serif" font-size="10">⚡ High Press · 🧱 Park The Bus</text>
+
+  <!-- Callout annotation box 2 -->
+  <rect x="630" y="275" width="210" height="42" rx="6" fill="#081810cc" stroke="#2a5a3c"/>
+  <text x="642" y="293" fill="#ffffff" font-family="sans-serif" font-weight="bold" font-size="11">📊 DETERMINISTIC PRNG</text>
+  <text x="642" y="307" fill="#88b598" font-family="sans-serif" font-size="10">Mulberry32 Seedable Match State</text>
+</svg>
