@@ -316,7 +316,7 @@ function deployDreamTeamAndPlay() {
   persistPrefs();
   render();
 
-  $('#matchday')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  scrollToSection($('#matchday'));
   toast(`Dream Team deployed in a ${dreamConfig.formation} (${dreamConfig.style}) vs ${getTeam(dreamConfig.opponentId).name}!`);
 }
 
@@ -624,7 +624,7 @@ function playTournamentMatchday(matchId) {
   persistPrefs();
   render();
 
-  $('#matchday')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  scrollToSection($('#matchday'));
   toast(`🏆 Knockout Fixture Loaded: ${getTeam(target.homeId).name} vs ${getTeam(target.awayId).name}! (Extra Time & Penalties active)`);
 }
 
@@ -656,6 +656,12 @@ let vault=loadVault();
 function loadVault(){try{const v=JSON.parse(localStorage.getItem(STORAGE)||'[]');return Array.isArray(v)?v.filter(item=>item?.match?.frames && item?.id).slice(0,12):[]}catch{return []}}
 function persistPrefs(){if(replay)return;try{localStorage.setItem(PREFS,JSON.stringify({homeId:match.homeId,awayId:match.awayId,seed:match.seed,formation:match.formations.home,tactics:match.tactics.home}))}catch{}}
 function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('visible');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>el.classList.remove('visible'),2500)}
+function scrollToSection(elemOrId){
+  const el=typeof elemOrId==='string'?$(elemOrId.startsWith('#')?elemOrId:'#'+elemOrId):elemOrId;
+  if(!el)return;
+  const top=el.getBoundingClientRect().top+window.pageYOffset-84;
+  window.scrollTo({top:Math.max(0,top),behavior:'smooth'});
+}
 function stop(){running=false;accumulator=0;updatePlayButton()}
 function updatePlayButton(){
   const isLast=replay?replay.index>=replay.source.frames.length-1:match.phase==='FULL_TIME';
@@ -1243,7 +1249,7 @@ function bind(){
   $$('.nav-link').forEach(b=>b.addEventListener('click',()=>{
     $$('.nav-link').forEach(x=>x.classList.toggle('is-active',x===b));
     const section = $('#'+b.dataset.section);
-    if (section) section.scrollIntoView({behavior:'smooth',block:'start'});
+    if (section) scrollToSection(section);
   }));
 
   // Touchline Shouts
