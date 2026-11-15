@@ -1,4 +1,4 @@
-import {getTeam, getPlayer, DEFAULT_TACTICS, FORMATIONS} from './data.js';
+import {TEAMS, getTeam, getPlayer, DEFAULT_TACTICS, FORMATIONS} from './data.js';
 
 const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
 const round2 = n => Math.round(n * 100)/100;
@@ -40,8 +40,26 @@ function frameFromMatch(m) {
 }
 
 export function createMatch(options = {}) {
-  const homeId = options.homeId ?? 'meridian';
-  let awayId = options.awayId ?? 'borough';
+  // Support custom team objects directly passed via options (e.g., custom Dream Team XI)
+  if (options.customHomeTeam) {
+    const existingIdx = TEAMS.findIndex(t => t.id === options.customHomeTeam.id);
+    if (existingIdx >= 0) {
+      TEAMS[existingIdx] = options.customHomeTeam;
+    } else {
+      TEAMS.unshift(options.customHomeTeam);
+    }
+  }
+  if (options.customAwayTeam) {
+    const existingIdx = TEAMS.findIndex(t => t.id === options.customAwayTeam.id);
+    if (existingIdx >= 0) {
+      TEAMS[existingIdx] = options.customAwayTeam;
+    } else {
+      TEAMS.unshift(options.customAwayTeam);
+    }
+  }
+
+  const homeId = options.homeId ?? (options.customHomeTeam ? options.customHomeTeam.id : 'meridian');
+  let awayId = options.awayId ?? (options.customAwayTeam ? options.customAwayTeam.id : 'borough');
   if (homeId === awayId) awayId = homeId === 'borough' ? 'meridian' : 'borough';
   const home = getTeam(homeId), away = getTeam(awayId);
   const lineups = {
@@ -220,21 +238,28 @@ export function advanceMinute(m) {
     const comment=chance(m,.5)?`${maker.name} breaks the line with a pass.`:`${maker.name} carries into the final third.`;
     addEvent(m,'build',side,comment,{playerId:maker.id});
   }
-  // Reactive In-Match AI Decisions at key intervals (e.g. 45' and 65')
-  if (m.minute === 46 || m.minute === 65) {
+  // Reactive In-Match AI Decisions at key tactical intervals (Minute 45 and 70)
+  if (m.minute === 45 || m.minute === 70) {
     const goalDiff = m.score.away - m.score.home;
+    const awayTeam = getTeam(m.awayId);
     if (goalDiff < 0) {
       // AI is trailing: increase urgency, pressing and go attacking
       m.tactics.away.mentality = 'Attacking';
-      m.tactics.away.pressing = clamp(m.tactics.away.pressing + 15, 60, 95);
-      m.tactics.away.tempo = clamp(m.tactics.away.tempo + 12, 60, 90);
-      addEvent(m, 'tactic', 'away', `AI Manager instructs a high pressing assault to chase the game.`);
-    } else if (goalDiff > 0 && m.minute >= 65) {
-      // AI is leading late: protect the lead
+      m.tactics.away.pressing = clamp(m.tactics.away.pressing + 16, 65, 96);
+      m.tactics.away.tempo = clamp(m.tactics.away.tempo + 14, 65, 92);
+      m.tactics.away.width = clamp(m.tactics.away.width + 10, 60, 90);
+      addEvent(m, 'tactic', 'away', `${awayTeam.short} Manager adapts at ${m.minute}′: switching to All-Out High Press to chase the game.`);
+    } else if (goalDiff > 0 && m.minute >= 70) {
+      // AI is leading late at 70': protect the lead with a compact low block
       m.tactics.away.mentality = 'Defensive';
-      m.tactics.away.pressing = clamp(m.tactics.away.pressing - 12, 25, 55);
-      m.tactics.away.tempo = clamp(m.tactics.away.tempo - 10, 30, 50);
-      addEvent(m, 'tactic', 'away', `AI Manager switches to a compact defensive block to protect the lead.`);
+      m.tactics.away.pressing = clamp(m.tactics.away.pressing - 14, 20, 50);
+      m.tactics.away.tempo = clamp(m.tactics.away.tempo - 12, 25, 45);
+      m.tactics.away.width = clamp(m.tactics.away.width - 15, 30, 50);
+      addEvent(m, 'tactic', 'away', `${awayTeam.short} Manager adapts at ${m.minute}′: switching to a disciplined Low Block to secure the lead.`);
+    } else if (goalDiff === 0 && m.minute === 70) {
+      // Tight deadlock at 70': tactical nudge
+      m.tactics.away.tempo = clamp(m.tactics.away.tempo + 6, 50, 75);
+      addEvent(m, 'tactic', 'away', `${awayTeam.short} Manager calls for higher tempo in the final 20 minutes.`);
     }
   }
 

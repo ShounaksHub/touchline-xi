@@ -264,9 +264,10 @@ function deployDreamTeamAndPlay() {
     TEAMS.unshift(dreamTeamObj);
   }
 
-  // Create Match against selected AI Opponent
+  // Create Match against selected AI Opponent passing custom Dream Team directly
   const chosenStyle = PLAY_STYLES[dreamConfig.style] || PLAY_STYLES['Tiki-Taka'];
   match = createMatch({
+    customHomeTeam: dreamTeamObj,
     homeId: 'dream_team',
     awayId: dreamConfig.opponentId,
     seed: `DREAM-${Math.floor(Math.random() * 90000 + 10000)}`,

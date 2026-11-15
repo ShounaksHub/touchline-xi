@@ -72,3 +72,70 @@ test('resetting a pre-match lineup updates its replay frame',()=>{
   assert.equal(resetStartingXI(m),true);
   assert.deepEqual(m.frames[0].lineups.home,team.starting);
 });
+
+test('Step 2: custom Dream Team roster passes directly into createMatch() as Home Team', ()=>{
+  const customDreamTeam = {
+    id: 'my_test_dream_team',
+    name: 'Test Galácticos',
+    short: 'TGL',
+    city: 'World XI',
+    primary: '#ffd700',
+    secondary: '#000000',
+    crest: '★',
+    isCustom: true,
+    players: [
+      { id: 'custom_gk', name: 'Legend Keeper', role: 'GK', number: 1, overall: 96, pace: 60, shooting: 20, passing: 80, defending: 45, physical: 85, keeping: 96 },
+      ...Array.from({length: 10}, (_, i) => ({
+        id: `custom_outfield_${i}`, name: `Star Player ${i}`, role: 'CM', number: i + 2, overall: 94, pace: 88, shooting: 90, passing: 92, defending: 80, physical: 85, keeping: 5
+      })),
+      { id: 'custom_sub_gk', name: 'Bench Keeper', role: 'GK', number: 12, overall: 90, pace: 55, shooting: 20, passing: 75, defending: 40, physical: 80, keeping: 90 },
+      ...Array.from({length: 4}, (_, i) => ({
+        id: `custom_bench_${i}`, name: `Bench Star ${i}`, role: 'ST', number: i + 13, overall: 91, pace: 89, shooting: 92, passing: 84, defending: 45, physical: 82, keeping: 5
+      }))
+    ],
+    starting: ['custom_gk', ...Array.from({length: 10}, (_, i) => `custom_outfield_${i}`)],
+    substitutes: ['custom_sub_gk', ...Array.from({length: 4}, (_, i) => `custom_bench_${i}`)]
+  };
+
+  const match = createMatch({
+    customHomeTeam: customDreamTeam,
+    awayId: 'spain',
+    seed: 'CUSTOM-DREAM-TEST'
+  });
+
+  assert.equal(match.homeId, 'my_test_dream_team');
+  assert.equal(match.lineups.home.length, 11);
+  assert.equal(match.lineups.home[0], 'custom_gk');
+  assert.equal(getTeam('my_test_dream_team').name, 'Test Galácticos');
+});
+
+test('Step 3: AI Manager adapts tactics at minute 45 and 70 based on scoreline', ()=>{
+  const m = createMatch({ seed: 'AI-TACTIC-TEST' });
+  // Simulate until minute 44
+  while (m.minute < 44) advanceMinute(m);
+  
+  // Force scoreline: Home 2 - 0 Away (AI trailing)
+  m.score.home = 2;
+  m.score.away = 0;
+  
+  // Advance into minute 45
+  advanceMinute(m);
+  assert.equal(m.minute, 45);
+  assert.equal(m.tactics.away.mentality, 'Attacking');
+  assert.ok(m.tactics.away.pressing >= 65);
+  assert.ok(m.events.some(e => e.minute === 45 && e.type === 'tactic' && e.side === 'away'));
+
+  // Advance to minute 69
+  while (m.minute < 69) advanceMinute(m);
+
+  // Force scoreline: Home 1 - 3 Away (AI leading late at 70)
+  m.score.home = 1;
+  m.score.away = 3;
+
+  // Advance into minute 70
+  advanceMinute(m);
+  assert.equal(m.minute, 70);
+  assert.equal(m.tactics.away.mentality, 'Defensive');
+  assert.ok(m.tactics.away.pressing <= 50);
+  assert.ok(m.events.some(e => e.minute === 70 && e.type === 'tactic' && e.side === 'away'));
+});
