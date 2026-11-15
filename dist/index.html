@@ -662,6 +662,7 @@ select:focus-visible {
   align-items: stretch;
   padding: 0 18px 18px;
   background: #fff;
+  min-width: 0;
 }
 
 .lineup-board {
@@ -690,6 +691,8 @@ select:focus-visible {
 
 .quick-sub-alert { display:none; align-items:center; gap:12px; position:absolute; z-index:8; top:16px; left:50%; transform:translateX(-50%); min-width:310px; padding:10px 12px; border:1px solid #d7ed8d; border-radius:7px; background:#1b3327f2; color:#f4ffd9; box-shadow:0 8px 24px #10221955; }
 .match-stage { position:relative; }
+.match-stage .pitch-surface { min-width: 0; width: 100%; }
+.match-stage canvas { max-width: 100%; }
 .quick-sub-alert.is-visible { display:flex; animation:sub-alert-in .28s ease-out; }
 .quick-sub-alert strong { display:block; font-size:11px; letter-spacing:.05em; }
 .quick-sub-alert span { display:block; margin-top:2px; color:#c7d9c9; font-size:10px; }
