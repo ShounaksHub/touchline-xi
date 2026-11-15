@@ -7,6 +7,7 @@
   <meta name="description" content="Build your eleven. Manage tactics, substitutions, tournaments, and scout all world football players. A deterministic, offline-first football simulation studio." />
   <title>Touchline XI — Football Simulation Studio</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="assets/logo.jpg" />
   <link rel="stylesheet" href="styles.css" />
   <script type="module" src="src/app.js"></script>
 </head>
@@ -14,7 +15,7 @@
   <div class="site-shell">
     <header class="topbar">
       <a href="#matchday" class="brand" aria-label="Touchline XI home">
-        <span class="brand-symbol" aria-hidden="true"><span class="brand-dot"></span><span class="brand-line"></span><span class="brand-dot"></span></span>
+        <img src="assets/logo.jpg" alt="Touchline XI" class="brand-logo-img" />
         <span class="brand-name">TOUCHLINE<span class="brand-slash">/</span><b>XI</b></span>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
@@ -540,9 +541,9 @@
     </main>
 
     <footer>
-      <div class="footer-brand">TOUCHLINE / XI</div>
-      <div>ENGINEERED FOR THE BEAUTIFUL GAME <span>—</span> MADE TO BE PLAYED</div>
-      <div>LOCAL FIRST <span>·</span> V2.0 FOOTBALL MANAGER SIMULATOR</div>
+      <div class="footer-brand"><span>TOUCHLINE / XI</span><small>Built by <a href="https://github.com/ShounaksHub" target="_blank" rel="noreferrer">Shounak</a></small></div>
+      <div class="footer-description">A deterministic football simulation studio for building, managing, and replaying the match</div>
+      <div class="footer-meta"><span>Local first</span><span aria-hidden="true">·</span><a href="https://github.com/ShounaksHub/touchline-xi" target="_blank" rel="noreferrer">View source on GitHub</a><span aria-hidden="true">·</span><span>v2.0</span></div>
     </footer>
   </div>
 
@@ -610,7 +611,7 @@
   <div class="welcome-modal-backdrop" id="welcomeModal" aria-hidden="true" role="dialog" aria-label="Welcome and How to Play Guide">
     <div class="welcome-modal-sheet">
       <div class="welcome-modal-banner">
-        <div class="welcome-badge">📋 THE GAFFER'S MATCHDAY BRIEFING</div>
+        <div class="welcome-badge"><img src="assets/logo.jpg" alt="Logo" class="welcome-banner-logo" /> THE GAFFER'S MATCHDAY BRIEFING</div>
         <button class="welcome-close-btn" id="closeWelcomeBtn" aria-label="Close welcome guide">✕</button>
         <h2>Welcome to Touchline XI, Boss! ⚽</h2>
         <p>The deterministic, zero-dependency football manager simulator where your decisions genuinely change the pitch.</p>

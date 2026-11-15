@@ -77,10 +77,13 @@ const Pitch = (({ getTeam, getPlayer, FORMATIONS }) => {
 const template = read('index.template.html');
 const css = read('styles.css');
 
+const logoBase64 = fs.readFileSync(path.join(root, 'assets/logo.jpg')).toString('base64');
+const logoDataUri = `data:image/jpeg;base64,${logoBase64}`;
+
 const standaloneHtml = template
   .replace('<link rel="stylesheet" href="styles.css" />', `<style>\n${css}\n</style>`)
   .replace('<script type="module" src="src/app.js"></script>', '')
-  .replace('<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />', '')
+  .replace('assets/logo.jpg', logoDataUri)
   .replace('</body>', () => `<script type="module">\n${bundledJs}\n</script>\n</body>`);
 
 // Write both standalone and root index.html for zero-config GitHub Pages & Vercel
