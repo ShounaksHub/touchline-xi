@@ -43,7 +43,7 @@ const Engine = (({ getTeam, getPlayer, DEFAULT_TACTICS, FORMATIONS, TEAMS }) => 
   };
 })(Data);
 
-const Tournament = (({ TEAMS, getTeam }, { createMatch, playFullMatch }) => {
+const Tournament = (({ TEAMS, getTeam, getPlayer }, { createMatch, playFullMatch }) => {
   ${tournamentModule}
   return {
     createTournament, loadTournament, saveTournament, clearTournament,

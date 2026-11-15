@@ -62,7 +62,7 @@ export function createMatch(options = {}) {
 
   const homeId = options.homeId ?? (options.customHomeTeam ? options.customHomeTeam.id : 'meridian');
   let awayId = options.awayId ?? (options.customAwayTeam ? options.customAwayTeam.id : 'borough');
-  if (homeId === awayId) awayId = homeId === 'borough' ? 'meridian' : 'borough';
+  if (homeId === awayId) awayId = TEAMS.find(t => t.id !== homeId)?.id ?? 'club_man_city';
   const home = getTeam(homeId), away = getTeam(awayId);
   const lineups = {
     home: validateLineup(homeId, options.homeLineup) ? [...options.homeLineup] : [...home.starting],
@@ -127,6 +127,7 @@ export function swapPlayer(m,starterId,benchId) {
   const idx=m.lineups.home.indexOf(starterId);
   if (idx<0 || m.lineups.home.includes(benchId) || !team.players.some(p=>p.id===benchId)) return false;
   const starter=getPlayer(team,starterId), incoming=getPlayer(team,benchId);
+  if (!starter || !incoming) return false;
   // Always retain a keeper. In-match GK swaps must be GK-for-GK.
   if ((starter.role==='GK') !== (incoming.role==='GK')) return false;
   if (m.minute>0 && m.substitutionsUsed>=5) return false;
@@ -504,6 +505,6 @@ export function playFullMatch(m) {
 export function matchFromFrame(base, index) {
   const frame=base.frames[clamp(index,0,base.frames.length-1)];
   if(!frame) return base;
-  return {...copy(frame),version:base.version,seed:base.seed,homeId:base.homeId,awayId:base.awayId,knockout:base.knockout,frames:base.frames};
+  return {...copy(frame),version:base.version,seed:base.seed,homeId:base.homeId,awayId:base.awayId,knockout:base.knockout ?? frame.knockout,frames:base.frames};
 }
 export function resultLabel(m){const h=m.score.home,a=m.score.away;return h===a?'Draw':h>a?'Home win':'Away win';}

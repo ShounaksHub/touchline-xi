@@ -23,7 +23,7 @@ export function playerPositions(match, side, time=0) {
   });
 }
 
-function roundedRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
+function roundedRect(ctx,x,y,w,h,r){if(ctx.roundRect){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}else{ctx.beginPath();ctx.rect(x,y,w,h);}}
 function setText(ctx,fill,font,align='center'){ctx.fillStyle=fill;ctx.font=font;ctx.textAlign=align;ctx.textBaseline='middle';}
 
 export function renderPitch(canvas,match,t=0) {
@@ -142,7 +142,8 @@ export function renderPitch(canvas,match,t=0) {
       }
 
       if(W>620 && (i===9||i===0||i===8||i===10)){
-        const label=pl.name.split(' ').at(-1).toUpperCase();
+        const parts=(pl.name||'').trim().split(/\s+/);
+        const label=(parts[parts.length-1]||pl.role||'').toUpperCase();
         setText(ctx,'rgba(236,249,222,.77)',`700 ${Math.max(7,W*.008)}px Arial`);
         ctx.fillText(label,pt.x,pt.y+r+11);
       }

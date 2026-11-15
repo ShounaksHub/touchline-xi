@@ -9,7 +9,12 @@ const $$=selector=>[...document.querySelectorAll(selector)];
 const STORAGE='touchline-xi-replays-v1';
 const PREFS='touchline-xi-prefs-v1';
 const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const formatStat=(key,value)=>key==='possession'?`${Math.round(value)}%`:key==='xg'?Number(value).toFixed(2):Number(value).toLocaleString('en-GB');
+const formatStat=(key,value)=>{
+  const num=Number(value)||0;
+  if(key==='possession') return `${Math.round(num)}%`;
+  if(key==='xg') return num.toFixed(2);
+  return num.toLocaleString('en-GB');
+};
 const keyEvents=new Set(['goal','save','shot','card','half','full','sub','tactic','talk','shootout']);
 const savedPrefs=(()=>{try{return JSON.parse(localStorage.getItem(PREFS))||{}}catch{return {}}})();
 
@@ -71,23 +76,23 @@ let dreamConfig = {
   opponentId: 'club_man_city',
   aiDifficulty: 'Standard',
   starters: [
-    { role: 'GK', id: 'spain_0', name: 'Iker Casillas', nat: 'Spain', ovr: 94, card: '94 Icon Moments' },
-    { role: 'LB', id: 'brazil_4', name: 'Roberto Carlos', nat: 'Brazil', ovr: 93, card: '93 Icon Moments' },
-    { role: 'CB', id: 'spain_1', name: 'Sergio Ramos', nat: 'Spain', ovr: 98, card: '98 TOTY Peak' },
+    { role: 'GK', id: 'spain_5', name: 'Iker Casillas', nat: 'Spain', ovr: 94, card: '94 Icon Moments' },
+    { role: 'LB', id: 'brazil_12', name: 'Roberto Carlos', nat: 'Brazil', ovr: 93, card: '93 Icon Moments' },
+    { role: 'CB', id: 'spain_0', name: 'Sergio Ramos', nat: 'Spain', ovr: 98, card: '98 TOTY Peak' },
     { role: 'CB', id: 'netherlands_0', name: 'Virgil van Dijk', nat: 'Netherlands', ovr: 99, card: '99 TOTY / Futties Peak' },
     { role: 'RB', id: 'morocco_0', name: 'Achraf Hakimi', nat: 'Morocco', ovr: 95, card: '95 TOTY Peak' },
     { role: 'CDM', id: 'france_4', name: "N'Golo Kanté", nat: 'France', ovr: 97, card: '97 TOTY Peak' },
     { role: 'CM', id: 'croatia_0', name: 'Luka Modrić', nat: 'Croatia', ovr: 99, card: '99 Ballon d\'Or / TOTY Peak' },
     { role: 'CM', id: 'belgium_0', name: 'Kevin De Bruyne', nat: 'Belgium', ovr: 99, card: '99 TOTY / TOTS Peak' },
-    { role: 'LW', id: 'brazil_3', name: 'Ronaldinho', nat: 'Brazil', ovr: 95, card: '95 Prime Icon' },
+    { role: 'LW', id: 'brazil_7', name: 'Ronaldinho', nat: 'Brazil', ovr: 95, card: '95 Prime Icon' },
     { role: 'ST', id: 'portugal_0', name: 'Cristiano Ronaldo', nat: 'Portugal', ovr: 99, card: '99 Futties / TOTY Peak' },
-    { role: 'RW', id: 'argentina_0', name: 'Lionel Messi', nat: 'Argentina', ovr: 99, card: '99 Futties / TOTY Peak' }
+    { role: 'RW', id: 'argentina_1', name: 'Lionel Messi', nat: 'Argentina', ovr: 99, card: '99 Futties / TOTY Peak' }
   ],
   bench: [
-    { role: 'GK', id: 'italy_0', name: 'Gianluigi Buffon', nat: 'Italy', ovr: 96, card: '96 End of an Era / Prime Icon' },
+    { role: 'GK', id: 'italy_1', name: 'Gianluigi Buffon', nat: 'Italy', ovr: 96, card: '96 End of an Era / Prime Icon' },
     { role: 'CB', id: 'italy_2', name: 'Paolo Maldini', nat: 'Italy', ovr: 95, card: '95 Icon Moments' },
-    { role: 'CM', id: 'france_0', name: 'Zinedine Zidane', nat: 'France', ovr: 97, card: '97 Icon Moments' },
-    { role: 'ST', id: 'france_1', name: 'Kylian Mbappé', nat: 'France', ovr: 99, card: '99 TOTY / Futties Peak' },
+    { role: 'CM', id: 'france_3', name: 'Zinedine Zidane', nat: 'France', ovr: 97, card: '97 Icon Moments' },
+    { role: 'ST', id: 'france_0', name: 'Kylian Mbappé', nat: 'France', ovr: 99, card: '99 TOTY / Futties Peak' },
     { role: 'RW', id: 'wales_0', name: 'Gareth Bale', nat: 'Wales', ovr: 98, card: '98 End of Era / Futties' }
   ]
 };
@@ -468,9 +473,15 @@ function openFutCardModal(playerId) {
 function draftActiveFutToDreamTeam() {
   if (!activeFutPlayer) return;
   const p = activeFutPlayer;
-  const targetIndex = dreamConfig.starters.findIndex(s => s.role === p.role) !== -1
-    ? dreamConfig.starters.findIndex(s => s.role === p.role)
-    : 10;
+  let targetIndex = -1;
+  if (p.role === 'GK') {
+    targetIndex = 0;
+  } else {
+    targetIndex = dreamConfig.starters.findIndex((s, idx) => idx > 0 && s.role === p.role);
+    if (targetIndex === -1) {
+      targetIndex = 10;
+    }
+  }
 
   dreamConfig.starters[targetIndex] = {
     role: p.role,
@@ -698,27 +709,27 @@ function startMatch(){
 
 function renderScoreboard(){
   const home=getTeam(match.homeId),away=getTeam(match.awayId);
-  $('#homeCrest').textContent=home.crest;
-  $('#awayCrest').textContent=away.crest;
-  $('#homeCrest').style.background=home.primary;
-  $('#homeCrest').style.color=home.secondary;
-  $('#awayCrest').style.background=away.primary;
-  $('#awayCrest').style.color=away.secondary;
-  $('#homeName').textContent=home.name;
-  $('#awayName').textContent=away.name;
-  $('#homeCity').textContent=home.city.toUpperCase();
-  $('#awayCity').textContent=away.city.toUpperCase();
+  $('#homeCrest').textContent=home.crest || '★';
+  $('#awayCrest').textContent=away.crest || '★';
+  $('#homeCrest').style.background=home.primary || '#183d2f';
+  $('#homeCrest').style.color=home.secondary || '#ffffff';
+  $('#awayCrest').style.background=away.primary || '#ffffff';
+  $('#awayCrest').style.color=away.secondary || '#183d2f';
+  $('#homeName').textContent=home.name || 'Home Team';
+  $('#awayName').textContent=away.name || 'Away Team';
+  $('#homeCity').textContent=(home.city || home.official_name || home.name || '').toUpperCase();
+  $('#awayCity').textContent=(away.city || away.official_name || away.name || '').toUpperCase();
   $('#homeScore').textContent=match.score.home;
   $('#awayScore').textContent=match.score.away;
 
-  $('#fixtureLabel').textContent=`${match.knockout ? 'KNOCKOUT CUP' : 'EXHIBITION'} / ${home.short} VS ${away.short}`;
+  $('#fixtureLabel').textContent=`${match.knockout ? 'KNOCKOUT CUP' : 'EXHIBITION'} / ${(home.short || 'HOM')} VS ${(away.short || 'AWY')}`;
   $('#matchMinute').textContent=String(match.minute).padStart(2,'0');
   $('#clockHalf').textContent=match.minute<46?'FIRST HALF':match.minute<91?'SECOND HALF':match.minute<=105?'ET 1ST HALF':'ET 2ND HALF';
   $('#matchState').textContent=replay?'REPLAY':match.phase==='PRE_MATCH'?'PRE-MATCH':match.phase==='HALF_TIME'?'HALF-TIME':match.phase==='EXTRA_TIME'?'EXTRA-TIME':match.phase==='PENALTIES'?'PENALTIES':match.phase==='FULL_TIME'?'FULL-TIME':'LIVE';
   $('#liveIndicator').textContent=replay?'REPLAY':match.phase==='FULL_TIME'?'FINAL':running?'ON AIR':'READY';
   $('#liveIndicator').classList.toggle('is-live',running);
-  $('#pitchStatus').textContent=`${home.short} vs ${away.short}`;
-  $('#pitchPossession').textContent=`${getTeam(match.possession==='home'?match.homeId:match.awayId).short} IN POSSESSION`;
+  $('#pitchStatus').textContent=`${home.short || 'HOM'} vs ${away.short || 'AWY'}`;
+  $('#pitchPossession').textContent=`${(getTeam(match.possession==='home'?match.homeId:match.awayId).short || 'POS')} IN POSSESSION`;
 
   const notable=[...match.events].reverse().find(e=>['goal','save','shot','card','sub','tactic','talk'].includes(e.type));
   let scoreNoteText = match.phase==='FULL_TIME'?`${resultLabel(match).toUpperCase()} / FINAL WHISTLE`:notable?`${notable.minute}' ${notable.text.toUpperCase().slice(0,55)}`:'READY FOR KICK-OFF';
@@ -870,7 +881,7 @@ function renderFlow(){
   const home=getTeam(match.homeId),away=getTeam(match.awayId);
   $('#homeLegendDot').style.background='#578750';$('#homeLegendDot').style.border='none';
   $('#awayLegendDot').style.background='#8da4b1';$('#awayLegendDot').style.border='none';
-  $('#flowHomeName').textContent=home.name.toUpperCase();$('#flowAwayName').textContent=away.name.toUpperCase();
+  $('#flowHomeName').textContent=(home.name || '').toUpperCase();$('#flowAwayName').textContent=(away.name || '').toUpperCase();
   const maxMins = (match.knockout || (replay && replay.source.knockout)) ? 120 : 90;
   const frames=match.frames.slice(0,match.minute+1);const w=640,h=139,x0=43,y0=17;
   const mx=Math.max(1,...frames.flatMap(f=>[f.stats.home.xg,f.stats.away.xg]));const yMax=Math.ceil(mx*2)/2;
@@ -972,7 +983,8 @@ function newTick(){
 
 function flashGoal(e){
   const el=$('#goalFlash');
-  $('#goalFlashWho').textContent=getTeam(e.side==='home'?match.homeId:match.awayId).name.toUpperCase();
+  const scoringTeam = getTeam(e.side==='home'?match.homeId:match.awayId);
+  $('#goalFlashWho').textContent=(scoringTeam.name || '').toUpperCase();
   el.classList.add('visible');
   clearTimeout(goalTimeout);
   goalTimeout=setTimeout(()=>el.classList.remove('visible'),1400);
@@ -1127,7 +1139,7 @@ function bind(){
     }
     const incoming=getPlayer(getTeam(match.homeId),b.dataset.bench);
     if(swapPlayer(match,selectedStarter,b.dataset.bench)){
-      toast(`Substitution: ${incoming.name} enters the pitch!`);
+      toast(`Substitution: ${incoming ? incoming.name : 'Substitute'} enters the pitch!`);
       selectedStarter=null;
       renderSquad();
       renderFeed();

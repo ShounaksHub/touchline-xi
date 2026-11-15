@@ -1,4 +1,4 @@
-import { TEAMS, getTeam } from './data.js';
+import { TEAMS, getTeam, getPlayer } from './data.js';
 import { createMatch, playFullMatch } from './engine.js';
 
 const STORAGE_KEY = 'touchline_tournament_v2';
@@ -110,12 +110,22 @@ export function simulateAIMatch(matchObj, seed = `AI-KNOCKOUT-${Date.now()}`) {
   playFullMatch(m);
 
   const goalEvents = m.events.filter(e => e.type === 'goal');
-  const scorers = goalEvents.map(e => ({
-    name: e.text.split(' finds the net!')[0] || 'Scorer',
-    side: e.side,
-    teamId: e.side === 'home' ? m.homeId : m.awayId,
-    minute: e.minute
-  }));
+  const scorers = goalEvents.map(e => {
+    let name = 'Scorer';
+    if (e.playerId) {
+      const p = getPlayer(getTeam(e.side === 'home' ? m.homeId : m.awayId), e.playerId);
+      if (p) name = p.name;
+    }
+    if (name === 'Scorer' && e.text) {
+      name = e.text.replace(/^[⚽\s]*PENALTY!\s*/, '').split(' finds the net!')[0].split(' calmly converts')[0] || 'Scorer';
+    }
+    return {
+      name,
+      side: e.side,
+      teamId: e.side === 'home' ? m.homeId : m.awayId,
+      minute: e.minute
+    };
+  });
 
   const winner = m.winner || (m.score.home > m.score.away ? 'home' : m.score.away > m.score.home ? 'away' : (m.penalties?.home > m.penalties?.away ? 'home' : 'away'));
 
@@ -142,43 +152,67 @@ export function recordTournamentResult(tournament, matchId, match) {
   }
   if (!target) return;
 
-  const winner = match.winner ? (match.winner === 'home' ? target.homeId : target.awayId) : (match.score.home > match.score.away ? target.homeId : target.awayId);
+  const winner = match.winner
+    ? (match.winner === 'home' ? target.homeId : target.awayId)
+    : (match.score.home > match.score.away
+      ? target.homeId
+      : (match.score.away > match.score.home
+        ? target.awayId
+        : (match.penalties?.home > match.penalties?.away ? target.homeId : target.awayId)));
 
   target.played = true;
   target.score = { ...match.score };
   target.winner = winner;
   target.penaltyScore = match.penalties ? { home: match.penalties.home, away: match.penalties.away } : null;
-  target.scorers = match.events.filter(e => e.type === 'goal').map(e => ({
-    name: e.text.split(' finds the net!')[0] || 'Scorer',
-    side: e.side,
-    teamId: e.side === 'home' ? target.homeId : target.awayId,
-    minute: e.minute
-  }));
+  target.scorers = match.scorers || (match.events ? match.events.filter(e => e.type === 'goal').map(e => {
+    let name = 'Scorer';
+    if (e.playerId) {
+      const p = getPlayer(getTeam(e.side === 'home' ? target.homeId : target.awayId), e.playerId);
+      if (p) name = p.name;
+    }
+    if (name === 'Scorer' && e.text) {
+      name = e.text.replace(/^[⚽\s]*PENALTY!\s*/, '').split(' finds the net!')[0].split(' calmly converts')[0] || 'Scorer';
+    }
+    return {
+      name,
+      side: e.side,
+      teamId: e.side === 'home' ? target.homeId : target.awayId,
+      minute: e.minute
+    };
+  }) : []);
 
   // Update top scorers leaderboard
   for (const s of target.scorers) {
     tournament.scorersMap[s.name] = (tournament.scorersMap[s.name] || 0) + 1;
   }
 
-  // Auto simulate remaining matches in this round if any
+  // Auto simulate remaining AI matches in this round if user's fixture was completed
   if (roundType === 'qf') {
-    for (const qf of tournament.bracket.qf) {
-      if (!qf.played) simulateAIMatch(qf, `QF-AI-${qf.id}-${Date.now()}`);
+    const userMatch = tournament.bracket.qf.find(m => m.homeId === tournament.userTeamId || m.awayId === tournament.userTeamId);
+    if (userMatch?.played) {
+      for (const qf of tournament.bracket.qf) {
+        if (!qf.played) simulateAIMatch(qf, `QF-AI-${qf.id}-${Date.now()}`);
+      }
     }
-    // Advance winners to Semi-Finals
-    tournament.bracket.sf[0].homeId = tournament.bracket.qf[0].winner;
-    tournament.bracket.sf[0].awayId = tournament.bracket.qf[1].winner;
-    tournament.bracket.sf[1].homeId = tournament.bracket.qf[2].winner;
-    tournament.bracket.sf[1].awayId = tournament.bracket.qf[3].winner;
-    tournament.stage = 'SF';
+    if (tournament.bracket.qf.every(m => m.played)) {
+      tournament.bracket.sf[0].homeId = tournament.bracket.qf[0].winner;
+      tournament.bracket.sf[0].awayId = tournament.bracket.qf[1].winner;
+      tournament.bracket.sf[1].homeId = tournament.bracket.qf[2].winner;
+      tournament.bracket.sf[1].awayId = tournament.bracket.qf[3].winner;
+      tournament.stage = 'SF';
+    }
   } else if (roundType === 'sf') {
-    for (const sf of tournament.bracket.sf) {
-      if (!sf.played) simulateAIMatch(sf, `SF-AI-${sf.id}-${Date.now()}`);
+    const userMatch = tournament.bracket.sf.find(m => m.homeId === tournament.userTeamId || m.awayId === tournament.userTeamId);
+    if (userMatch?.played) {
+      for (const sf of tournament.bracket.sf) {
+        if (!sf.played) simulateAIMatch(sf, `SF-AI-${sf.id}-${Date.now()}`);
+      }
     }
-    // Advance winners to Final
-    tournament.bracket.final.homeId = tournament.bracket.sf[0].winner;
-    tournament.bracket.final.awayId = tournament.bracket.sf[1].winner;
-    tournament.stage = 'FINAL';
+    if (tournament.bracket.sf.every(m => m.played)) {
+      tournament.bracket.final.homeId = tournament.bracket.sf[0].winner;
+      tournament.bracket.final.awayId = tournament.bracket.sf[1].winner;
+      tournament.stage = 'FINAL';
+    }
   } else if (roundType === 'final') {
     tournament.champion = target.winner;
     tournament.stage = 'COMPLETED';

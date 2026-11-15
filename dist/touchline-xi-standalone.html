@@ -8527,9 +8527,10 @@ const PLAY_STYLES = {
 const DEFAULT_TACTICS = {pressing: 52, tempo: 55, width: 58, mentality: 'Balanced'};
 const getTeam = id => TEAMS.find(t => t.id === id) ?? TEAMS[0];
 const getPlayer = (team, id) => {
-  if (!team) return null;
-  const found = team.players?.find(p => p.id === id);
-  if (found) return found;
+  if (team && team.players) {
+    const found = team.players.find(p => p.id === id);
+    if (found) return found;
+  }
   // Fallback search across all teams (especially for custom dream team player references)
   for (const t of TEAMS) {
     const p = t.players?.find(x => x.id === id);
@@ -8740,7 +8741,7 @@ function createMatch(options = {}) {
 
   const homeId = options.homeId ?? (options.customHomeTeam ? options.customHomeTeam.id : 'meridian');
   let awayId = options.awayId ?? (options.customAwayTeam ? options.customAwayTeam.id : 'borough');
-  if (homeId === awayId) awayId = homeId === 'borough' ? 'meridian' : 'borough';
+  if (homeId === awayId) awayId = TEAMS.find(t => t.id !== homeId)?.id ?? 'club_man_city';
   const home = getTeam(homeId), away = getTeam(awayId);
   const lineups = {
     home: validateLineup(homeId, options.homeLineup) ? [...options.homeLineup] : [...home.starting],
@@ -8805,6 +8806,7 @@ function swapPlayer(m,starterId,benchId) {
   const idx=m.lineups.home.indexOf(starterId);
   if (idx<0 || m.lineups.home.includes(benchId) || !team.players.some(p=>p.id===benchId)) return false;
   const starter=getPlayer(team,starterId), incoming=getPlayer(team,benchId);
+  if (!starter || !incoming) return false;
   // Always retain a keeper. In-match GK swaps must be GK-for-GK.
   if ((starter.role==='GK') !== (incoming.role==='GK')) return false;
   if (m.minute>0 && m.substitutionsUsed>=5) return false;
@@ -9182,7 +9184,7 @@ function playFullMatch(m) {
 function matchFromFrame(base, index) {
   const frame=base.frames[clamp(index,0,base.frames.length-1)];
   if(!frame) return base;
-  return {...copy(frame),version:base.version,seed:base.seed,homeId:base.homeId,awayId:base.awayId,knockout:base.knockout,frames:base.frames};
+  return {...copy(frame),version:base.version,seed:base.seed,homeId:base.homeId,awayId:base.awayId,knockout:base.knockout ?? frame.knockout,frames:base.frames};
 }
 function resultLabel(m){const h=m.score.home,a=m.score.away;return h===a?'Draw':h>a?'Home win':'Away win';}
 
@@ -9193,7 +9195,7 @@ function resultLabel(m){const h=m.score.home,a=m.score.away;return h===a?'Draw':
   };
 })(Data);
 
-const Tournament = (({ TEAMS, getTeam }, { createMatch, playFullMatch }) => {
+const Tournament = (({ TEAMS, getTeam, getPlayer }, { createMatch, playFullMatch }) => {
   const STORAGE_KEY = 'touchline_tournament_v2';
 
 const TOURNAMENT_PRESETS = [
@@ -9303,12 +9305,22 @@ function simulateAIMatch(matchObj, seed = `AI-KNOCKOUT-${Date.now()}`) {
   playFullMatch(m);
 
   const goalEvents = m.events.filter(e => e.type === 'goal');
-  const scorers = goalEvents.map(e => ({
-    name: e.text.split(' finds the net!')[0] || 'Scorer',
-    side: e.side,
-    teamId: e.side === 'home' ? m.homeId : m.awayId,
-    minute: e.minute
-  }));
+  const scorers = goalEvents.map(e => {
+    let name = 'Scorer';
+    if (e.playerId) {
+      const p = getPlayer(getTeam(e.side === 'home' ? m.homeId : m.awayId), e.playerId);
+      if (p) name = p.name;
+    }
+    if (name === 'Scorer' && e.text) {
+      name = e.text.replace(/^[⚽\s]*PENALTY!\s*/, '').split(' finds the net!')[0].split(' calmly converts')[0] || 'Scorer';
+    }
+    return {
+      name,
+      side: e.side,
+      teamId: e.side === 'home' ? m.homeId : m.awayId,
+      minute: e.minute
+    };
+  });
 
   const winner = m.winner || (m.score.home > m.score.away ? 'home' : m.score.away > m.score.home ? 'away' : (m.penalties?.home > m.penalties?.away ? 'home' : 'away'));
 
@@ -9335,43 +9347,67 @@ function recordTournamentResult(tournament, matchId, match) {
   }
   if (!target) return;
 
-  const winner = match.winner ? (match.winner === 'home' ? target.homeId : target.awayId) : (match.score.home > match.score.away ? target.homeId : target.awayId);
+  const winner = match.winner
+    ? (match.winner === 'home' ? target.homeId : target.awayId)
+    : (match.score.home > match.score.away
+      ? target.homeId
+      : (match.score.away > match.score.home
+        ? target.awayId
+        : (match.penalties?.home > match.penalties?.away ? target.homeId : target.awayId)));
 
   target.played = true;
   target.score = { ...match.score };
   target.winner = winner;
   target.penaltyScore = match.penalties ? { home: match.penalties.home, away: match.penalties.away } : null;
-  target.scorers = match.events.filter(e => e.type === 'goal').map(e => ({
-    name: e.text.split(' finds the net!')[0] || 'Scorer',
-    side: e.side,
-    teamId: e.side === 'home' ? target.homeId : target.awayId,
-    minute: e.minute
-  }));
+  target.scorers = match.scorers || (match.events ? match.events.filter(e => e.type === 'goal').map(e => {
+    let name = 'Scorer';
+    if (e.playerId) {
+      const p = getPlayer(getTeam(e.side === 'home' ? target.homeId : target.awayId), e.playerId);
+      if (p) name = p.name;
+    }
+    if (name === 'Scorer' && e.text) {
+      name = e.text.replace(/^[⚽\s]*PENALTY!\s*/, '').split(' finds the net!')[0].split(' calmly converts')[0] || 'Scorer';
+    }
+    return {
+      name,
+      side: e.side,
+      teamId: e.side === 'home' ? target.homeId : target.awayId,
+      minute: e.minute
+    };
+  }) : []);
 
   // Update top scorers leaderboard
   for (const s of target.scorers) {
     tournament.scorersMap[s.name] = (tournament.scorersMap[s.name] || 0) + 1;
   }
 
-  // Auto simulate remaining matches in this round if any
+  // Auto simulate remaining AI matches in this round if user's fixture was completed
   if (roundType === 'qf') {
-    for (const qf of tournament.bracket.qf) {
-      if (!qf.played) simulateAIMatch(qf, `QF-AI-${qf.id}-${Date.now()}`);
+    const userMatch = tournament.bracket.qf.find(m => m.homeId === tournament.userTeamId || m.awayId === tournament.userTeamId);
+    if (userMatch?.played) {
+      for (const qf of tournament.bracket.qf) {
+        if (!qf.played) simulateAIMatch(qf, `QF-AI-${qf.id}-${Date.now()}`);
+      }
     }
-    // Advance winners to Semi-Finals
-    tournament.bracket.sf[0].homeId = tournament.bracket.qf[0].winner;
-    tournament.bracket.sf[0].awayId = tournament.bracket.qf[1].winner;
-    tournament.bracket.sf[1].homeId = tournament.bracket.qf[2].winner;
-    tournament.bracket.sf[1].awayId = tournament.bracket.qf[3].winner;
-    tournament.stage = 'SF';
+    if (tournament.bracket.qf.every(m => m.played)) {
+      tournament.bracket.sf[0].homeId = tournament.bracket.qf[0].winner;
+      tournament.bracket.sf[0].awayId = tournament.bracket.qf[1].winner;
+      tournament.bracket.sf[1].homeId = tournament.bracket.qf[2].winner;
+      tournament.bracket.sf[1].awayId = tournament.bracket.qf[3].winner;
+      tournament.stage = 'SF';
+    }
   } else if (roundType === 'sf') {
-    for (const sf of tournament.bracket.sf) {
-      if (!sf.played) simulateAIMatch(sf, `SF-AI-${sf.id}-${Date.now()}`);
+    const userMatch = tournament.bracket.sf.find(m => m.homeId === tournament.userTeamId || m.awayId === tournament.userTeamId);
+    if (userMatch?.played) {
+      for (const sf of tournament.bracket.sf) {
+        if (!sf.played) simulateAIMatch(sf, `SF-AI-${sf.id}-${Date.now()}`);
+      }
     }
-    // Advance winners to Final
-    tournament.bracket.final.homeId = tournament.bracket.sf[0].winner;
-    tournament.bracket.final.awayId = tournament.bracket.sf[1].winner;
-    tournament.stage = 'FINAL';
+    if (tournament.bracket.sf.every(m => m.played)) {
+      tournament.bracket.final.homeId = tournament.bracket.sf[0].winner;
+      tournament.bracket.final.awayId = tournament.bracket.sf[1].winner;
+      tournament.stage = 'FINAL';
+    }
   } else if (roundType === 'final') {
     tournament.champion = target.winner;
     tournament.stage = 'COMPLETED';
@@ -9418,7 +9454,7 @@ function playerPositions(match, side, time=0) {
   });
 }
 
-function roundedRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}
+function roundedRect(ctx,x,y,w,h,r){if(ctx.roundRect){ctx.beginPath();ctx.roundRect(x,y,w,h,r);}else{ctx.beginPath();ctx.rect(x,y,w,h);}}
 function setText(ctx,fill,font,align='center'){ctx.fillStyle=fill;ctx.font=font;ctx.textAlign=align;ctx.textBaseline='middle';}
 
 function renderPitch(canvas,match,t=0) {
@@ -9537,7 +9573,8 @@ function renderPitch(canvas,match,t=0) {
       }
 
       if(W>620 && (i===9||i===0||i===8||i===10)){
-        const label=pl.name.split(' ').at(-1).toUpperCase();
+        const parts=(pl.name||'').trim().split(/\s+/);
+        const label=(parts[parts.length-1]||pl.role||'').toUpperCase();
         setText(ctx,'rgba(236,249,222,.77)',`700 ${Math.max(7,W*.008)}px Arial`);
         ctx.fillText(label,pt.x,pt.y+r+11);
       }
@@ -9569,7 +9606,12 @@ const $$=selector=>[...document.querySelectorAll(selector)];
 const STORAGE='touchline-xi-replays-v1';
 const PREFS='touchline-xi-prefs-v1';
 const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const formatStat=(key,value)=>key==='possession'?`${Math.round(value)}%`:key==='xg'?Number(value).toFixed(2):Number(value).toLocaleString('en-GB');
+const formatStat=(key,value)=>{
+  const num=Number(value)||0;
+  if(key==='possession') return `${Math.round(num)}%`;
+  if(key==='xg') return num.toFixed(2);
+  return num.toLocaleString('en-GB');
+};
 const keyEvents=new Set(['goal','save','shot','card','half','full','sub','tactic','talk','shootout']);
 const savedPrefs=(()=>{try{return JSON.parse(localStorage.getItem(PREFS))||{}}catch{return {}}})();
 
@@ -9631,23 +9673,23 @@ let dreamConfig = {
   opponentId: 'club_man_city',
   aiDifficulty: 'Standard',
   starters: [
-    { role: 'GK', id: 'spain_0', name: 'Iker Casillas', nat: 'Spain', ovr: 94, card: '94 Icon Moments' },
-    { role: 'LB', id: 'brazil_4', name: 'Roberto Carlos', nat: 'Brazil', ovr: 93, card: '93 Icon Moments' },
-    { role: 'CB', id: 'spain_1', name: 'Sergio Ramos', nat: 'Spain', ovr: 98, card: '98 TOTY Peak' },
+    { role: 'GK', id: 'spain_5', name: 'Iker Casillas', nat: 'Spain', ovr: 94, card: '94 Icon Moments' },
+    { role: 'LB', id: 'brazil_12', name: 'Roberto Carlos', nat: 'Brazil', ovr: 93, card: '93 Icon Moments' },
+    { role: 'CB', id: 'spain_0', name: 'Sergio Ramos', nat: 'Spain', ovr: 98, card: '98 TOTY Peak' },
     { role: 'CB', id: 'netherlands_0', name: 'Virgil van Dijk', nat: 'Netherlands', ovr: 99, card: '99 TOTY / Futties Peak' },
     { role: 'RB', id: 'morocco_0', name: 'Achraf Hakimi', nat: 'Morocco', ovr: 95, card: '95 TOTY Peak' },
     { role: 'CDM', id: 'france_4', name: "N'Golo Kanté", nat: 'France', ovr: 97, card: '97 TOTY Peak' },
     { role: 'CM', id: 'croatia_0', name: 'Luka Modrić', nat: 'Croatia', ovr: 99, card: '99 Ballon d\'Or / TOTY Peak' },
     { role: 'CM', id: 'belgium_0', name: 'Kevin De Bruyne', nat: 'Belgium', ovr: 99, card: '99 TOTY / TOTS Peak' },
-    { role: 'LW', id: 'brazil_3', name: 'Ronaldinho', nat: 'Brazil', ovr: 95, card: '95 Prime Icon' },
+    { role: 'LW', id: 'brazil_7', name: 'Ronaldinho', nat: 'Brazil', ovr: 95, card: '95 Prime Icon' },
     { role: 'ST', id: 'portugal_0', name: 'Cristiano Ronaldo', nat: 'Portugal', ovr: 99, card: '99 Futties / TOTY Peak' },
-    { role: 'RW', id: 'argentina_0', name: 'Lionel Messi', nat: 'Argentina', ovr: 99, card: '99 Futties / TOTY Peak' }
+    { role: 'RW', id: 'argentina_1', name: 'Lionel Messi', nat: 'Argentina', ovr: 99, card: '99 Futties / TOTY Peak' }
   ],
   bench: [
-    { role: 'GK', id: 'italy_0', name: 'Gianluigi Buffon', nat: 'Italy', ovr: 96, card: '96 End of an Era / Prime Icon' },
+    { role: 'GK', id: 'italy_1', name: 'Gianluigi Buffon', nat: 'Italy', ovr: 96, card: '96 End of an Era / Prime Icon' },
     { role: 'CB', id: 'italy_2', name: 'Paolo Maldini', nat: 'Italy', ovr: 95, card: '95 Icon Moments' },
-    { role: 'CM', id: 'france_0', name: 'Zinedine Zidane', nat: 'France', ovr: 97, card: '97 Icon Moments' },
-    { role: 'ST', id: 'france_1', name: 'Kylian Mbappé', nat: 'France', ovr: 99, card: '99 TOTY / Futties Peak' },
+    { role: 'CM', id: 'france_3', name: 'Zinedine Zidane', nat: 'France', ovr: 97, card: '97 Icon Moments' },
+    { role: 'ST', id: 'france_0', name: 'Kylian Mbappé', nat: 'France', ovr: 99, card: '99 TOTY / Futties Peak' },
     { role: 'RW', id: 'wales_0', name: 'Gareth Bale', nat: 'Wales', ovr: 98, card: '98 End of Era / Futties' }
   ]
 };
@@ -10028,9 +10070,15 @@ function openFutCardModal(playerId) {
 function draftActiveFutToDreamTeam() {
   if (!activeFutPlayer) return;
   const p = activeFutPlayer;
-  const targetIndex = dreamConfig.starters.findIndex(s => s.role === p.role) !== -1
-    ? dreamConfig.starters.findIndex(s => s.role === p.role)
-    : 10;
+  let targetIndex = -1;
+  if (p.role === 'GK') {
+    targetIndex = 0;
+  } else {
+    targetIndex = dreamConfig.starters.findIndex((s, idx) => idx > 0 && s.role === p.role);
+    if (targetIndex === -1) {
+      targetIndex = 10;
+    }
+  }
 
   dreamConfig.starters[targetIndex] = {
     role: p.role,
@@ -10258,27 +10306,27 @@ function startMatch(){
 
 function renderScoreboard(){
   const home=getTeam(match.homeId),away=getTeam(match.awayId);
-  $('#homeCrest').textContent=home.crest;
-  $('#awayCrest').textContent=away.crest;
-  $('#homeCrest').style.background=home.primary;
-  $('#homeCrest').style.color=home.secondary;
-  $('#awayCrest').style.background=away.primary;
-  $('#awayCrest').style.color=away.secondary;
-  $('#homeName').textContent=home.name;
-  $('#awayName').textContent=away.name;
-  $('#homeCity').textContent=home.city.toUpperCase();
-  $('#awayCity').textContent=away.city.toUpperCase();
+  $('#homeCrest').textContent=home.crest || '★';
+  $('#awayCrest').textContent=away.crest || '★';
+  $('#homeCrest').style.background=home.primary || '#183d2f';
+  $('#homeCrest').style.color=home.secondary || '#ffffff';
+  $('#awayCrest').style.background=away.primary || '#ffffff';
+  $('#awayCrest').style.color=away.secondary || '#183d2f';
+  $('#homeName').textContent=home.name || 'Home Team';
+  $('#awayName').textContent=away.name || 'Away Team';
+  $('#homeCity').textContent=(home.city || home.official_name || home.name || '').toUpperCase();
+  $('#awayCity').textContent=(away.city || away.official_name || away.name || '').toUpperCase();
   $('#homeScore').textContent=match.score.home;
   $('#awayScore').textContent=match.score.away;
 
-  $('#fixtureLabel').textContent=`${match.knockout ? 'KNOCKOUT CUP' : 'EXHIBITION'} / ${home.short} VS ${away.short}`;
+  $('#fixtureLabel').textContent=`${match.knockout ? 'KNOCKOUT CUP' : 'EXHIBITION'} / ${(home.short || 'HOM')} VS ${(away.short || 'AWY')}`;
   $('#matchMinute').textContent=String(match.minute).padStart(2,'0');
   $('#clockHalf').textContent=match.minute<46?'FIRST HALF':match.minute<91?'SECOND HALF':match.minute<=105?'ET 1ST HALF':'ET 2ND HALF';
   $('#matchState').textContent=replay?'REPLAY':match.phase==='PRE_MATCH'?'PRE-MATCH':match.phase==='HALF_TIME'?'HALF-TIME':match.phase==='EXTRA_TIME'?'EXTRA-TIME':match.phase==='PENALTIES'?'PENALTIES':match.phase==='FULL_TIME'?'FULL-TIME':'LIVE';
   $('#liveIndicator').textContent=replay?'REPLAY':match.phase==='FULL_TIME'?'FINAL':running?'ON AIR':'READY';
   $('#liveIndicator').classList.toggle('is-live',running);
-  $('#pitchStatus').textContent=`${home.short} vs ${away.short}`;
-  $('#pitchPossession').textContent=`${getTeam(match.possession==='home'?match.homeId:match.awayId).short} IN POSSESSION`;
+  $('#pitchStatus').textContent=`${home.short || 'HOM'} vs ${away.short || 'AWY'}`;
+  $('#pitchPossession').textContent=`${(getTeam(match.possession==='home'?match.homeId:match.awayId).short || 'POS')} IN POSSESSION`;
 
   const notable=[...match.events].reverse().find(e=>['goal','save','shot','card','sub','tactic','talk'].includes(e.type));
   let scoreNoteText = match.phase==='FULL_TIME'?`${resultLabel(match).toUpperCase()} / FINAL WHISTLE`:notable?`${notable.minute}' ${notable.text.toUpperCase().slice(0,55)}`:'READY FOR KICK-OFF';
@@ -10430,7 +10478,7 @@ function renderFlow(){
   const home=getTeam(match.homeId),away=getTeam(match.awayId);
   $('#homeLegendDot').style.background='#578750';$('#homeLegendDot').style.border='none';
   $('#awayLegendDot').style.background='#8da4b1';$('#awayLegendDot').style.border='none';
-  $('#flowHomeName').textContent=home.name.toUpperCase();$('#flowAwayName').textContent=away.name.toUpperCase();
+  $('#flowHomeName').textContent=(home.name || '').toUpperCase();$('#flowAwayName').textContent=(away.name || '').toUpperCase();
   const maxMins = (match.knockout || (replay && replay.source.knockout)) ? 120 : 90;
   const frames=match.frames.slice(0,match.minute+1);const w=640,h=139,x0=43,y0=17;
   const mx=Math.max(1,...frames.flatMap(f=>[f.stats.home.xg,f.stats.away.xg]));const yMax=Math.ceil(mx*2)/2;
@@ -10532,7 +10580,8 @@ function newTick(){
 
 function flashGoal(e){
   const el=$('#goalFlash');
-  $('#goalFlashWho').textContent=getTeam(e.side==='home'?match.homeId:match.awayId).name.toUpperCase();
+  const scoringTeam = getTeam(e.side==='home'?match.homeId:match.awayId);
+  $('#goalFlashWho').textContent=(scoringTeam.name || '').toUpperCase();
   el.classList.add('visible');
   clearTimeout(goalTimeout);
   goalTimeout=setTimeout(()=>el.classList.remove('visible'),1400);
@@ -10687,7 +10736,7 @@ function bind(){
     }
     const incoming=getPlayer(getTeam(match.homeId),b.dataset.bench);
     if(swapPlayer(match,selectedStarter,b.dataset.bench)){
-      toast(`Substitution: ${incoming.name} enters the pitch!`);
+      toast(`Substitution: ${incoming ? incoming.name : 'Substitute'} enters the pitch!`);
       selectedStarter=null;
       renderSquad();
       renderFeed();

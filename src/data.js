@@ -117,9 +117,10 @@ export const PLAY_STYLES = {
 export const DEFAULT_TACTICS = {pressing: 52, tempo: 55, width: 58, mentality: 'Balanced'};
 export const getTeam = id => TEAMS.find(t => t.id === id) ?? TEAMS[0];
 export const getPlayer = (team, id) => {
-  if (!team) return null;
-  const found = team.players?.find(p => p.id === id);
-  if (found) return found;
+  if (team && team.players) {
+    const found = team.players.find(p => p.id === id);
+    if (found) return found;
+  }
   // Fallback search across all teams (especially for custom dream team player references)
   for (const t of TEAMS) {
     const p = t.players?.find(x => x.id === id);
