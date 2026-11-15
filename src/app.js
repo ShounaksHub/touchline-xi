@@ -743,8 +743,53 @@ function renderScoreboard(){
   $('#awayScore').textContent=match.score.away;
 
   $('#fixtureLabel').textContent=`${match.knockout ? 'KNOCKOUT CUP' : 'EXHIBITION'} / ${(home.short || 'HOM')} VS ${(away.short || 'AWY')}`;
-  $('#matchMinute').textContent=String(match.minute).padStart(2,'0');
-  $('#clockHalf').textContent=match.minute<46?'FIRST HALF':match.minute<91?'SECOND HALF':match.minute<=105?'ET 1ST HALF':'ET 2ND HALF';
+  
+  // Render Goalscorers under respective teams
+  const goalEvents = (match.events || []).filter(e => e.type === 'goal');
+  const homeGoals = goalEvents.filter(e => e.side === 'home');
+  const awayGoals = goalEvents.filter(e => e.side === 'away');
+
+  const formatScorer = e => {
+    let name = 'Scorer';
+    if (e.playerId) {
+      const p = getPlayer(getTeam(e.side === 'home' ? match.homeId : match.awayId), e.playerId);
+      if (p) name = p.name;
+    }
+    if (name === 'Scorer' && e.text) {
+      const matchName = e.text.match(/^([^!]+?)\s+(?:finds the net|calmly converts)/i) || e.text.match(/⚽\s*(?:PENALTY!\s*)?([^!]+?)\s+(?:finds|calmly)/i);
+      if (matchName) name = matchName[1].replace(/^⚽\s*/, '').trim();
+      else name = e.text.split(' ')[0];
+    }
+    const pen = e.isPenalty ? ' (P)' : '';
+    return `<div class="scorer-item"><span class="scorer-ball">⚽</span> <span>${escapeHtml(name)}</span><span class="scorer-min">${e.minute}′${pen}</span></div>`;
+  };
+
+  const homeScorersEl = $('#homeScorers');
+  if (homeScorersEl) {
+    homeScorersEl.innerHTML = homeGoals.map(formatScorer).join('');
+  }
+  const awayScorersEl = $('#awayScorers');
+  if (awayScorersEl) {
+    awayScorersEl.innerHTML = awayGoals.map(formatScorer).join('');
+  }
+
+  // Display clock minute with added injury time indicator if stoppage is active
+  let minuteDisplay = String(match.minute).padStart(2,'0');
+  let clockHalfText = match.minute<46?'FIRST HALF':match.minute<91?'SECOND HALF':match.minute<=105?'ET 1ST HALF':'ET 2ND HALF';
+
+  const extra1 = match.injuryTime?.firstHalf || 2;
+  const extra2 = match.injuryTime?.secondHalf || 4;
+
+  if (match.minute === 44 || match.minute === 45) {
+    minuteDisplay = `45+${match.minute === 44 ? 1 : extra1}`;
+    clockHalfText = `1ST HALF (+${extra1}′ ET)`;
+  } else if (match.minute >= 89 && match.minute <= 90 && !match.knockout) {
+    minuteDisplay = `90+${match.minute === 89 ? 1 : extra2}`;
+    clockHalfText = `2ND HALF (+${extra2}′ ET)`;
+  }
+
+  $('#matchMinute').textContent=minuteDisplay;
+  $('#clockHalf').textContent=clockHalfText;
   $('#matchState').textContent=replay?'REPLAY':match.phase==='PRE_MATCH'?'PRE-MATCH':match.phase==='HALF_TIME'?'HALF-TIME':match.phase==='EXTRA_TIME'?'EXTRA-TIME':match.phase==='PENALTIES'?'PENALTIES':match.phase==='FULL_TIME'?'FULL-TIME':'LIVE';
   $('#liveIndicator').textContent=replay?'REPLAY':match.phase==='FULL_TIME'?'FINAL':running?'ON AIR':'READY';
   $('#liveIndicator').classList.toggle('is-live',running);
@@ -967,6 +1012,7 @@ function newTick(){
   }
 
   const prior=match.events.length;
+  const priorScore = { home: match.score.home, away: match.score.away };
   advanceMinute(match);
   persistPrefs();
   const nextEvents=match.events.slice(prior);
@@ -975,13 +1021,20 @@ function newTick(){
   if(goal){
     flashGoal(goal);
     sound.playGoalCheer();
+    // Auto-pause match upon goal for tactical and squad adjustments
+    stop();
+    const scoringTeam = getTeam(goal.side==='home'?match.homeId:match.awayId);
+    toast(`⚽ GOAL (${scoringTeam.short})! Match auto-paused for tactical changes.`);
   } else {
     const shot=nextEvents.find(e=>e.type==='shot'||e.type==='save');
     if(shot) sound.playKick();
   }
 
-  if(match.minute===45){
+  if(match.minute===45 && match.phase==='HALF_TIME'){
     sound.playWhistle(0.3);
+    // Auto-pause match at half-time for team talk & tactical changes
+    stop();
+    toast('🗣️ Half-time reached! Match auto-paused for team talk & tactical adjustments.');
   }
 
   if(match.phase==='FULL_TIME'){

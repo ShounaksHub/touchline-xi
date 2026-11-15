@@ -38,6 +38,7 @@ function frameFromMatch(m) {
   return copy({minute:m.minute, phase:m.phase, score:m.score, stats:m.stats, ball:m.ball, possession:m.possession,
     rng:m.rng, events:m.events, tactics:m.tactics, formations:m.formations, lineups:m.lineups, substitutionsUsed:m.substitutionsUsed,
     stamina:copy(m.stamina || {}), winner:m.winner || null, penalties:m.penalties || null, knockout:!!m.knockout,
+    injuryTime:copy(m.injuryTime || { firstHalf: 2, secondHalf: 4 }),
     bookings:copy(m.bookings || { home: {}, away: {} })});
 }
 
@@ -76,11 +77,15 @@ export function createMatch(options = {}) {
     for (const id of team.substitutes || []) stamina[id] = 100;
   }
 
+  const injuryFirstHalf = 1 + (seedToState(`${options.seed}-inj1`) % 4); // 1 to 4 mins
+  const injurySecondHalf = 2 + (seedToState(`${options.seed}-inj2`) % 5); // 2 to 6 mins
+
   const m = {
     version:1, seed:String(options.seed ?? 'TOUCHLINE-001'), rng:seedToState(options.seed ?? 'TOUCHLINE-001'),
     homeId, awayId, minute:0, phase:'PRE_MATCH', possession:'home', ball:{x:50,y:50}, score:{home:0,away:0},
     stats:{home:emptyStats(),away:emptyStats()}, lineups, substitutionsUsed:0, stamina, knockout:!!options.knockout,
     winner:null, penalties:null, bookings:{home:{},away:{}},
+    injuryTime:{ firstHalf: injuryFirstHalf, secondHalf: injurySecondHalf },
     formations:{home:options.formation && FORMATIONS[options.formation] ? options.formation : '4-3-3',away:'4-3-3'},
     tactics:{home:{...DEFAULT_TACTICS,...(options.tactics ?? {})},away:{...DEFAULT_TACTICS,pressing:betweenFake(options.seed,42,72),tempo:betweenFake(`${options.seed}-tempo`,42,66)}},
     events:[{minute:0,type:'kickoff',side:null,text:'The teams are ready. Awaiting kick-off.'}],
@@ -368,9 +373,19 @@ export function advanceMinute(m) {
     }
   }
 
+  if(m.minute===44){
+    const extra = m.injuryTime?.firstHalf || 2;
+    addEvent(m,'tactic',null,`⏱️ 4th Official Board: +${extra} min added injury time in the first half.`);
+  }
+
   if(m.minute===45){
     m.phase='HALF_TIME';
     addEvent(m,'half',null,'Half-time. The coaches have work to do.');
+  }
+
+  if(m.minute===89){
+    const extra = m.injuryTime?.secondHalf || 4;
+    addEvent(m,'tactic',null,`⏱️ 4th Official Board: +${extra} min added injury time in the second half.`);
   }
 
   if (!m.knockout) {
