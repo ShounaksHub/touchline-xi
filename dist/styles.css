@@ -81,9 +81,25 @@ select:focus-visible {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Match page: the workspace grid is full height */
+/* Match page: the workspace grid is full height and centered single column */
 .page--matchday .workspace {
   min-height: calc(100vh - 84px - 60px);
+  grid-template-columns: 1fr;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* Squad Lab Page Layout */
+.squad-lab-layout {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .squad-lab-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Page inner padding */
@@ -2617,6 +2633,11 @@ footer span {
 }
 .player-stamina-fill.danger {
   background: #e84118;
+}
+
+/* Squad Lab Section */
+.squad-lab-section {
+  padding: 48px 0;
 }
 
 /* Tournament Section */

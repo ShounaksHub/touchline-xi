@@ -91,9 +91,25 @@ select:focus-visible {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Match page: the workspace grid is full height */
+/* Match page: the workspace grid is full height and centered single column */
 .page--matchday .workspace {
   min-height: calc(100vh - 84px - 60px);
+  grid-template-columns: 1fr;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+/* Squad Lab Page Layout */
+.squad-lab-layout {
+  display: grid;
+  grid-template-columns: 380px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 960px) {
+  .squad-lab-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Page inner padding */
@@ -2629,6 +2645,11 @@ footer span {
   background: #e84118;
 }
 
+/* Squad Lab Section */
+.squad-lab-section {
+  padding: 48px 0;
+}
+
 /* Tournament Section */
 .tournament-section {
   padding: 48px 0;
@@ -3131,10 +3152,10 @@ footer span {
       </a>
       <nav class="main-nav" aria-label="Main navigation">
         <button class="nav-link is-active" data-section="matchday" data-page="page-matchday">Match centre 🏟️</button>
+        <button class="nav-link" data-section="squad" data-page="page-squad">Squad lab 📋</button>
         <button class="nav-link" data-section="tournament" data-page="page-tournament">Tournament Cup 🏆</button>
         <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam">Dream Team Studio ✨</button>
         <button class="nav-link" data-section="scouting" data-page="page-scouting">Scouting &amp; Database 🔍</button>
-        <button class="nav-link" data-section="squad" data-page="page-matchday">Squad lab 📋</button>
         <button class="nav-link" data-section="vault" data-page="page-vault">Replay vault 📼</button>
       </nav>
       <div class="topbar-right">
@@ -3164,6 +3185,7 @@ footer span {
                 <button class="text-button" id="randomSeedBtn" title="Generate random seed" style="padding:4px 8px;font-size:14px;cursor:pointer;">🎲</button>
               </div>
             </div>
+            <button class="secondary-button" id="openSquadLabBtn">📋 Squad Lab &amp; Tactics</button>
             <button class="primary-button" id="newMatchBtn"><span>↗</span> New fixture</button>
           </div>
         </section>
@@ -3348,53 +3370,83 @@ footer span {
               </div>
             </section>
           </div>
-
-          <!-- Manager Touchline Control Column -->
-          <aside class="control-column" id="squad" aria-label="Team manager">
-            <section class="manager-header">
-              <div class="aside-topline"><span>THE MANAGER'S DESK</span><span class="panel-number">02 /</span></div>
-              <h2>Your touchline.<br><em>Your decisions.</em></h2>
-              <p>Manage your side. Changes, stamina, and tactics feed live into the simulation.</p>
-            </section>
-
-            <section class="control-card team-control">
-              <div class="control-card-heading"><span>01</span><h3>Match setup</h3></div>
-              <div class="field"><label for="homeSelect">YOUR CLUB / NATION</label><div class="select-wrap"><select id="homeSelect"></select></div></div>
-              <div class="field"><label for="awaySelect">OPPOSITION</label><div class="select-wrap"><select id="awaySelect"></select></div></div>
-              <p class="field-hint">Switching clubs or opponents begins a fresh fixture.</p>
-            </section>
-
-            <section class="control-card">
-              <div class="control-card-heading"><span>02</span><h3>Formation &amp; shape</h3></div>
-              <div class="formation-summary"><span>STARTING SYSTEM</span><b id="formationReadout">4-3-3</b></div>
-              <div class="formation-grid" id="formationButtons"></div>
-              <div class="mini-pitch"><div class="mini-pitch-line"></div><div id="formationDots" class="formation-dots"></div></div>
-            </section>
-
-            <section class="control-card">
-              <div class="control-card-heading"><span>03</span><h3>Tactical instructions</h3></div>
-              <div class="tactic-row"><div class="tactic-label"><label for="pressingRange">Pressing intensity</label><b id="pressingValue">52</b></div><input id="pressingRange" type="range" min="0" max="100" value="52"/><div class="range-ends"><span>LOW BLOCK</span><span>HIGH PRESS</span></div></div>
-              <div class="tactic-row"><div class="tactic-label"><label for="tempoRange">Passing tempo</label><b id="tempoValue">55</b></div><input id="tempoRange" type="range" min="0" max="100" value="55"/><div class="range-ends"><span>PATIENT</span><span>DIRECT</span></div></div>
-              <div class="tactic-row"><div class="tactic-label"><label for="widthRange">Attacking width</label><b id="widthValue">58</b></div><input id="widthRange" type="range" min="0" max="100" value="58"/><div class="range-ends"><span>NARROW</span><span>WIDE</span></div></div>
-              <div class="mentality-label">TEAM MENTALITY</div>
-              <div class="mentality-buttons" id="mentalityButtons"><button data-mentality="Defensive">Defensive</button><button data-mentality="Balanced" class="is-active">Balanced</button><button data-mentality="Attacking">Attacking</button></div>
-            </section>
-
-            <section class="control-card squad-card">
-              <div class="control-card-heading"><span>04</span><h3>Matchday squad &amp; stamina</h3></div>
-              <div class="squad-top"><span>STARTING XI</span><button class="text-button" id="resetLineupBtn">Reset XI ↺</button></div>
-              <div id="squadList" class="squad-list"></div>
-              <div class="bench-heading"><span>SUBSTITUTES</span><span id="benchCount">05 AVAILABLE</span></div>
-              <div id="benchList" class="bench-list"></div>
-              <p class="squad-hint" id="squadHint">Select a starter, then choose a substitute to swap. Fresh subs bring stamina boosts.</p>
-            </section>
-          </aside>
         </div>
 
       </div><!-- end page--matchday -->
 
 
-      <!-- PAGE 2: Tournament Cup -->
+      <!-- PAGE 2: Squad Lab (Dedicated Full Tactical Studio) -->
+      <div class="page page--squad-lab" id="page-squad">
+        <section class="squad-lab-section" id="squad" aria-label="Squad Lab and Tactics">
+          <div class="panel-heading">
+            <div>
+              <span class="section-num">02 / SQUAD LAB</span>
+              <h2>Manager's Tactical Studio</h2>
+              <p class="section-sub">Configure your starting eleven, bench swaps, tactical system, and pressing intensity.</p>
+            </div>
+            <div>
+              <button class="primary-button" id="squadGoToMatchBtn">🏟️ Proceed to Matchday ↗</button>
+            </div>
+          </div>
+
+          <div class="squad-lab-layout">
+            <!-- Left Column: Strategy & Tactics -->
+            <div class="control-column">
+              <section class="manager-header">
+                <div class="aside-topline"><span>THE TACTICAL BLUEPRINT</span><span class="panel-number">01 /</span></div>
+                <h2>System &amp; Strategy</h2>
+                <p>Shape, philosophy, and pressing instructions.</p>
+              </section>
+
+              <section class="control-card team-control">
+                <div class="control-card-heading"><span>01</span><h3>Match setup</h3></div>
+                <div class="field"><label for="homeSelect">YOUR CLUB / NATION</label><div class="select-wrap"><select id="homeSelect"></select></div></div>
+                <div class="field"><label for="awaySelect">OPPOSITION</label><div class="select-wrap"><select id="awaySelect"></select></div></div>
+                <p class="field-hint">Switching clubs or opponents begins a fresh fixture.</p>
+              </section>
+
+              <section class="control-card">
+                <div class="control-card-heading"><span>02</span><h3>Formation &amp; shape</h3></div>
+                <div class="formation-summary"><span>STARTING SYSTEM</span><b id="formationReadout">4-3-3</b></div>
+                <div class="formation-grid" id="formationButtons"></div>
+                <div class="mini-pitch"><div class="mini-pitch-line"></div><div id="formationDots" class="formation-dots"></div></div>
+              </section>
+
+              <section class="control-card">
+                <div class="control-card-heading"><span>03</span><h3>Tactical instructions</h3></div>
+                <div class="tactic-row"><div class="tactic-label"><label for="pressingRange">Pressing intensity</label><b id="pressingValue">52</b></div><input id="pressingRange" type="range" min="0" max="100" value="52"/><div class="range-ends"><span>LOW BLOCK</span><span>HIGH PRESS</span></div></div>
+                <div class="tactic-row"><div class="tactic-label"><label for="tempoRange">Passing tempo</label><b id="tempoValue">55</b></div><input id="tempoRange" type="range" min="0" max="100" value="55"/><div class="range-ends"><span>PATIENT</span><span>DIRECT</span></div></div>
+                <div class="tactic-row"><div class="tactic-label"><label for="widthRange">Attacking width</label><b id="widthValue">58</b></div><input id="widthRange" type="range" min="0" max="100" value="58"/><div class="range-ends"><span>NARROW</span><span>WIDE</span></div></div>
+                <div class="mentality-label">TEAM MENTALITY</div>
+                <div class="mentality-buttons" id="mentalityButtons"><button data-mentality="Defensive">Defensive</button><button data-mentality="Balanced" class="is-active">Balanced</button><button data-mentality="Attacking">Attacking</button></div>
+              </section>
+            </div>
+
+            <!-- Right Column: Lineup & Bench -->
+            <div class="control-column">
+              <section class="manager-header" style="background:#e4ede0;">
+                <div class="aside-topline"><span>ROSTER MANAGEMENT</span><span class="panel-number">02 /</span></div>
+                <h2>Starting XI &amp; Substitutes</h2>
+                <p>Inspect ratings, monitor stamina, and make substitutions.</p>
+              </section>
+
+              <section class="control-card squad-card">
+                <div class="squad-top"><span>STARTING XI</span><button class="text-button" id="resetLineupBtn">Reset XI ↺</button></div>
+                <div id="squadList" class="squad-list"></div>
+                <div class="bench-heading"><span>SUBSTITUTES</span><span id="benchCount">05 AVAILABLE</span></div>
+                <div id="benchList" class="bench-list"></div>
+                <p class="squad-hint" id="squadHint">Select a starter, then choose a substitute to swap. Fresh subs bring stamina boosts.</p>
+                <div style="margin-top:20px;text-align:right;">
+                  <button class="primary-button" id="squadDeployBottomBtn" style="width:100%;justify-content:center;">🏟️ Save Tactics &amp; Go to Matchday ↗</button>
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+      </div><!-- end page--squad -->
+
+
+      <!-- PAGE 3: Tournament Cup -->
       <div class="page page--tournament" id="page-tournament">
         <section class="tournament-section" id="tournament" aria-label="Tournament Mode">
           <div class="panel-heading">
@@ -3451,7 +3503,7 @@ footer span {
       </div><!-- end page--tournament -->
 
 
-      <!-- PAGE 3: Dream Team Studio -->
+      <!-- PAGE 4: Dream Team Studio -->
       <div class="page page--dreamteam" id="page-dreamteam">
         <section class="dream-team-section" id="dreamteam" aria-label="Dream Team Studio">
           <div class="panel-heading">
@@ -3543,7 +3595,7 @@ footer span {
       </div><!-- end page--dreamteam -->
 
 
-      <!-- PAGE 4: Scouting & Database -->
+      <!-- PAGE 5: Scouting & Database -->
       <div class="page page--scouting" id="page-scouting">
         <section class="scouting-section" id="scouting" aria-label="Scouting and All Players Database">
           <div class="panel-heading">
@@ -3593,7 +3645,7 @@ footer span {
       </div><!-- end page--scouting -->
 
 
-      <!-- PAGE 5: Replay Vault -->
+      <!-- PAGE 6: Replay Vault -->
       <div class="page page--vault" id="page-vault">
         <section class="vault" id="vault">
           <div class="vault-heading">
@@ -10407,8 +10459,7 @@ function showPage(pageId){
   $$('.page').forEach(p=>p.classList.toggle('is-active',p===targetPage));
   const activeSection=norm.replace('page-','');
   $$('.nav-link').forEach(btn=>{
-    const isTarget=btn.dataset.section===activeSection||(activeSection==='matchday'&&btn.dataset.section==='matchday');
-    btn.classList.toggle('is-active',isTarget);
+    btn.classList.toggle('is-active',btn.dataset.section===activeSection);
   });
   window.scrollTo({top:0,behavior:'instant'});
   try{
@@ -11012,15 +11063,6 @@ function bind(){
     const targetPageId = b.dataset.page ? b.dataset.page.replace('page-', '') : section;
     showPage(targetPageId);
     $$('.nav-link').forEach(x => x.classList.toggle('is-active', x === b));
-    if (section === 'squad') {
-      requestAnimationFrame(() => {
-        const el = $('#squad');
-        if (el) {
-          const top = el.getBoundingClientRect().top + window.pageYOffset - 84;
-          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        }
-      });
-    }
   }));
 
   $('.brand')?.addEventListener('click', (e) => {
@@ -11028,43 +11070,31 @@ function bind(){
     showPage('matchday');
   });
 
+  // Cross-page shortcuts
+  $('#openSquadLabBtn')?.addEventListener('click', () => {
+    showPage('squad');
+  });
+  $('#squadGoToMatchBtn')?.addEventListener('click', () => {
+    showPage('matchday');
+  });
+  $('#squadDeployBottomBtn')?.addEventListener('click', () => {
+    showPage('matchday');
+    toast('Tactics & squad applied to matchday pitch!');
+  });
+
   window.addEventListener('hashchange', () => {
     const hash = location.hash.replace('#', '');
     if (!hash) return;
-    if (hash === 'squad') {
-      showPage('matchday');
-      const squadBtn = $('[data-section="squad"]');
-      if (squadBtn) $$('.nav-link').forEach(x => x.classList.toggle('is-active', x === squadBtn));
-      const el = $('#squad');
-      if (el) {
-        const top = el.getBoundingClientRect().top + window.pageYOffset - 84;
-        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-      }
-    } else {
-      const targetNav = $(`[data-section="${hash}"]`);
-      if (targetNav) targetNav.click();
-      else showPage(hash);
-    }
+    const targetNav = $(`[data-section="${hash}"]`);
+    if (targetNav) targetNav.click();
+    else showPage(hash);
   });
 
   const initialHash = location.hash.replace('#', '');
   if (initialHash) {
-    if (initialHash === 'squad') {
-      showPage('matchday');
-      const squadBtn = $('[data-section="squad"]');
-      if (squadBtn) $$('.nav-link').forEach(x => x.classList.toggle('is-active', x === squadBtn));
-      setTimeout(() => {
-        const el = $('#squad');
-        if (el) {
-          const top = el.getBoundingClientRect().top + window.pageYOffset - 84;
-          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        }
-      }, 50);
-    } else {
-      const targetNav = $(`[data-section="${initialHash}"]`);
-      if (targetNav) targetNav.click();
-      else showPage(initialHash);
-    }
+    const targetNav = $(`[data-section="${initialHash}"]`);
+    if (targetNav) targetNav.click();
+    else showPage(initialHash);
   }
 
   // Touchline Shouts

@@ -662,8 +662,7 @@ function showPage(pageId){
   $$('.page').forEach(p=>p.classList.toggle('is-active',p===targetPage));
   const activeSection=norm.replace('page-','');
   $$('.nav-link').forEach(btn=>{
-    const isTarget=btn.dataset.section===activeSection||(activeSection==='matchday'&&btn.dataset.section==='matchday');
-    btn.classList.toggle('is-active',isTarget);
+    btn.classList.toggle('is-active',btn.dataset.section===activeSection);
   });
   window.scrollTo({top:0,behavior:'instant'});
   try{
@@ -1267,15 +1266,6 @@ function bind(){
     const targetPageId = b.dataset.page ? b.dataset.page.replace('page-', '') : section;
     showPage(targetPageId);
     $$('.nav-link').forEach(x => x.classList.toggle('is-active', x === b));
-    if (section === 'squad') {
-      requestAnimationFrame(() => {
-        const el = $('#squad');
-        if (el) {
-          const top = el.getBoundingClientRect().top + window.pageYOffset - 84;
-          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        }
-      });
-    }
   }));
 
   $('.brand')?.addEventListener('click', (e) => {
@@ -1283,43 +1273,31 @@ function bind(){
     showPage('matchday');
   });
 
+  // Cross-page shortcuts
+  $('#openSquadLabBtn')?.addEventListener('click', () => {
+    showPage('squad');
+  });
+  $('#squadGoToMatchBtn')?.addEventListener('click', () => {
+    showPage('matchday');
+  });
+  $('#squadDeployBottomBtn')?.addEventListener('click', () => {
+    showPage('matchday');
+    toast('Tactics & squad applied to matchday pitch!');
+  });
+
   window.addEventListener('hashchange', () => {
     const hash = location.hash.replace('#', '');
     if (!hash) return;
-    if (hash === 'squad') {
-      showPage('matchday');
-      const squadBtn = $('[data-section="squad"]');
-      if (squadBtn) $$('.nav-link').forEach(x => x.classList.toggle('is-active', x === squadBtn));
-      const el = $('#squad');
-      if (el) {
-        const top = el.getBoundingClientRect().top + window.pageYOffset - 84;
-        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-      }
-    } else {
-      const targetNav = $(`[data-section="${hash}"]`);
-      if (targetNav) targetNav.click();
-      else showPage(hash);
-    }
+    const targetNav = $(`[data-section="${hash}"]`);
+    if (targetNav) targetNav.click();
+    else showPage(hash);
   });
 
   const initialHash = location.hash.replace('#', '');
   if (initialHash) {
-    if (initialHash === 'squad') {
-      showPage('matchday');
-      const squadBtn = $('[data-section="squad"]');
-      if (squadBtn) $$('.nav-link').forEach(x => x.classList.toggle('is-active', x === squadBtn));
-      setTimeout(() => {
-        const el = $('#squad');
-        if (el) {
-          const top = el.getBoundingClientRect().top + window.pageYOffset - 84;
-          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-        }
-      }, 50);
-    } else {
-      const targetNav = $(`[data-section="${initialHash}"]`);
-      if (targetNav) targetNav.click();
-      else showPage(initialHash);
-    }
+    const targetNav = $(`[data-section="${initialHash}"]`);
+    if (targetNav) targetNav.click();
+    else showPage(initialHash);
   }
 
   // Touchline Shouts

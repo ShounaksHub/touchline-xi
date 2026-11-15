@@ -143,7 +143,7 @@ try {
     { section: 'dreamteam', expectedPageId: 'page-dreamteam' },
     { section: 'scouting', expectedPageId: 'page-scouting' },
     { section: 'vault', expectedPageId: 'page-vault' },
-    { section: 'squad', expectedPageId: 'page-matchday' },
+    { section: 'squad', expectedPageId: 'page-squad' },
     { section: 'matchday', expectedPageId: 'page-matchday' }
   ];
 
