@@ -1,11 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "outputDirectory": "public",
-  "redirects": [
+  "rewrites": [
     {
       "source": "/",
-      "destination": "/touchline-xi-standalone.html",
-      "permanent": false
+      "destination": "/touchline-xi-standalone.html"
     }
   ]
 }
