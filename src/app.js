@@ -163,7 +163,7 @@ function buildTeamOptionsHtml(selectedId, includeAllOption = false, filterQuery 
 
   let html = '';
   if (includeAllOption) {
-    html += '<option value="ALL">All Clubs & National Teams (5,700+ Players)</option>';
+    html += '<option value="ALL">All Clubs & National Teams (12,900+ Players)</option>';
   }
 
   let totalMatches = 0;

@@ -3,9 +3,14 @@ import assert from 'node:assert/strict';
 import {TEAMS,getTeam} from '../src/data.js';
 import {createMatch,advanceMinute,playFullMatch,matchFromFrame,swapPlayer,changeFormation,applyTactic,validateLineup,resetStartingXI,applyShout,applyTeamTalk,simulatePenaltyShootout} from '../src/engine.js';
 
-test('clubs and top 150 national teams contain unique sixteen-player rosters',()=>{
+test('clubs and top 150 national teams contain unique extended rosters with strong starting XI and deep reserves',()=>{
   assert.equal(TEAMS.length, 357);
-  for(const team of TEAMS){assert.equal(team.players.length,16);assert.equal(new Set(team.players.map(p=>p.id)).size,16);assert.equal(team.starting.length,11);assert.equal(team.substitutes.length,5)}
+  for(const team of TEAMS){
+    assert.ok(team.players.length >= 36, `Team ${team.name} has only ${team.players.length} players`);
+    assert.equal(new Set(team.players.map(p=>p.id)).size, team.players.length);
+    assert.equal(team.starting.length, 11);
+    assert.ok(team.substitutes.length >= 5);
+  }
 });
 test('same seed and inputs produce deterministic 90-minute outcomes',()=>{
   const a=playFullMatch(createMatch({seed:'FOREVER-FC'}));

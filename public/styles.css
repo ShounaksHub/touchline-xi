@@ -1535,11 +1535,20 @@ select:focus-visible {
   letter-spacing: normal
 }
 
-.squad-list,
+.squad-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .bench-list {
   display: flex;
   flex-direction: column;
-  gap: 4px
+  gap: 4px;
+  max-height: 480px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding-right: 4px;
 }
 
 .player-item {
