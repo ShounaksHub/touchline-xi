@@ -348,7 +348,7 @@ function randomizeGalacticos() {
   dreamConfig.bench[4] = { ...pickRandomTop(fwds), slotRole: 'RW' };
 
   renderDreamStudio();
-  toast('🎲 Drafted a fresh legendary squad of Galácticos!');
+  toast('Drafted a fresh legendary squad of Galácticos');
 }
 
 // ==========================================
@@ -496,7 +496,7 @@ function draftActiveFutToDreamTeam() {
 
   $('#futCardModal').classList.remove('is-open');
   renderDreamStudio();
-  toast(`🌟 ${p.name} drafted into your Dream Team XI!`);
+  toast(`${p.name} drafted into your Dream Team XI`);
 }
 
 // ==========================================
@@ -545,14 +545,14 @@ function renderTournament() {
       if (isUser) {
         actions = `
           <div class="bracket-match-actions">
-            <button class="primary-button" data-play-tournament="${m.id}" style="padding:6px 12px;font-size:11px;">⚔️ Play Matchday</button>
-            <button class="secondary-button" data-sim-tournament="${m.id}" style="padding:6px 10px;font-size:11px;">⚡ Quick Sim</button>
+            <button class="primary-button" data-play-tournament="${m.id}" style="padding:6px 12px;font-size:11px;">Play matchday</button>
+            <button class="secondary-button" data-sim-tournament="${m.id}" style="padding:6px 10px;font-size:11px;">Quick sim</button>
           </div>
         `;
       } else {
         actions = `
           <div class="bracket-match-actions">
-            <button class="secondary-button" data-sim-tournament="${m.id}" style="padding:5px 8px;font-size:10px;">⚡ Simulate</button>
+            <button class="secondary-button" data-sim-tournament="${m.id}" style="padding:5px 8px;font-size:10px;">Simulate</button>
           </div>
         `;
       }
@@ -993,7 +993,7 @@ function newTick(){
       recordTournamentResult(currentTournament, activeTournamentMatchId, match);
       activeTournamentMatchId = null;
       renderTournament();
-      toast('🏆 Tournament match completed & recorded into bracket!');
+      toast('Tournament match completed and recorded into bracket');
     } else {
       toast('Full time. Match recorded in replay vault.');
     }
@@ -1066,7 +1066,7 @@ function bind(){
       recordTournamentResult(currentTournament, activeTournamentMatchId, match);
       activeTournamentMatchId = null;
       renderTournament();
-      toast('🏆 Tournament match completed & recorded into bracket!');
+      toast('Tournament match completed and recorded into bracket');
     }
     render();
     toast('Full time simulated. Result stored in vault.');
@@ -1078,7 +1078,7 @@ function bind(){
     const randomSeed = `MATCH-${Math.floor(Math.random() * 90000 + 10000)}`;
     $('#seedInput').value = randomSeed;
     match.seed = randomSeed;
-    toast(`🎲 Seed randomized: ${randomSeed}`);
+    toast(`Seed randomized: ${randomSeed}`);
   });
 
   // Timeline scrub seeking for replays and match review
@@ -1256,7 +1256,7 @@ function bind(){
     const isNowOn = sound.toggle();
     soundBtn.classList.toggle('is-active', isNowOn);
     soundStatus.textContent = isNowOn ? 'ON' : 'OFF';
-    toast(isNowOn ? '🔊 Stadium audio enabled!' : '🔇 Audio muted.');
+      toast(isNowOn ? 'Stadium audio enabled' : 'Audio muted');
   });
 
   // Navigation Links & Multi-Page View Switcher
@@ -1455,7 +1455,7 @@ function bind(){
     $('#closeWelcomeBtn')?.addEventListener('click', closeWelcome);
     $('#startPlayingBtn')?.addEventListener('click', () => {
       closeWelcome();
-      toast('⚽ Welcome to the Touchline, Boss! Best of luck today.');
+      toast('Welcome to the Touchline. Best of luck today');
     });
     welcomeModal.addEventListener('click', (e) => {
       if (e.target === welcomeModal) closeWelcome();
