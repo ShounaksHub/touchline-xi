@@ -61,6 +61,46 @@ select:focus-visible {
   overflow-x: hidden;
 }
 
+/* =============================================
+   PAGE SWITCHER — Each nav link shows one page
+   ============================================= */
+
+/* All pages hidden by default */
+.page {
+  display: none;
+  animation: pageIn .18s ease;
+}
+
+/* Only the active page is visible */
+.page.is-active {
+  display: block;
+}
+
+@keyframes pageIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Match page: the workspace grid is full height */
+.page--matchday .workspace {
+  min-height: calc(100vh - 84px - 60px);
+}
+
+/* Page inner padding */
+.page > * {
+  padding-top: 0;
+}
+.page--matchday > .intro {
+  padding-top: 36px;
+}
+.page--tournament,
+.page--dreamteam,
+.page--scouting,
+.page--squad-lab,
+.page--vault {
+  padding: 48px 0 80px;
+}
+
 .topbar {
   height: 84px;
   display: flex;

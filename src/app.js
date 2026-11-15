@@ -316,7 +316,7 @@ function deployDreamTeamAndPlay() {
   persistPrefs();
   render();
 
-  scrollToSection($('#matchday'));
+  showPage('matchday');
   toast(`Dream Team deployed in a ${dreamConfig.formation} (${dreamConfig.style}) vs ${getTeam(dreamConfig.opponentId).name}!`);
 }
 
@@ -624,7 +624,7 @@ function playTournamentMatchday(matchId) {
   persistPrefs();
   render();
 
-  scrollToSection($('#matchday'));
+  showPage('matchday');
   toast(`🏆 Knockout Fixture Loaded: ${getTeam(target.homeId).name} vs ${getTeam(target.awayId).name}! (Extra Time & Penalties active)`);
 }
 
@@ -656,6 +656,22 @@ let vault=loadVault();
 function loadVault(){try{const v=JSON.parse(localStorage.getItem(STORAGE)||'[]');return Array.isArray(v)?v.filter(item=>item?.match?.frames && item?.id).slice(0,12):[]}catch{return []}}
 function persistPrefs(){if(replay)return;try{localStorage.setItem(PREFS,JSON.stringify({homeId:match.homeId,awayId:match.awayId,seed:match.seed,formation:match.formations.home,tactics:match.tactics.home}))}catch{}}
 function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('visible');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>el.classList.remove('visible'),2500)}
+function showPage(pageId){
+  const norm=pageId.startsWith('page-')?pageId:`page-${pageId}`;
+  const targetPage=$('#'+norm)||$('#page-matchday');
+  $$('.page').forEach(p=>p.classList.toggle('is-active',p===targetPage));
+  const activeSection=norm.replace('page-','');
+  $$('.nav-link').forEach(btn=>{
+    const isTarget=btn.dataset.section===activeSection||(activeSection==='matchday'&&btn.dataset.section==='matchday');
+    btn.classList.toggle('is-active',isTarget);
+  });
+  window.scrollTo({top:0,behavior:'instant'});
+  try{
+    if(history.replaceState){
+      history.replaceState(null,'','#'+activeSection);
+    }
+  }catch{}
+}
 function scrollToSection(elemOrId){
   const el=typeof elemOrId==='string'?$(elemOrId.startsWith('#')?elemOrId:'#'+elemOrId):elemOrId;
   if(!el)return;
@@ -1245,12 +1261,66 @@ function bind(){
     toast(isNowOn ? '🔊 Stadium audio enabled!' : '🔇 Audio muted.');
   });
 
-  // Navigation Links
-  $$('.nav-link').forEach(b=>b.addEventListener('click',()=>{
-    $$('.nav-link').forEach(x=>x.classList.toggle('is-active',x===b));
-    const section = $('#'+b.dataset.section);
-    if (section) scrollToSection(section);
+  // Navigation Links & Multi-Page View Switcher
+  $$('.nav-link').forEach(b => b.addEventListener('click', () => {
+    const section = b.dataset.section;
+    const targetPageId = b.dataset.page ? b.dataset.page.replace('page-', '') : section;
+    showPage(targetPageId);
+    $$('.nav-link').forEach(x => x.classList.toggle('is-active', x === b));
+    if (section === 'squad') {
+      requestAnimationFrame(() => {
+        const el = $('#squad');
+        if (el) {
+          const top = el.getBoundingClientRect().top + window.pageYOffset - 84;
+          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        }
+      });
+    }
   }));
+
+  $('.brand')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    showPage('matchday');
+  });
+
+  window.addEventListener('hashchange', () => {
+    const hash = location.hash.replace('#', '');
+    if (!hash) return;
+    if (hash === 'squad') {
+      showPage('matchday');
+      const squadBtn = $('[data-section="squad"]');
+      if (squadBtn) $$('.nav-link').forEach(x => x.classList.toggle('is-active', x === squadBtn));
+      const el = $('#squad');
+      if (el) {
+        const top = el.getBoundingClientRect().top + window.pageYOffset - 84;
+        window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+      }
+    } else {
+      const targetNav = $(`[data-section="${hash}"]`);
+      if (targetNav) targetNav.click();
+      else showPage(hash);
+    }
+  });
+
+  const initialHash = location.hash.replace('#', '');
+  if (initialHash) {
+    if (initialHash === 'squad') {
+      showPage('matchday');
+      const squadBtn = $('[data-section="squad"]');
+      if (squadBtn) $$('.nav-link').forEach(x => x.classList.toggle('is-active', x === squadBtn));
+      setTimeout(() => {
+        const el = $('#squad');
+        if (el) {
+          const top = el.getBoundingClientRect().top + window.pageYOffset - 84;
+          window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+        }
+      }, 50);
+    } else {
+      const targetNav = $(`[data-section="${initialHash}"]`);
+      if (targetNav) targetNav.click();
+      else showPage(initialHash);
+    }
+  }
 
   // Touchline Shouts
   $('#managerShoutsPanel')?.addEventListener('click', e => {
