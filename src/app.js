@@ -1437,8 +1437,43 @@ function bind(){
     }
   });
 
+  // Welcome & How to Play Pop-Out Modal
+  const welcomeModal = $('#welcomeModal');
+  if (welcomeModal) {
+    let hideWelcome = false;
+    try { hideWelcome = localStorage.getItem('touchline_hide_welcome') === 'true'; } catch {}
+    if (!hideWelcome) {
+      welcomeModal.classList.add('is-open');
+      welcomeModal.setAttribute('aria-hidden', 'false');
+    }
+    const closeWelcome = () => {
+      welcomeModal.classList.remove('is-open');
+      welcomeModal.setAttribute('aria-hidden', 'true');
+      if ($('#dontShowWelcomeAgain')?.checked) {
+        try { localStorage.setItem('touchline_hide_welcome', 'true'); } catch {}
+      }
+    };
+    $('#closeWelcomeBtn')?.addEventListener('click', closeWelcome);
+    $('#startPlayingBtn')?.addEventListener('click', () => {
+      closeWelcome();
+      toast('⚽ Welcome to the Touchline, Boss! Best of luck today.');
+    });
+    welcomeModal.addEventListener('click', (e) => {
+      if (e.target === welcomeModal) closeWelcome();
+    });
+    $('#helpModalBtn')?.addEventListener('click', () => {
+      welcomeModal.classList.add('is-open');
+      welcomeModal.setAttribute('aria-hidden', 'false');
+    });
+  }
+
   // Accessible keyboard shortcuts
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && welcomeModal?.classList.contains('is-open')) {
+      welcomeModal.classList.remove('is-open');
+      welcomeModal.setAttribute('aria-hidden', 'true');
+      return;
+    }
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLSelectElement) return;
     if (e.code === 'Space') {
       e.preventDefault();

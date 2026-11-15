@@ -26,6 +26,7 @@
         <button class="nav-link" data-section="vault" data-page="page-vault">Replay vault 📼</button>
       </nav>
       <div class="topbar-right">
+        <button id="helpModalBtn" class="audio-toggle-btn" aria-label="Game rules and guide" style="cursor:pointer;">📖 How to Play</button>
         <button id="soundToggleBtn" class="audio-toggle-btn" aria-label="Toggle stadium sound">🔊 Sound: <span id="soundStatusText">OFF</span></button>
         <span class="topbar-mark"><span class="signal-dot"></span> OFFLINE READY</span>
         <span class="header-rule"></span>
@@ -599,6 +600,68 @@
         <div class="fut-card-actions">
           <button class="primary-button" id="futDraftToDreamBtn">＋ Draft into Dream Team XI</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Welcome / How to Play Pop-Out Modal -->
+  <div class="welcome-modal-backdrop" id="welcomeModal" aria-hidden="true" role="dialog" aria-label="Welcome and How to Play Guide">
+    <div class="welcome-modal-sheet">
+      <div class="welcome-modal-banner">
+        <div class="welcome-badge">📋 THE GAFFER'S MATCHDAY BRIEFING</div>
+        <button class="welcome-close-btn" id="closeWelcomeBtn" aria-label="Close welcome guide">✕</button>
+        <h2>Welcome to Touchline XI, Boss! ⚽</h2>
+        <p>The deterministic, zero-dependency football manager simulator where your decisions genuinely change the pitch.</p>
+      </div>
+
+      <div class="welcome-modal-body">
+        <!-- 3 Feature Highlights Cards -->
+        <div class="welcome-cards-grid">
+          <div class="welcome-card">
+            <div class="welcome-card-icon">📋</div>
+            <h4>1. Set the System in Squad Lab</h4>
+            <p>Choose your club or nation, pick a formation (4-3-3, 3-5-2, etc.), manage stamina, and swap bench substitutes.</p>
+          </div>
+          <div class="welcome-card">
+            <div class="welcome-card-icon">🏟️</div>
+            <h4>2. Kick Off in Match Centre</h4>
+            <p>Watch 22 tactical dots battle on the 2D pitch radar with ball physics, pass trajectories, commentary, and live xG flow.</p>
+          </div>
+          <div class="welcome-card">
+            <div class="welcome-card-icon">⚡</div>
+            <h4>3. Roar Touchline Shouts</h4>
+            <p>Bark real-time orders: <em>⚡ High Press</em> for quick turnovers, <em>🧱 Park The Bus</em> to defend the lead, or <em>🔥 Demand More</em> for a stamina boost!</p>
+          </div>
+        </div>
+
+        <!-- Rules & Golden Laws Box -->
+        <div class="welcome-rules-box">
+          <h3>📜 The 4 Golden Rules of the Touchline:</h3>
+          <ul class="welcome-rules-list">
+            <li><strong>Stamina Matters:</strong> Heavy-metal pressing and fast tempo tire your players out, reducing shot composure and tackle speed. Use your 5 bench substitutes wisely!</li>
+            <li><strong>Half-Time Team Talk:</strong> At minute 45, address your squad in the locker room. Your words boost stamina, pass accuracy, or defensive grit.</li>
+            <li><strong>Knockout Drama:</strong> In the Tournament Cup, drawn matches proceed to 30 minutes of Extra Time and sudden-death penalty shootouts.</li>
+            <li><strong>Deterministic Seeds:</strong> Share your match seed with a friend — same seed + same tactics produces the exact same 90-minute outcome every time.</li>
+          </ul>
+        </div>
+
+        <!-- Hotkeys Cheatsheet -->
+        <div class="welcome-hotkeys-row">
+          <span>🎮 <b>Pro Shortcuts:</b></span>
+          <span class="hotkey-pill"><kbd>Space</kbd> Play / Pause</span>
+          <span class="hotkey-pill"><kbd>S</kbd> Step 1 min</span>
+          <span class="hotkey-pill"><kbd>F</kbd> Sim to FT</span>
+          <span class="hotkey-pill"><kbd>M</kbd> Sound Mute</span>
+          <span class="hotkey-pill"><kbd>1</kbd>/<kbd>2</kbd>/<kbd>5</kbd> Speed</span>
+        </div>
+      </div>
+
+      <div class="welcome-modal-footer">
+        <label class="welcome-remember">
+          <input type="checkbox" id="dontShowWelcomeAgain" />
+          <span>Don't show this briefing automatically on startup</span>
+        </label>
+        <button class="primary-button" id="startPlayingBtn">⚽ Take The Touchline &amp; Play! ↗</button>
       </div>
     </div>
   </div>

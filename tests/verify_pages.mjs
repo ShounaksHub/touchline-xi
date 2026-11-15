@@ -113,7 +113,39 @@ try {
     return res.result.value;
   };
 
-  // Test 1: Check initial page state
+  // Test 1: Check initial page state & Welcome Pop-out modal
+  const welcomeCheck = await evaluate(`(() => {
+    const modal = document.getElementById('welcomeModal');
+    return {
+      isOpen: modal?.classList.contains('is-open'),
+      display: modal ? getComputedStyle(modal).display : 'missing',
+      title: document.querySelector('.welcome-modal-banner h2')?.textContent
+    };
+  })()`);
+  console.log('Welcome Modal Initial State:', welcomeCheck);
+  if (!welcomeCheck.isOpen || welcomeCheck.display !== 'flex') {
+    throw new Error('Welcome Pop-out modal did not open on initial load!');
+  }
+  console.log('✓ Welcome Pop-out modal opened on startup with title:', welcomeCheck.title);
+
+  // Close welcome modal
+  await evaluate(`document.getElementById('startPlayingBtn')?.click()`);
+  await sleep(150);
+  const welcomeClosed = await evaluate(`document.getElementById('welcomeModal')?.classList.contains('is-open')`);
+  if (welcomeClosed) throw new Error('Welcome modal did not close on clicking Start button!');
+  console.log('✓ Welcome modal closed cleanly on start button click.');
+
+  // Re-open via How to Play button
+  await evaluate(`document.getElementById('helpModalBtn')?.click()`);
+  await sleep(150);
+  const welcomeReopened = await evaluate(`document.getElementById('welcomeModal')?.classList.contains('is-open')`);
+  if (!welcomeReopened) throw new Error('Welcome modal did not re-open via Help button!');
+  console.log('✓ Welcome modal re-opened via "How to Play" button in topbar.');
+
+  // Close via X button
+  await evaluate(`document.getElementById('closeWelcomeBtn')?.click()`);
+  await sleep(150);
+
   const initial = await evaluate(`(() => {
     const pages = Array.from(document.querySelectorAll('.page')).map(p => ({
       id: p.id,

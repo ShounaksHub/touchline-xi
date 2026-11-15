@@ -2655,6 +2655,220 @@ footer span {
   padding: 48px 0;
   border-top: 1px solid var(--line);
 }
+
+/* Welcome / How to Play Pop-Out Modal */
+.welcome-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(10, 24, 16, 0.78);
+  backdrop-filter: blur(6px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.welcome-modal-backdrop.is-open {
+  display: flex;
+}
+.welcome-modal-sheet {
+  position: relative;
+  background: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 760px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  animation: modalPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid #2d5a40;
+}
+@keyframes modalPopIn {
+  from { opacity: 0; transform: scale(0.96) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.welcome-modal-banner {
+  background: linear-gradient(135deg, #11291d 0%, #173827 60%, #0d2116 100%);
+  color: #fff;
+  padding: 28px 28px 22px;
+  position: relative;
+  border-bottom: 2px solid #2d5e41;
+}
+.welcome-badge {
+  display: inline-block;
+  background: #1b4731;
+  color: #52de97;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid #36825a;
+  margin-bottom: 10px;
+}
+.welcome-modal-banner h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+.welcome-modal-banner p {
+  margin: 0;
+  color: #b7cfc1;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.welcome-close-btn {
+  position: absolute;
+  top: 20px;
+  right: 22px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #e0ece4;
+  font-size: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.welcome-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  transform: scale(1.06);
+}
+.welcome-modal-body {
+  padding: 24px 28px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  background: #fdfefc;
+}
+.welcome-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+@media (max-width: 680px) {
+  .welcome-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.welcome-card {
+  background: #f4f8f1;
+  border: 1px solid #d8e4d2;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.welcome-card-icon {
+  font-size: 24px;
+}
+.welcome-card h4 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 850;
+  color: #1a3324;
+}
+.welcome-card p {
+  margin: 0;
+  font-size: 12px;
+  color: #556b5d;
+  line-height: 1.45;
+}
+.welcome-rules-box {
+  background: #edf5ea;
+  border: 1px solid #c8dcc3;
+  border-radius: 8px;
+  padding: 16px 20px;
+}
+.welcome-rules-box h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 900;
+  color: #173824;
+  letter-spacing: -0.01em;
+}
+.welcome-rules-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #3b5444;
+  line-height: 1.45;
+}
+.welcome-rules-list strong {
+  color: #143020;
+}
+.welcome-hotkeys-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #4b6353;
+  background: #f7f9f5;
+  padding: 12px 16px;
+  border-radius: 6px;
+  border: 1px solid #e1e9dd;
+}
+.hotkey-pill {
+  background: #ffffff;
+  border: 1px solid #cbd8c7;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.hotkey-pill kbd {
+  background: #edf3eb;
+  border: 1px solid #b7cbb3;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 10px;
+  margin-right: 3px;
+}
+.welcome-modal-footer {
+  padding: 16px 28px;
+  background: #f1f6ed;
+  border-top: 1px solid #d5e2cf;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+@media (max-width: 600px) {
+  .welcome-modal-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+.welcome-remember {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #556c5e;
+  cursor: pointer;
+  user-select: none;
+}
+.welcome-remember input {
+  cursor: pointer;
+  accent-color: #2b6142;
+}
 .tournament-presets-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -3159,6 +3373,7 @@ footer span {
         <button class="nav-link" data-section="vault" data-page="page-vault">Replay vault 📼</button>
       </nav>
       <div class="topbar-right">
+        <button id="helpModalBtn" class="audio-toggle-btn" aria-label="Game rules and guide" style="cursor:pointer;">📖 How to Play</button>
         <button id="soundToggleBtn" class="audio-toggle-btn" aria-label="Toggle stadium sound">🔊 Sound: <span id="soundStatusText">OFF</span></button>
         <span class="topbar-mark"><span class="signal-dot"></span> OFFLINE READY</span>
         <span class="header-rule"></span>
@@ -3732,6 +3947,68 @@ footer span {
         <div class="fut-card-actions">
           <button class="primary-button" id="futDraftToDreamBtn">＋ Draft into Dream Team XI</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Welcome / How to Play Pop-Out Modal -->
+  <div class="welcome-modal-backdrop" id="welcomeModal" aria-hidden="true" role="dialog" aria-label="Welcome and How to Play Guide">
+    <div class="welcome-modal-sheet">
+      <div class="welcome-modal-banner">
+        <div class="welcome-badge">📋 THE GAFFER'S MATCHDAY BRIEFING</div>
+        <button class="welcome-close-btn" id="closeWelcomeBtn" aria-label="Close welcome guide">✕</button>
+        <h2>Welcome to Touchline XI, Boss! ⚽</h2>
+        <p>The deterministic, zero-dependency football manager simulator where your decisions genuinely change the pitch.</p>
+      </div>
+
+      <div class="welcome-modal-body">
+        <!-- 3 Feature Highlights Cards -->
+        <div class="welcome-cards-grid">
+          <div class="welcome-card">
+            <div class="welcome-card-icon">📋</div>
+            <h4>1. Set the System in Squad Lab</h4>
+            <p>Choose your club or nation, pick a formation (4-3-3, 3-5-2, etc.), manage stamina, and swap bench substitutes.</p>
+          </div>
+          <div class="welcome-card">
+            <div class="welcome-card-icon">🏟️</div>
+            <h4>2. Kick Off in Match Centre</h4>
+            <p>Watch 22 tactical dots battle on the 2D pitch radar with ball physics, pass trajectories, commentary, and live xG flow.</p>
+          </div>
+          <div class="welcome-card">
+            <div class="welcome-card-icon">⚡</div>
+            <h4>3. Roar Touchline Shouts</h4>
+            <p>Bark real-time orders: <em>⚡ High Press</em> for quick turnovers, <em>🧱 Park The Bus</em> to defend the lead, or <em>🔥 Demand More</em> for a stamina boost!</p>
+          </div>
+        </div>
+
+        <!-- Rules & Golden Laws Box -->
+        <div class="welcome-rules-box">
+          <h3>📜 The 4 Golden Rules of the Touchline:</h3>
+          <ul class="welcome-rules-list">
+            <li><strong>Stamina Matters:</strong> Heavy-metal pressing and fast tempo tire your players out, reducing shot composure and tackle speed. Use your 5 bench substitutes wisely!</li>
+            <li><strong>Half-Time Team Talk:</strong> At minute 45, address your squad in the locker room. Your words boost stamina, pass accuracy, or defensive grit.</li>
+            <li><strong>Knockout Drama:</strong> In the Tournament Cup, drawn matches proceed to 30 minutes of Extra Time and sudden-death penalty shootouts.</li>
+            <li><strong>Deterministic Seeds:</strong> Share your match seed with a friend — same seed + same tactics produces the exact same 90-minute outcome every time.</li>
+          </ul>
+        </div>
+
+        <!-- Hotkeys Cheatsheet -->
+        <div class="welcome-hotkeys-row">
+          <span>🎮 <b>Pro Shortcuts:</b></span>
+          <span class="hotkey-pill"><kbd>Space</kbd> Play / Pause</span>
+          <span class="hotkey-pill"><kbd>S</kbd> Step 1 min</span>
+          <span class="hotkey-pill"><kbd>F</kbd> Sim to FT</span>
+          <span class="hotkey-pill"><kbd>M</kbd> Sound Mute</span>
+          <span class="hotkey-pill"><kbd>1</kbd>/<kbd>2</kbd>/<kbd>5</kbd> Speed</span>
+        </div>
+      </div>
+
+      <div class="welcome-modal-footer">
+        <label class="welcome-remember">
+          <input type="checkbox" id="dontShowWelcomeAgain" />
+          <span>Don't show this briefing automatically on startup</span>
+        </label>
+        <button class="primary-button" id="startPlayingBtn">⚽ Take The Touchline &amp; Play! ↗</button>
       </div>
     </div>
   </div>
@@ -11234,8 +11511,43 @@ function bind(){
     }
   });
 
+  // Welcome & How to Play Pop-Out Modal
+  const welcomeModal = $('#welcomeModal');
+  if (welcomeModal) {
+    let hideWelcome = false;
+    try { hideWelcome = localStorage.getItem('touchline_hide_welcome') === 'true'; } catch {}
+    if (!hideWelcome) {
+      welcomeModal.classList.add('is-open');
+      welcomeModal.setAttribute('aria-hidden', 'false');
+    }
+    const closeWelcome = () => {
+      welcomeModal.classList.remove('is-open');
+      welcomeModal.setAttribute('aria-hidden', 'true');
+      if ($('#dontShowWelcomeAgain')?.checked) {
+        try { localStorage.setItem('touchline_hide_welcome', 'true'); } catch {}
+      }
+    };
+    $('#closeWelcomeBtn')?.addEventListener('click', closeWelcome);
+    $('#startPlayingBtn')?.addEventListener('click', () => {
+      closeWelcome();
+      toast('⚽ Welcome to the Touchline, Boss! Best of luck today.');
+    });
+    welcomeModal.addEventListener('click', (e) => {
+      if (e.target === welcomeModal) closeWelcome();
+    });
+    $('#helpModalBtn')?.addEventListener('click', () => {
+      welcomeModal.classList.add('is-open');
+      welcomeModal.setAttribute('aria-hidden', 'false');
+    });
+  }
+
   // Accessible keyboard shortcuts
   document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && welcomeModal?.classList.contains('is-open')) {
+      welcomeModal.classList.remove('is-open');
+      welcomeModal.setAttribute('aria-hidden', 'true');
+      return;
+    }
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLSelectElement) return;
     if (e.code === 'Space') {
       e.preventDefault();
