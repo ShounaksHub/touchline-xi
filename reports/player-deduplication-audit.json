@@ -1,0 +1,141 @@
+{
+  "total_player_records_before": 19904,
+  "intra_squad_duplicates_removed": 968,
+  "total_player_records_after": 18936,
+  "total_unique_footballers": 16396,
+  "verified_real_footballers": 11142,
+  "generated_reserve_footballers": 5254,
+  "squads_with_intra_duplicates": 311,
+  "squads_with_harmonized_stats": 261,
+  "records_updated_to_peak_stats": 2540,
+  "flagged_for_manual_review_count": 266,
+  "flagged_samples": [
+    {
+      "name": "Ederson",
+      "nationality": "Brazil",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 3,
+      "instances": [
+        "Manchester City (GK, Brazil, 89 OVR, gen=False)",
+        "Atalanta BC (CDM, Brazil, 89 OVR, gen=False)",
+        "Brazil (GK, Brazil, 89 OVR, gen=False)"
+      ]
+    },
+    {
+      "name": "Julian Schroder",
+      "nationality": "Germany",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 2,
+      "instances": [
+        "FC Bayern München (GK, Germany, 86 OVR, gen=False)",
+        "Germany (CAM, Germany, 86 OVR, gen=False)"
+      ]
+    },
+    {
+      "name": "Lukas Schafer",
+      "nationality": "Germany",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 3,
+      "instances": [
+        "FC Bayern München (GK, Germany, 89 OVR, gen=False)",
+        "Eintracht Frankfurt (CAM, Germany, 89 OVR, gen=False)",
+        "Germany (CB, Germany, 89 OVR, gen=False)"
+      ]
+    },
+    {
+      "name": "Maximilian Bauer",
+      "nationality": "Germany",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 3,
+      "instances": [
+        "FC Bayern München (CDM, Germany, 85 OVR, gen=False)",
+        "Eintracht Frankfurt (CB, Germany, 85 OVR, gen=False)",
+        "SC Freiburg (GK, Germany, 85 OVR, gen=False)"
+      ]
+    },
+    {
+      "name": "Felix Richter",
+      "nationality": "Germany",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 2,
+      "instances": [
+        "FC Bayern München (LB, Germany, 84 OVR, gen=False)",
+        "SV Werder Bremen (GK, Germany, 84 OVR, gen=False)"
+      ]
+    },
+    {
+      "name": "Finn Richter",
+      "nationality": "Germany",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 3,
+      "instances": [
+        "FC Bayern München (CB, Germany, 83 OVR, gen=False)",
+        "Eintracht Frankfurt (GK, Germany, 83 OVR, gen=False)",
+        "SC Freiburg (CB, Germany, 83 OVR, gen=False)"
+      ]
+    },
+    {
+      "name": "Philipp Zimmermann",
+      "nationality": "Germany",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 2,
+      "instances": [
+        "FC Bayern München (CDM, Germany, 90 OVR, gen=True)",
+        "Germany (GK, Germany, 90 OVR, gen=True)"
+      ]
+    },
+    {
+      "name": "Gabriele De Luca",
+      "nationality": "Italy",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 3,
+      "instances": [
+        "Juventus (CAM, Italy, 84 OVR, gen=False)",
+        "SS Lazio (CM, Italy, 84 OVR, gen=False)",
+        "Genoa CFC (GK, Italy, 84 OVR, gen=False)"
+      ]
+    },
+    {
+      "name": "Francesco Rizzo",
+      "nationality": "Italy",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 3,
+      "instances": [
+        "Juventus (CB, Italy, 87 OVR, gen=False)",
+        "SS Lazio (GK, Italy, 87 OVR, gen=True)",
+        "Italy (LW, Italy, 87 OVR, gen=True)"
+      ]
+    },
+    {
+      "name": "Lorenzo Bruno",
+      "nationality": "Italy",
+      "reasons": [
+        "GK vs Outfield positional collision within same nationality"
+      ],
+      "count": 3,
+      "instances": [
+        "Juventus (GK, Italy, 86 OVR, gen=False)",
+        "SS Lazio (CB, Italy, 86 OVR, gen=False)",
+        "Italy (LB, Italy, 86 OVR, gen=False)"
+      ]
+    }
+  ]
+}

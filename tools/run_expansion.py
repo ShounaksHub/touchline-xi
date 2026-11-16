@@ -101,7 +101,7 @@ for club in clubs:
             p_copy.setdefault('rosterEra', 'Modern')
             new_players.append(p_copy)
 
-        # Add 20 reserve players with explicit generated provenance!
+        # Add 20 reserve players with explicit generated provenance and intra-squad deduplication!
         target_reserves = 20
         start_idx = len(new_players)
         country_guess = club.get('city', '').split(',')[-1].strip() if ',' in club.get('city', '') else club.get('name', '')
@@ -111,12 +111,24 @@ for club in clubs:
         avg_ovr = sum(p.get('ovr', 75) for p in existing_players[:11]) / max(1, min(11, len(existing_players)))
         reserve_base_ovr = clamp(round(avg_ovr - 4), 62, 88)
 
+        existing_names = set(p['name'].lower() for p in new_players)
         for r_i in range(target_reserves):
             idx = start_idx + r_i
             h = hash_str(f"{club_id}_reserve_{idx}")
-            fn = name_pool['first'][(h >> 2) % len(name_pool['first'])]
-            ln = name_pool['last'][(h >> 5) % len(name_pool['last'])]
-            name = f"{fn} {ln}"
+            fn_idx = (h >> 2) % len(name_pool['first'])
+            ln_idx = (h >> 5) % len(name_pool['last'])
+            name = f"{name_pool['first'][fn_idx]} {name_pool['last'][ln_idx]}"
+            
+            # Prevent intra-squad duplicates
+            attempt = 0
+            while name.lower() in existing_names and attempt < 30:
+                attempt += 1
+                fn_idx = (fn_idx + 1) % len(name_pool['first'])
+                if attempt % 3 == 0:
+                    ln_idx = (ln_idx + 1) % len(name_pool['last'])
+                name = f"{name_pool['first'][fn_idx]} {name_pool['last'][ln_idx]}"
+                
+            existing_names.add(name.lower())
             role = RESERVE_POSITIONS[r_i % len(RESERVE_POSITIONS)]
             nat = existing_players[0].get('nat', 'International') if existing_players else 'International'
             jitter = (h % 7) - 3
@@ -176,7 +188,7 @@ for team in national_teams:
             p_copy.setdefault('rosterEra', 'Modern')
             new_players.append(p_copy)
 
-        # Add 20 reserve players!
+        # Add 20 reserve players with intra-squad duplicate prevention!
         target_reserves = 20
         start_idx = len(new_players)
         name_pool = get_country_names(team_name)
@@ -184,12 +196,24 @@ for team in national_teams:
         avg_ovr = sum(p.get('ovr', 75) for p in existing_players[:11]) / max(1, min(11, len(existing_players)))
         reserve_base_ovr = clamp(round(avg_ovr - 4), 60, 88)
 
+        existing_names = set(p['name'].lower() for p in new_players)
         for r_i in range(target_reserves):
             idx = start_idx + r_i
             h = hash_str(f"{team_id}_reserve_{idx}")
-            fn = name_pool['first'][(h >> 2) % len(name_pool['first'])]
-            ln = name_pool['last'][(h >> 5) % len(name_pool['last'])]
-            name = f"{fn} {ln}"
+            fn_idx = (h >> 2) % len(name_pool['first'])
+            ln_idx = (h >> 5) % len(name_pool['last'])
+            name = f"{name_pool['first'][fn_idx]} {name_pool['last'][ln_idx]}"
+            
+            # Prevent intra-squad duplicates
+            attempt = 0
+            while name.lower() in existing_names and attempt < 30:
+                attempt += 1
+                fn_idx = (fn_idx + 1) % len(name_pool['first'])
+                if attempt % 3 == 0:
+                    ln_idx = (ln_idx + 1) % len(name_pool['last'])
+                name = f"{name_pool['first'][fn_idx]} {name_pool['last'][ln_idx]}"
+                
+            existing_names.add(name.lower())
             role = RESERVE_POSITIONS[r_i % len(RESERVE_POSITIONS)]
             nat = team_name
             jitter = (h % 7) - 3

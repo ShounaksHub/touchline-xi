@@ -100,35 +100,69 @@ function updatePresentationModeUi() {
   }
 }
 
-// Master player pool indexing all 2,750+ players across clubs, national teams & peak legends
+// Master player pool indexing all unique footballers deduplicated to peak canonical rating
 const ALL_PLAYERS_POOL = (() => {
-  const list = [];
-  const seen = new Set();
+  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, ' ').replace(/\s+/g, ' ').trim();
+  const pool = new Map();
   for (const team of TEAMS) {
     for (const p of (team.players || [])) {
-      if (!seen.has(p.id)) {
-        seen.add(p.id);
-        list.push({
+      const k = norm(p.name);
+      const playerOvr = p.ovr || p.overall || 85;
+      if (!pool.has(k)) {
+        pool.set(k, {
           id: p.id,
           name: p.name,
           role: p.role,
           nat: p.nat || 'International',
           club: p.club || team.name,
           teamName: team.name,
-          ovr: p.ovr || p.overall || 85,
-          overall: p.ovr || p.overall || 85,
+          ovr: playerOvr,
+          overall: playerOvr,
           pace: p.pace || 80,
           shooting: p.shooting || 75,
           passing: p.passing || 80,
           defending: p.defending || 70,
           physical: p.physical || 75,
           keeping: p.keeping || (p.role === 'GK' ? 85 : 5),
-          card: p.card || 'Gold Rare'
+          card: p.card || 'Gold Rare',
+          playerType: p.playerType,
+          verificationStatus: p.verificationStatus,
+          isGenerated: p.isGenerated,
+          rosterEra: p.rosterEra,
+          appearances: [team.name]
         });
+      } else {
+        const existing = pool.get(k);
+        if (!existing.appearances.includes(team.name)) existing.appearances.push(team.name);
+        if (playerOvr > existing.ovr) {
+          const apps = existing.appearances;
+          Object.assign(existing, {
+            id: p.id,
+            name: p.name,
+            role: p.role,
+            nat: p.nat || existing.nat,
+            club: p.club || team.name,
+            teamName: team.name,
+            ovr: playerOvr,
+            overall: playerOvr,
+            pace: p.pace || existing.pace,
+            shooting: p.shooting || existing.shooting,
+            passing: p.passing || existing.passing,
+            defending: p.defending || existing.defending,
+            physical: p.physical || existing.physical,
+            keeping: p.keeping || existing.keeping,
+            card: p.card || existing.card,
+            playerType: p.playerType || existing.playerType,
+            verificationStatus: p.verificationStatus || existing.verificationStatus,
+            isGenerated: p.isGenerated !== undefined ? p.isGenerated : existing.isGenerated,
+            rosterEra: p.rosterEra || existing.rosterEra,
+            appearances: apps
+          });
+        }
       }
     }
   }
-  return list.sort((a,b) => b.ovr - a.ovr);
+  return Array.from(pool.values()).sort((a,b) => b.ovr - a.ovr);
 })();
 
 function getRoleCategory(role) {
