@@ -57,7 +57,7 @@ def make_card_title(ovr, name, role):
     if ovr >= 80: return f"Gold Regular ({ovr} OVR)"
     return f"Silver Regular ({ovr} OVR)"
 
-def build_player_dict(team_id, idx, name, role, nat, club_name, ovr, num):
+def build_player_dict(team_id, idx, name, role, nat, club_name, ovr, num, player_type='verified_active', verification_status='verified', is_generated=False, roster_era='Modern'):
     h = hash_str(f"{team_id}_{name}_{idx}_{role}")
     base_stats = ROLE_PROFILES.get(role, ROLE_PROFILES['CM'])
     stat_mod = (ovr - 78) * 0.75
@@ -84,7 +84,11 @@ def build_player_dict(team_id, idx, name, role, nat, club_name, ovr, num):
         'defending': defending,
         'physical': physical,
         'keeping': keeping,
-        'card': make_card_title(ovr, name, role)
+        'card': make_card_title(ovr, name, role),
+        'playerType': player_type,
+        'verificationStatus': verification_status,
+        'isGenerated': is_generated,
+        'rosterEra': roster_era
     }
 
 def select_strongest_xi(players):

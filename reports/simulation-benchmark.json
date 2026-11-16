@@ -1,0 +1,27 @@
+{
+  "sampleSize": 500,
+  "elapsedMs": 3032,
+  "avgExecutionMsPerMatch": 6.06,
+  "metrics": {
+    "avgGoalsPerMatch": 3.11,
+    "avgShotsPerMatch": 21.9,
+    "avgOnTargetPerMatch": 9,
+    "avgCornersPerMatch": 5.92,
+    "avgYellowsPerMatch": 1.31,
+    "avgRedsPerMatch": 0.15,
+    "avgFoulsPerMatch": 6.84,
+    "avgXgPerMatch": 3.23,
+    "homeWinPct": 45,
+    "drawPct": 24.4,
+    "awayWinPct": 30.6,
+    "cleanSheetPct": 40.2
+  },
+  "referenceCorridors": {
+    "goalsExpected": "2.60 - 3.40 (Realistic top-flight league / UEFA Champions League average)",
+    "shotsExpected": "18.0 - 24.0 shots per match",
+    "onTargetExpected": "7.5 - 11.0 on-target shots per match",
+    "homeWinExpected": "38% - 46%",
+    "drawExpected": "22% - 30%",
+    "awayWinExpected": "28% - 35%"
+  }
+}

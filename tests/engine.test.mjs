@@ -59,6 +59,36 @@ test('goalkeeper swaps can only be goalkeeper for goalkeeper',()=>{
   assert.equal(swapPlayer(m,team.starting[0],team.substitutes[0]),true);
 });
 
+test('validateLineup strictly enforces goalkeeper at index 0 and 11 unique players', () => {
+  const team = getTeam('club_real_madrid');
+  const validXI = [...team.starting];
+  assert.equal(validateLineup('club_real_madrid', validXI), true);
+
+  // Less than 11 players
+  assert.equal(validateLineup('club_real_madrid', validXI.slice(0, 10)), false);
+
+  // Duplicate player
+  const dupXI = [...validXI];
+  dupXI[1] = dupXI[0];
+  assert.equal(validateLineup('club_real_madrid', dupXI), false);
+
+  // Outfield player in GK slot 0
+  const swappedGkXI = [...validXI];
+  swappedGkXI[0] = validXI[9]; // Striker at index 0
+  swappedGkXI[9] = validXI[0]; // GK at index 9
+  assert.equal(validateLineup('club_real_madrid', swappedGkXI), false, 'Striker at index 0 must fail validation');
+
+  // Two GKs in starting lineup (both index 0 and index 5)
+  const twoGkXI = [...validXI];
+  twoGkXI[5] = team.substitutes[0]; // backup GK
+  assert.equal(validateLineup('club_real_madrid', twoGkXI), false, 'Two GKs in starting XI must fail validation');
+
+  // Player not in club roster
+  const foreignPlayerXI = [...validXI];
+  foreignPlayerXI[10] = 'non_existent_player_xyz';
+  assert.equal(validateLineup('club_real_madrid', foreignPlayerXI), false, 'Foreign or unknown player must fail validation');
+});
+
 test('current replay frame captures substitutions and tactical changes',()=>{
   const m=createMatch();advanceMinute(m);
   changeFormation(m,'4-4-2');applyTactic(m,'pressing',91);

@@ -1,6 +1,6 @@
 # Touchline XI — Master Technical Brain & Architecture Specification
 
-> **Touchline XI** is an offline-first, deterministic football simulation studio and squad laboratory built with zero runtime npm dependencies. It pairs a calibrated 2D pitch radar simulation engine with deep tactical management, a knockout tournament bracket system, a fantasy Galácticos studio, an archive replay vault, and a massive 12,900+ real player and historic legend database across 357 global clubs and national teams.
+> **Touchline XI** is an offline-first, deterministic football simulation studio and squad laboratory built with zero runtime npm dependencies. It pairs a calibrated 2D pitch radar simulation engine with deep tactical management, a knockout tournament bracket system, a fantasy Galácticos studio, an archive replay vault, and an expansive 19,900+ player database with verified real stars, historic legends, and club youth reserves across 357 global clubs and national teams.
 
 ---
 
@@ -11,12 +11,15 @@
 - **License**: MIT
 - **Sibling Project**: [ShounaksHub/Cricket-Game](https://github.com/ShounaksHub/Cricket-Game)
 - **Zero Runtime Dependencies**: 100% vanilla JavaScript (ES modules), CSS3, HTML5 Canvas, Web Audio API, and SVG. No frameworks, no external libraries, no CDNs required.
-- **Offline-First Delivery**: Bundled into a self-contained single-file HTML executable (`touchline-xi-standalone.html`, ~5.3 MB) containing embedded CSS, vector heraldry, data arrays, and procedural audio.
-- **Calibrated Football Science**: Powered by Mulberry32 deterministic PRNG. Tested across a massive 500-match Monte Carlo simulation benchmark to guarantee real-world top-flight statistical parity (2.9–3.1 goals/game, 40% home win bias, realistic card and xG distribution).
+- **Offline-First Delivery**: Bundled into a self-contained single-file HTML executable (`touchline-xi-standalone.html`) containing embedded CSS, vector heraldry, data arrays, and procedural audio.
+- **Data Provenance & Transparency**: Explicit data classification for all footballers (`playerType`, `verificationStatus`, `isGenerated`, `rosterEra`). Distinguishes verified real superstars and historic legends from generated reserve players.
+- **State Isolation**: Safe custom team registry (`registerCustomTeam`) that prevents Dream Team fixtures from ever mutating the canonical `TEAMS` array.
+- **Lineup Integrity**: Strict `validateLineup` enforcing 11 unique players, starting goalkeeper at index 0, and non-GK outfielders.
+- **Calibrated Football Science**: Powered by Mulberry32 deterministic PRNG. Tested across a massive 500-match Monte Carlo simulation benchmark to guarantee real-world top-flight statistical parity (3.11 goals/match, 45% home win bias, 21.9 shots, realistic disciplinary and xG distribution).
 
 ---
 
-## 2. Global Database Architecture (357 Teams · 12,944 Players)
+## 2. Global Database Architecture (357 Teams · 19,904 Players)
 
 Touchline XI houses one of the most comprehensive open-source football databases ever assembled in a browser simulator:
 
@@ -28,11 +31,12 @@ Touchline XI houses one of the most comprehensive open-source football databases
 5. **African Clubs (CAF)**: 20 clubs spanning Egypt, Morocco, South Africa, Nigeria, Tunisia, Ghana, etc.
 6. **Senior FIFA National Teams**: Top 150 nations ranked by official FIFA points, complete with continental representation.
 
-### B. Squad Depth & 20+ Reserve System
-- **Every squad** in the game features **36 to 50 players**:
-  - **Starting XI (11 players)**: Highest-rated positional specialist eleven matching the tactical shape.
+### B. Squad Depth, Provenance & 20+ Reserve System
+- **Every squad** in the game features **36 to 56 players**:
+  - **Starting XI (11 players)**: Highest-rated positional specialist eleven matching the tactical shape, with starting goalkeeper strictly at `starting[0]`.
   - **Substitutes (5–7 primary bench)**: Includes a backup goalkeeper (always `substitutes[0]`) and top tactical impact substitutes.
   - **Reserves (20–35 players)**: Deep reserves and historic icons accessible for rotation and substitutions in Squad Lab.
+  - **Provenance Metadata**: Every player record embeds `playerType` (`verified_legend`, `verified_active`, or `generated_reserve`), `verificationStatus` (`verified` vs `generated`), `isGenerated` (`boolean`), and `rosterEra` (`Historic Legend`, `Modern`, or `Club Reserve`).
 - **FC Barcelona Super-Roster (50 Players)**:
   - Starting XI: Ter Stegen (90), Dani Alves (92), Puyol (93), Ronald Koeman (92), Jordi Alba (89), Busquets (93), Iniesta (94), Xavi (94), Ronaldinho (95), Messi (99), Cruyff (96).
   - Bench & Reserves: Maradona (97), Ronaldo Nazário (96), Romário (94), Luis Suárez (94), Neymar Jr (93), Henry (93), Rivaldo (93), Eto'o (92), Stoichkov (92), Laudrup (92), Piqué (91), Guardiola (91), Villa (91), Lewandowski (91), Deco (90), Lineker (90), Yaya Touré (90), Lamine Yamal (90), Pedri (90), Raphinha (89), Valdés (89), Zubizarreta (89), Mascherano (89), Kluivert (89), De Jong (88), Olmo (88), Koundé (88), Araújo (88), Gavi (87), Abidal (87), Cubarsí (86), Szczęsny (86), Christensen (85), Balde (85), Iñigo Martínez (85), Ferran Torres (84), Casadó (83), Fermín López (83), Peña (81).

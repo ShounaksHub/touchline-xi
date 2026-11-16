@@ -86,14 +86,22 @@ for club in clubs:
         curated = CURATED_CLUBS[club_id]
         print(f"Applying curated legend roster to {club_name} ({len(curated)} players)")
         for idx, (pname, role, nat, ovr, num) in enumerate(curated):
-            p = build_player_dict(club_id, idx, pname, role, nat, club_name, ovr, num)
+            ptype = 'verified_legend' if ovr >= 92 else 'verified_active'
+            pera = 'Historic Legend' if ovr >= 92 else 'Modern'
+            p = build_player_dict(club_id, idx, pname, role, nat, club_name, ovr, num,
+                                  player_type=ptype, verification_status='verified', is_generated=False, roster_era=pera)
             new_players.append(p)
     else:
-        # Keep existing 16 players
+        # Keep existing verified players
         for p in existing_players:
-            new_players.append(dict(p))
+            p_copy = dict(p)
+            p_copy.setdefault('playerType', 'verified_active')
+            p_copy.setdefault('verificationStatus', 'verified')
+            p_copy.setdefault('isGenerated', False)
+            p_copy.setdefault('rosterEra', 'Modern')
+            new_players.append(p_copy)
 
-        # Add 20 reserve players!
+        # Add 20 reserve players with explicit generated provenance!
         target_reserves = 20
         start_idx = len(new_players)
         country_guess = club.get('city', '').split(',')[-1].strip() if ',' in club.get('city', '') else club.get('name', '')
@@ -115,7 +123,8 @@ for club in clubs:
             ovr = clamp(reserve_base_ovr + jitter, 60, 91)
             num = 20 + r_i
 
-            p = build_player_dict(club_id, idx, name, role, nat, club_name, ovr, num)
+            p = build_player_dict(club_id, idx, name, role, nat, club_name, ovr, num,
+                                  player_type='generated_reserve', verification_status='generated', is_generated=True, roster_era='Club Reserve')
             new_players.append(p)
 
     # Now select strongest XI and order squad
@@ -152,12 +161,20 @@ for team in national_teams:
         curated = CURATED_NATIONS[team_id]
         print(f"Applying curated legend roster to {team_name} ({len(curated)} players)")
         for idx, (pname, role, nat, ovr, num) in enumerate(curated):
-            p = build_player_dict(team_p_prefix, idx, pname, role, nat, team_name, ovr, num)
+            ptype = 'verified_legend' if ovr >= 92 else 'verified_active'
+            pera = 'Historic Legend' if ovr >= 92 else 'Modern'
+            p = build_player_dict(team_p_prefix, idx, pname, role, nat, team_name, ovr, num,
+                                  player_type=ptype, verification_status='verified', is_generated=False, roster_era=pera)
             new_players.append(p)
     else:
         # Keep existing 16 players
         for p in existing_players:
-            new_players.append(dict(p))
+            p_copy = dict(p)
+            p_copy.setdefault('playerType', 'verified_active')
+            p_copy.setdefault('verificationStatus', 'verified')
+            p_copy.setdefault('isGenerated', False)
+            p_copy.setdefault('rosterEra', 'Modern')
+            new_players.append(p_copy)
 
         # Add 20 reserve players!
         target_reserves = 20
@@ -179,7 +196,8 @@ for team in national_teams:
             ovr = clamp(reserve_base_ovr + jitter, 58, 90)
             num = 20 + r_i
 
-            p = build_player_dict(team_p_prefix, idx, name, role, nat, team_name, ovr, num)
+            p = build_player_dict(team_p_prefix, idx, name, role, nat, team_name, ovr, num,
+                                  player_type='generated_reserve', verification_status='generated', is_generated=True, roster_era='National Pool')
             new_players.append(p)
 
     # Select strongest XI

@@ -82,3 +82,60 @@ test('E2E Interaction: Cross-team getPlayer searches all 132 teams without crash
   const invalid = getPlayer(null, 'non_existent_player_id_9999');
   assert.equal(invalid, null, 'Non-existent player safely returns null');
 });
+
+test('E2E Data Integrity: Custom Dream Team matches do NOT mutate canonical TEAMS array', () => {
+  const initialTeamsCount = TEAMS.length;
+  const initialBarca = JSON.stringify(getTeam('club_barcelona'));
+
+  const customTeamA = {
+    id: 'isolated_custom_a',
+    name: 'Custom Team Alpha',
+    short: 'CTA',
+    isCustom: true,
+    players: [
+      { id: 'p_gk_a', name: 'Alpha GK', role: 'GK', ovr: 95, keeping: 95, pace: 60, shooting: 20, passing: 70, defending: 40, physical: 80 },
+      ...Array.from({length: 10}, (_, i) => ({
+        id: `p_out_a_${i}`, name: `Alpha Outfielder ${i}`, role: 'CM', ovr: 90, keeping: 5, pace: 80, shooting: 80, passing: 85, defending: 75, physical: 80
+      }))
+    ],
+    starting: ['p_gk_a', ...Array.from({length: 10}, (_, i) => `p_out_a_${i}`)],
+    substitutes: []
+  };
+
+  const matchA = createMatch({
+    customHomeTeam: customTeamA,
+    awayId: 'club_barcelona',
+    seed: 'CUSTOM-ISOLATION-1'
+  });
+
+  // Canonical TEAMS must remain untouched!
+  assert.equal(TEAMS.length, initialTeamsCount, 'TEAMS array length must not increase when custom team is used');
+  assert.equal(JSON.stringify(getTeam('club_barcelona')), initialBarca, 'Existing team data was not corrupted');
+  assert.equal(getTeam('isolated_custom_a').name, 'Custom Team Alpha', 'Custom team is accessible via getTeam without polluting TEAMS');
+
+  // Sequential custom team with same pattern
+  const customTeamB = {
+    id: 'isolated_custom_b',
+    name: 'Custom Team Beta',
+    short: 'CTB',
+    isCustom: true,
+    players: [
+      { id: 'p_gk_b', name: 'Beta GK', role: 'GK', ovr: 92, keeping: 92, pace: 58, shooting: 20, passing: 70, defending: 40, physical: 80 },
+      ...Array.from({length: 10}, (_, i) => ({
+        id: `p_out_b_${i}`, name: `Beta Outfielder ${i}`, role: 'ST', ovr: 91, keeping: 5, pace: 85, shooting: 88, passing: 75, defending: 45, physical: 80
+      }))
+    ],
+    starting: ['p_gk_b', ...Array.from({length: 10}, (_, i) => `p_out_b_${i}`)],
+    substitutes: []
+  };
+
+  const matchB = createMatch({
+    customHomeTeam: customTeamB,
+    awayId: 'club_real_madrid',
+    seed: 'CUSTOM-ISOLATION-2'
+  });
+
+  assert.equal(TEAMS.length, initialTeamsCount, 'TEAMS array length remains strictly constant');
+  assert.equal(getTeam('isolated_custom_b').name, 'Custom Team Beta');
+  assert.equal(getTeam('isolated_custom_a').name, 'Custom Team Alpha');
+});

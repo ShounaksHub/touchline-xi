@@ -511,6 +511,13 @@
 
           <div class="scouting-toolbar">
             <input type="text" id="scoutSearchInput" placeholder="Search by player name, club, or nationality..." />
+            <select id="scoutProvenanceFilter">
+              <option value="ALL">All Provenance</option>
+              <option value="verified">Verified Real Stars &amp; Legends</option>
+              <option value="legend">Historic Legends &amp; Icons</option>
+              <option value="active">Active Verified Footballers</option>
+              <option value="generated">Club Reserves &amp; Youth</option>
+            </select>
             <select id="scoutRoleFilter">
               <option value="ALL">All Positions</option>
               <option value="GK">Goalkeepers</option>
@@ -623,6 +630,7 @@
 
         <div class="fut-card-player-name" id="futPlayerName">LIONEL MESSI</div>
         <div class="fut-card-badge-pill" id="futCardRarity">99 TOTY / Futties Peak</div>
+        <div class="fut-card-badge-pill" id="futCardProvenance" style="margin-top:-10px;margin-bottom:14px;font-size:9px;letter-spacing:0.05em;color:#9cb1a4;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:2px 8px;display:inline-block;">PROVENANCE: VERIFIED</div>
 
         <div class="fut-card-attributes-grid" id="futCardAttrsGrid">
           <div class="fut-attr-row"><span class="fut-attr-label">PAC (Pace)</span><b class="fut-attr-val" id="futPac">98</b></div>

@@ -117,11 +117,22 @@ export const PLAY_STYLES = {
 };
 
 export const DEFAULT_TACTICS = {pressing: 52, tempo: 55, width: 58, mentality: 'Balanced'};
-export const getTeam = id => TEAMS.find(t => t.id === id) ?? TEAMS[0];
+const CUSTOM_TEAMS_MAP = new Map();
+export const registerCustomTeam = (team) => {
+  if (team && team.id) {
+    CUSTOM_TEAMS_MAP.set(team.id, team);
+  }
+};
+export const getTeam = id => CUSTOM_TEAMS_MAP.get(id) ?? TEAMS.find(t => t.id === id) ?? TEAMS[0];
 export const getPlayer = (team, id) => {
   if (team && team.players) {
     const found = team.players.find(p => p.id === id);
     if (found) return found;
+  }
+  // Check custom teams map first
+  for (const ct of CUSTOM_TEAMS_MAP.values()) {
+    const p = ct.players?.find(x => x.id === id);
+    if (p) return p;
   }
   // Fallback search across all teams (especially for custom dream team player references)
   for (const t of TEAMS) {

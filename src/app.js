@@ -501,12 +501,19 @@ function renderScoutingHub() {
   }
 
   const query = $('#scoutSearchInput').value.trim().toLowerCase();
+  const provFilter = $('#scoutProvenanceFilter')?.value || 'ALL';
   const roleCat = $('#scoutRoleFilter').value;
   const tier = $('#scoutTierFilter').value;
   const teamVal = $('#scoutTeamFilter').value;
   const sortKey = $('#scoutSortFilter').value;
 
   let pool = ALL_PLAYERS_POOL.filter(p => {
+    if (provFilter !== 'ALL') {
+      if (provFilter === 'verified' && p.isGenerated) return false;
+      if (provFilter === 'legend' && p.playerType !== 'verified_legend') return false;
+      if (provFilter === 'active' && (p.playerType !== 'verified_active' || p.isGenerated)) return false;
+      if (provFilter === 'generated' && !p.isGenerated) return false;
+    }
     if (roleCat !== 'ALL') {
       if (getRoleCategory(p.role) !== roleCat) return false;
     }
@@ -554,7 +561,10 @@ function renderScoutingHub() {
           </div>
           <span class="scouting-ovr-badge">${p.ovr}</span>
         </div>
-        <span class="scouting-card-badge">${escapeHtml(p.card || 'Elite')}</span>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+          <span class="scouting-card-badge">${escapeHtml(p.card || 'Elite')}</span>
+          <span class="scouting-card-badge" style="background:${p.isGenerated ? 'rgba(255,255,255,0.06)' : 'rgba(212,175,55,0.18)'};color:${p.isGenerated ? '#888' : '#ffd700'};border-color:${p.isGenerated ? 'rgba(255,255,255,0.1)' : 'rgba(212,175,55,0.4)'};">${p.isGenerated ? '🛡️ Reserve' : (p.playerType === 'verified_legend' ? '⭐ Legend' : '⚽ Verified')}</span>
+        </div>
       </div>
       <div class="scouting-card-stats">
         <div class="scouting-stat-col"><span>PAC</span><b>${p.pace}</b></div>
@@ -601,6 +611,12 @@ function openFutCardModal(playerId) {
   $('#futClubName').textContent = p.club || p.teamName || 'World Elite';
   $('#futPlayerName').textContent = p.name.toUpperCase();
   $('#futCardRarity').textContent = p.card || 'Elite Gold';
+
+  const provLabel = p.isGenerated 
+    ? 'PROVENANCE: GENERATED RESERVE' 
+    : (p.playerType === 'verified_legend' ? 'PROVENANCE: VERIFIED HISTORIC LEGEND' : 'PROVENANCE: VERIFIED REAL FOOTBALLER');
+  const provEl = $('#futCardProvenance');
+  if (provEl) provEl.textContent = provLabel;
 
   $('#futPac').textContent = p.pace;
   $('#futSho').textContent = p.shooting;
@@ -1469,16 +1485,38 @@ function bind(){
   $('#replayFileInput')?.addEventListener('change', e => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Security guard: Limit file size to 10MB to prevent browser lockup
+    if (file.size > 10 * 1024 * 1024) {
+      toast('File exceeds maximum replay size limit (10MB).');
+      e.target.value = '';
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = ev => {
       try {
-        const data = JSON.parse(ev.target.result);
-        const targetMatch = data.match || data;
-        if (!targetMatch.frames || !targetMatch.score || !targetMatch.seed) {
-          toast('Invalid replay format: missing frames or match data.');
+        const rawText = ev.target.result;
+        // Security guard: Reject prototype pollution patterns in raw JSON string
+        if (rawText.includes('__proto__') || rawText.includes('constructor') || rawText.includes('prototype')) {
+          toast('Security violation: Replay file contains forbidden keys.');
           return;
         }
-        const id = `${targetMatch.seed}-${Date.now()}`;
+
+        const data = JSON.parse(rawText);
+        const targetMatch = data.match || data;
+        if (!targetMatch.frames || !Array.isArray(targetMatch.frames) || !targetMatch.score || !targetMatch.seed) {
+          toast('Invalid replay format: missing frames, score, or seed.');
+          return;
+        }
+
+        // Schema validation: Verify frames integrity and boundaries
+        if (targetMatch.frames.length < 1 || targetMatch.frames.length > 250) {
+          toast('Invalid replay: frame count out of allowable match bounds.');
+          return;
+        }
+
+        const id = `${String(targetMatch.seed).replace(/[^a-zA-Z0-9_-]/g, '')}-${Date.now()}`;
         vault = [{ id, savedAt: data.savedAt || new Date().toISOString(), match: targetMatch }, ...vault].slice(0, 12);
         localStorage.setItem(STORAGE, JSON.stringify(vault));
         renderVault();
@@ -1681,6 +1719,7 @@ function bind(){
   // Scouting Hub Filters
   const resetAndScout = () => { scoutPage = 1; renderScoutingHub(); };
   $('#scoutSearchInput').addEventListener('input', resetAndScout);
+  $('#scoutProvenanceFilter')?.addEventListener('change', resetAndScout);
   $('#scoutRoleFilter').addEventListener('change', resetAndScout);
   $('#scoutTierFilter').addEventListener('change', resetAndScout);
   $('#scoutTeamFilter').addEventListener('change', resetAndScout);
@@ -1688,6 +1727,8 @@ function bind(){
 
   const resetAllScoutingFilters = () => {
     $('#scoutSearchInput').value = '';
+    const provSelect = $('#scoutProvenanceFilter');
+    if (provSelect) provSelect.value = 'ALL';
     $('#scoutRoleFilter').value = 'ALL';
     $('#scoutTierFilter').value = 'ALL';
     $('#scoutTeamFilter').value = 'ALL';

@@ -1,4 +1,4 @@
-import {TEAMS, getTeam, getPlayer, DEFAULT_TACTICS, FORMATIONS} from './data.js';
+import {TEAMS, getTeam, getPlayer, DEFAULT_TACTICS, FORMATIONS, registerCustomTeam} from './data.js';
 
 const clamp = (v,a,b) => Math.max(a, Math.min(b,v));
 const round2 = n => Math.round(n * 100)/100;
@@ -25,13 +25,35 @@ const chance = (m,p) => rand(m) < clamp(p,0,1);
 const emptyStats = () => ({possession:0, passes:0, completed:0, shots:0, onTarget:0, xg:0, fouls:0, yellow:0, red:0, corners:0, offsides:0, saves:0});
 
 export function validateLineup(teamId, ids) {
-  const team = getTeam(teamId);
-  const pool = new Set(team.players ? team.players.map(p=>p.id) : []);
-  // For custom Dream Teams, pool might not be strictly bounded by one team
-  if (teamId === 'dream_team' || team.isCustom) {
-    return Array.isArray(ids) && ids.length===11 && new Set(ids).size===11 && ids.some(id => getPlayer(team, id)?.role==='GK');
+  if (!Array.isArray(ids) || ids.length !== 11 || new Set(ids).size !== 11) {
+    return false;
   }
-  return Array.isArray(ids) && ids.length===11 && new Set(ids).size===11 && ids.every(id=>pool.has(id)) && ids.some(id => getPlayer(team,id)?.role==='GK');
+  const team = getTeam(teamId);
+  if (!team) return false;
+  
+  // Starting goalkeeper contract: slot 0 MUST be a goalkeeper
+  const starterGk = getPlayer(team, ids[0]);
+  if (!starterGk || starterGk.role !== 'GK') {
+    return false;
+  }
+
+  // Outfield slots 1..10 must not be goalkeepers (unless no outfield players exist)
+  for (let i = 1; i < 11; i++) {
+    const p = getPlayer(team, ids[i]);
+    if (p && p.role === 'GK') {
+      return false;
+    }
+  }
+
+  // For standard teams, all players must belong to the team roster
+  if (teamId !== 'dream_team' && !team.isCustom) {
+    const pool = new Set(team.players ? team.players.map(p => p.id) : []);
+    if (!ids.every(id => pool.has(id))) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 function frameFromMatch(m) {
@@ -44,21 +66,12 @@ function frameFromMatch(m) {
 
 export function createMatch(options = {}) {
   // Support custom team objects directly passed via options (e.g., custom Dream Team XI)
+  // Safely register in custom team registry WITHOUT mutating the canonical TEAMS array
   if (options.customHomeTeam) {
-    const existingIdx = TEAMS.findIndex(t => t.id === options.customHomeTeam.id);
-    if (existingIdx >= 0) {
-      TEAMS[existingIdx] = options.customHomeTeam;
-    } else {
-      TEAMS.unshift(options.customHomeTeam);
-    }
+    registerCustomTeam(options.customHomeTeam);
   }
   if (options.customAwayTeam) {
-    const existingIdx = TEAMS.findIndex(t => t.id === options.customAwayTeam.id);
-    if (existingIdx >= 0) {
-      TEAMS[existingIdx] = options.customAwayTeam;
-    } else {
-      TEAMS.unshift(options.customAwayTeam);
-    }
+    registerCustomTeam(options.customAwayTeam);
   }
 
   const homeId = options.homeId ?? (options.customHomeTeam ? options.customHomeTeam.id : 'club_real_madrid');
