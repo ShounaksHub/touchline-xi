@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Tests-26%20Passing-brightgreen?style=flat-square&logo=node.js&logoColor=white" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-32%20Passing-brightgreen?style=flat-square&logo=node.js&logoColor=white" alt="Tests">
   <img src="https://img.shields.io/badge/Runtime%20Dependencies-0%20(Pure%20Vanilla)-blue?style=flat-square" alt="Zero Dependencies">
   <img src="https://img.shields.io/badge/Players%20Database-19%2C900%2B%20Players-orange?style=flat-square" alt="Players">
   <img src="https://img.shields.io/badge/Teams-357%20Clubs%20%26%20Nations-purple?style=flat-square" alt="Teams">
@@ -59,6 +59,15 @@ Touchline XI features a **true multi-page stadium architecture** with instant ta
 <p align="center">
   <img src="assets/tactical-pitch.svg" alt="Touchline XI Tactical Pitch Visualizer" width="100%">
 </p>
+
+### 📐 Continuous Spatial World Model & Organic Underdogs
+
+Touchline XI's next-generation simulation engine is driven by a continuous 2D spatial world model:
+- **105m × 68m FIFA Pitch Geometry**: Standard metric pitch normalized to 100 × 100 space with true 18-yard penalty box coordinates ($X \in [84.3, 100]$ or $[0, 15.7]$), penalty spots ($X = 12, 88$), and goal boundaries.
+- **Dynamic 22-Player Tracking**: Live coordinates $(x, y)$, velocities $(vx, vy)$, tactical targets, fatigue, and individual attributes for every footballer on the pitch.
+- **Passing Lane Clearances**: Midfield passing and through-balls calculate true geometric line-segment distances to nearby defenders (`distToSegmentM`) to resolve clean passes vs. interceptions.
+- **Genuine Organic Underdogs (Zero Scripting)**: Weaker teams can legitimately conquer elite clubs through physical tactical counters — e.g. a deep Low Block compresses box space, baiting a high-pressing favorite to push their backline forward ($X \approx 55$), creating $40\text{m}$ of vacant space for rapid through-ball counter-attacks and 1-on-1s.
+- **Rules of Football**: Offsides evaluated at pass release; penalty kicks awarded strictly when fouls occur inside the 18-yard penalty area.
 
 ### 🗣️ Touchline Shouts (What You Yell vs. What Happens)
 

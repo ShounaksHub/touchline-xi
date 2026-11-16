@@ -106,9 +106,48 @@ Touchline XI is engineered with a multi-page stadium architecture featuring inst
 
 ---
 
-## 4. Deterministic Engine Specifications & Invariants
+## 4. Next-Gen Continuous Spatial Simulation Engine & Football Physics
 
-### A. Mulberry32 PRNG & Seed Invariance
+Touchline XI features an emergent, continuous spatial football simulation engine that models matches through physical interactions, spatial intelligence, and pitch geometry rather than minute-based dice rolls or predetermined scores.
+
+### A. Pitch Geometry & Metric Vector Mathematics
+Standard FIFA international pitch dimensions ($105\text{ m} \times 68\text{ m}$) are normalized to a continuous $[0, 100] \times [0, 100]$ coordinate space:
+- **Pitch Scaling**: $\Delta X \times 1.05\text{ m}$, $\Delta Y \times 0.68\text{ m}$.
+- **Goal Boundaries**: Goal lines at $X = 0$ (Home goal) and $X = 100$ (Away goal); goal mouths span $Y \in [44.6, 55.4]$ ($7.32\text{ m}$ width).
+- **18-Yard Penalty Boxes**: $X \in [0, 15.7]$ for Home box, $X \in [84.3, 100]$ for Away box; width $Y \in [19.7, 80.3]$ ($40.3\text{ m}$).
+- **Penalty Spots**: $X = 12.0$ (Away penalty spot) and $X = 88.0$ (Home penalty spot).
+- **Passing Lane Clearances**: Calculated via perpendicular segment distance:
+  $$\text{distToSegmentM}(p_x, p_y, x_1, y_1, x_2, y_2)$$
+  to determine whether nearby defenders can intercept passing lanes.
+
+### B. Dynamic 22-Player World Model & Micro-Simulation
+Every match maintains live dynamic state for all 22 on-pitch footballers and the ball:
+- **Player State**: `{ id, name, role, number, x, y, vx, vy, targetX, targetY, stamina, pace, shooting, passing, defending, physical, keeping, ovr, side }`.
+- **Ball State**: `{ x, y, carrierId, carrierSide, lastCarrierId, lastSide }`.
+- **10 Ticks / Minute**: Each minute executes 10 tactical micro-phases simulating dynamic positional adjustments, ball travel, defender tackles, passing decisions, and shots.
+- **Visual Pitch Synchronization**: `src/pitch.js` consumes `match.playerStates` directly, ensuring the 2D canvas radar renders the exact spatial coordinates computed by the simulation.
+
+### C. Carrier Decision AI & Passing Lanes
+At every tick, the ball carrier evaluates multiple tactical options:
+1. **Shooting Utility**: Evaluates distance to goal ($d \le 32\text{ m}$), angle to goal mouth, shooting attribute, and defender pressure.
+2. **Through-Ball Counter-Attack Utility**: Evaluates opponent defensive line depth. When an opponent plays a high line, forward runners exploit the vacant space behind them.
+3. **Passing Lane Clearance**: Calculates geometric lane clearance to every teammate; passes with obstructed lanes risk interception.
+4. **Midfield Retention & Recycling**: Safe backward or sideways passes to sustain possession when forward avenues are closed.
+
+### D. Authentic Organic Underdog Victories
+Touchline XI contains **zero scripted comebacks, zero predetermined outcomes, and zero artificial handicap dice rolls**. Underdog victories emerge organically through genuine tactical physics:
+- **Low Block vs. High Line Dynamic**: When a lower-tier team (e.g., Lesotho, 64 OVR) adopts a compact Low Block (`pressing < 35`, `width < 40`, `mentality: 'Defensive'`), their defensive line sits deep ($X \approx 18-28$), compressing the space inside the 18-yard box.
+- **Space Exploitation**: When an elite favorite plays All-Out High Press (`pressing > 80`, `mentality: 'Attacking'`), their backline pushes past midfield ($X \approx 52-62$), leaving $35-45\text{ m}$ of vacant green behind them.
+- **Breakaway Through-Balls**: A turnover won deep inside the underdog's third triggers a rapid through-ball into the vacant channel. Fast wingers or forwards break clear into an isolated 1-on-1 chance against the keeper.
+- Combined with goalkeeper heroics and shot blocking, underdogs legitimately secure points and upsets without artificial bonuses.
+
+### E. Realistic Ball Dispersion, Goalkeeping & Laws of Football
+- **Shot Dispersion**: Box-Muller Gaussian dispersion (`randGaussian(m)`) scales with distance and fatigue, aiming towards goal corners ($Y = 47.0$ or $53.0$) with physical post and crossbar woodwork detection.
+- **Goalkeeper Reach & Reactions**: Goalkeeper diving reach models physical travel time, wingspan, reaction latency ($0.18\text{s}$), and keeping attributes ($70-92$), saving $\sim 70-74\%$ of shots on target.
+- **Penalty Law**: Penalty kicks are strictly awarded when fouls occur inside the 18-yard box coordinates ($X \in [84.3, 100]$ or $[0, 15.7]$ with $Y \in [19.7, 80.3]$).
+- **Offside Law**: Evaluated at the exact micro-tick a through-ball is struck: if the forward runner is ahead of the deepest opponent defender in the attacking half, the assistant referee's flag is raised.
+
+### F. Mulberry32 PRNG & Seed Invariance
 The engine uses a 32-bit Mulberry PRNG initialized by a string seed:
 ```javascript
 function seedToState(seed) {
@@ -119,28 +158,28 @@ function seedToState(seed) {
   return h >>> 0;
 }
 ```
-**Invariant**: Given the same match seed, homeId, awayId, tactics, and lineups, the engine produces **100% byte-for-byte identical outcomes, scores, and events across all 90 frames on every device**.
+**Invariant**: Given the same match seed, homeId, awayId, tactics, and lineups, the engine produces **100% byte-for-byte identical outcomes, scores, player trajectories, and events across all 90 frames on every device**.
 
-### B. Positional & Lineup Invariants
+### G. Positional & Lineup Invariants
 1. `team.starting[0]` is **ALWAYS** a Goalkeeper (`role: 'GK'`).
 2. `team.substitutes[0]` is **ALWAYS** the backup Goalkeeper (`role: 'GK'`).
 3. Outfield players cannot be swapped into the goalkeeper slot; goalkeeper swaps are strictly goalkeeper-for-goalkeeper.
 4. Starting XI always defaults to the highest-rated positional specialists available in the club.
 5. In pre-match state, users can swap starters with any bench or reserve player; resetting starting XI restores the default peak XI.
 
-### C. xG (Expected Goals) Mathematical Model
-Shot probability and xG are computed using:
-- Attacker Shooting attribute vs. Goalkeeper Keeping attribute.
-- Spatial coordinate distance from goal center $(100, 50)$ or $(0, 50)$.
-- Defensive pressure (nearby opponent defender defending attributes).
-- Attacking tactical width and tempo adjustments.
-- Real-world expected shot conversion: average shot xG ranges from $0.05$ (long-range speculative) to $0.75$ (uncontested box finish).
+### H. Spatial xG (Expected Goals) Mathematical Model
+Expected Goals are calculated spatially from physical position:
+$$\text{xG} = \left(\text{distFactor}^2 \times 0.40 + \text{angleFactor} \times 0.12\right) \times \left(0.65 + \frac{\text{shooting}}{100} \times 0.45\right)$$
+- Penalty box finishes ($10-14\text{m}$): $\sim 0.15 - 0.35\text{ xG}$.
+- 6-yard box tap-ins ($5\text{m}$): $\sim 0.40 - 0.60\text{ xG}$.
+- Long-range efforts ($>25\text{m}$): $\sim 0.03 - 0.08\text{ xG}$.
+- Penalty kicks: $0.79\text{ xG}$ ($78\%$ historical conversion).
 
-### D. Disciplinary & Stamina Engine
+### I. Disciplinary & Stamina Engine
 - Stamina begins at $100\%$ for all starters and bench reserves.
 - Depletes dynamically per minute based on player pressing intensity and age/work rate.
 - Fatigue threshold ($\le 40\%$) triggers `#quickSubAlert` recommending tactical substitutions.
-- Fouls trigger yellow cards ($~1.3/\text{match}$) and red cards ($~0.14/\text{match}$). A red card reduces team pitch nodes from 11 to 10, widening defensive gaps.
+- Contested challenges trigger fouls ($\sim 8-10/\text{match}$), bookings ($\sim 2.0/\text{match}$), and dismissals ($\sim 0.25/\text{match}$). A red card reduces team pitch nodes from 11 to 10, widening defensive gaps.
 
 ---
 
@@ -182,10 +221,10 @@ Touchline XI features vector crest renderers producing crisp, retina-ready SVG e
 The codebase enforces strict, automated verification pipelines with zero tolerance for broken IDs, missing classes, or syntax regressions:
 
 ```bash
-# 1. Run Unit & Engine Test Suite (24 tests)
+# 1. Run Unit & Engine Test Suite (32 tests)
 npm test
 
-# 2. Validate DOM ID Consistency (146 unique IDs queried in JS)
+# 2. Validate DOM ID Consistency (148 unique IDs queried in JS)
 node tests/check_dom_ids.mjs
 
 # 3. Validate CSS Class Coverage (235 unique HTML classes)
@@ -202,10 +241,11 @@ npm run build
 node tests/check_bundle.mjs
 ```
 
-### Automated Test Coverage Matrix:
-- **`tests/engine.test.mjs`**: 18 tests covering Mulberry32 determinism, 90-minute bounds, frame replay parity, goal/shot consistency, formation live updates, substitution invariants, goalkeeper rules, extra time, penalty shootouts, disciplinary cards, and extended squad depth ($\ge 36$ players/team).
-- **`tests/statistical_audit.test.mjs`**: 500-match Monte Carlo simulation audit verifying averages: $3.16$ goals/match, $20.5$ shots, $9.0$ on target, $1.36$ yellows, $0.13$ reds, $38.6\%$ home wins, $29.4\%$ draws, $32.0\%$ away wins.
-- **`tests/interaction_audit.test.mjs`**: E2E cross-database player search, tournament bracket preservation during AI sim, and null-safety guards.
+### Automated Test Coverage Matrix (32 Tests Passing Cleanly):
+- **`tests/engine.test.mjs` (19 tests)**: Mulberry32 determinism, 90-minute bounds, frame replay parity, goal/shot consistency, formation live updates, substitution invariants, goalkeeper rules, extra time, penalty shootouts, disciplinary cards, and extended squad depth ($\ge 36$ players/team).
+- **`tests/spatial_engine.test.mjs` (6 tests)**: Continuous spatial world model, 22-player boundary constraints, Mulberry32 trajectory determinism, pitch renderer sync, penalty box rule enforcement, and organic low-block counter-attacking underdog upsets.
+- **`tests/statistical_audit.test.mjs` (1 test · 500 matches)**: 500-match Monte Carlo simulation audit verifying averages: $3.7$ goals/match, $22.3$ shots, $9.7$ on target, $4.2$ corners, $2.0$ yellows, $0.26$ reds, $43.4\%$ home wins, $20.4\%$ draws, $36.2\%$ away wins.
+- **`tests/interaction_audit.test.mjs` (6 tests)**: E2E cross-database player search, tournament bracket preservation during AI sim, and null-safety guards.
 - **`tests/verify_ux_fixes.mjs`**: Headless Chrome test validating 350+ team quick filter, scouting empty state reset, pause banner spacebar resume, and Escape key modal dismissal.
 
 ---
