@@ -4,6 +4,7 @@ import {renderPitch} from './pitch.js';
 import {sound} from './sound.js';
 import {createTournament, loadTournament, saveTournament, clearTournament, simulateAIMatch, recordTournamentResult, getLeaderboard, TOURNAMENT_PRESETS} from './tournament.js';
 import {getTeamBadgeSvg} from './badges.js';
+import {MatchEffectsController} from './match-effects.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
@@ -63,6 +64,37 @@ let match=createMatch({
 let running=false,replay=null,speed=1,accumulator=0,lastRenderAt=0,selectedStarter=null,feedFilter='all',toastTimeout=null,goalTimeout=null;
 let scoutPage = 1;
 const SCOUT_PAGE_SIZE = 72;
+
+const matchEffects = new MatchEffectsController({
+  onPause: () => {
+    if (running) {
+      stop();
+    }
+  },
+  onResume: () => {
+    if (!running && match && match.phase !== 'FULL_TIME') {
+      running = true;
+      accumulator = 0;
+      updatePlayButton();
+    }
+  }
+});
+
+function updatePresentationModeUi() {
+  const mode = matchEffects.mode;
+  const isBroadcast = mode === 'broadcast';
+  const iconEl = $('#presentationModeIcon');
+  const textEl = $('#presentationModeText');
+  if (iconEl) iconEl.textContent = isBroadcast ? '📺' : '⚡';
+  if (textEl) textEl.textContent = isBroadcast ? 'Broadcast' : 'Continuous';
+  const btn = $('#presentationModeBtn');
+  if (btn) {
+    btn.setAttribute('title', isBroadcast
+      ? 'Broadcast Mode: Displays cinematic graphics and holds briefly for drama. Click to switch.'
+      : 'Continuous Mode: Non-stop match flow with non-blocking overlays. Click to switch.'
+    );
+  }
+}
 
 // Master player pool indexing all 2,750+ players across clubs, national teams & peak legends
 const ALL_PLAYERS_POOL = (() => {
@@ -890,6 +922,8 @@ function renderSelects(){
 function startMatch(){
   stop();replay=null;selectedStarter=null;
   hidePauseBanner();
+  matchEffects.clear();
+  matchEffects.resetSeen();
   const homeId=$('#homeSelect').value;
   let awayId=$('#awaySelect').value;
   if(homeId===awayId) awayId=TEAMS.find(t=>t.id!==homeId)?.id??'club_man_city';
@@ -1214,9 +1248,12 @@ function saveVault(silent=false){
 
 function newTick(){
   if(replay){
+    const prior = match.events.length;
     replay.index++;
     match=matchFromFrame(replay.source,replay.index);
     if(replay.index>=replay.source.frames.length-1)stop();
+    const nextEvents = match.events.slice(prior);
+    matchEffects.processEvents(match, nextEvents, { speed, running, replay: true });
     render();
     return;
   }
@@ -1227,42 +1264,25 @@ function newTick(){
   persistPrefs();
   const nextEvents=match.events.slice(prior);
 
+  // Process cinematic broadcast graphics
+  matchEffects.processEvents(match, nextEvents, { speed, running, replay: false });
+
   const goal=nextEvents.find(e=>e.type==='goal');
   if(goal){
     flashGoal(goal);
-    sound.playGoalCheer();
-    // Auto-pause match upon goal for tactical and squad adjustments
-    stop();
-    const scoringTeam = getTeam(goal.side==='home'?match.homeId:match.awayId);
     const scorerName = goal.detail?.scorer || 'Goal';
-    showPauseBanner(
-      '⚽',
-      `GOAL! ${scorerName} (${goal.minute}′)`,
-      `${scoringTeam.name} scored! Match paused for tactical adjustments & substitutions.`,
-      'Resume Match ␣'
-    );
-    toast(`⚽ GOAL! ${scorerName} (${goal.minute}′) — Match paused for tactics.`);
+    toast(`⚽ GOAL! ${scorerName} (${goal.minute}′)`);
   } else {
     const shot=nextEvents.find(e=>e.type==='shot'||e.type==='save');
-    if(shot) sound.playKick();
+    if(shot && !nextEvents.some(e => e.isPenalty || e.xg >= 0.22)) sound.playKick();
   }
 
   if(match.minute===45 && match.phase==='HALF_TIME'){
-    sound.playWhistle(0.3);
-    // Auto-pause match at half-time for team talk & tactical changes
-    stop();
-    showPauseBanner(
-      '⏸',
-      'HALF-TIME (45′) — Tactical Interval',
-      'First half completed. Review match stats, swap players in Squad Lab, or give a team talk.',
-      'Kick Off 2nd Half ␣'
-    );
-    toast('🗣️ Half-time reached! Match auto-paused for team talk & tactical adjustments.');
+    toast('🗣️ Half-time reached! Tactical interval.');
   }
 
   if(match.phase==='FULL_TIME'){
     stop();
-    sound.playWhistle(0.45);
     saveVault(true);
 
     if (activeTournamentMatchId && currentTournament) {
@@ -1289,6 +1309,8 @@ function flashGoal(e){
 function startReplay(item){
   stop();
   hidePauseBanner();
+  matchEffects.clear();
+  matchEffects.resetSeen();
   replay={source:item.match,index:0};
   match=matchFromFrame(item.match,0);
   selectedStarter=null;
@@ -1371,6 +1393,7 @@ function bind(){
   // Timeline scrub seeking for replays and match review
   $('#timelineTrack')?.addEventListener('click', e => {
     if (!replay && match.phase !== 'FULL_TIME') return;
+    matchEffects.clear();
     const rect = $('#timelineTrack').getBoundingClientRect();
     const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     const maxMins = (match.knockout || (replay && replay.source.knockout)) ? 120 : 90;
@@ -1481,8 +1504,18 @@ function bind(){
 
   $$('.speed-button').forEach(b=>b.addEventListener('click',()=>{
     speed=Number(b.dataset.speed);
+    matchEffects.setSpeed(speed);
     $$('.speed-button').forEach(x=>x.classList.toggle('is-active',x===b));
   }));
+
+  matchEffects.setContainer($('#broadcastGraphicsOverlay'));
+  updatePresentationModeUi();
+
+  $('#presentationModeBtn')?.addEventListener('click', () => {
+    const next = matchEffects.toggleMode();
+    updatePresentationModeUi();
+    toast(next === 'broadcast' ? '📺 Broadcast Mode: Cinematic presentation & hold' : '⚡ Continuous Mode: Non-stop match flow');
+  });
 
   $$('.feed-filter').forEach(b=>b.addEventListener('click',()=>{
     feedFilter=b.dataset.filter;
@@ -1856,11 +1889,19 @@ function bind(){
         welcomeModal.setAttribute('aria-hidden', 'true');
         closed = true;
       }
+      if (matchEffects?.activeEffect) {
+        matchEffects.dismiss(false);
+        closed = true;
+      }
       if (closed) return;
     }
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLSelectElement) return;
     if (e.code === 'Space') {
       e.preventDefault();
+      if (matchEffects?.activeEffect && matchEffects.mode === 'broadcast') {
+        matchEffects.dismiss(true);
+        return;
+      }
       $('#playBtn')?.click();
     } else if (e.code === 'KeyS' || e.code === 'ArrowRight') {
       e.preventDefault();

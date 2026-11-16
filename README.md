@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Tests-32%20Passing-brightgreen?style=flat-square&logo=node.js&logoColor=white" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-43%20Passing-brightgreen?style=flat-square&logo=node.js&logoColor=white" alt="Tests">
   <img src="https://img.shields.io/badge/Runtime%20Dependencies-0%20(Pure%20Vanilla)-blue?style=flat-square" alt="Zero Dependencies">
   <img src="https://img.shields.io/badge/Players%20Database-19%2C900%2B%20Players-orange?style=flat-square" alt="Players">
   <img src="https://img.shields.io/badge/Teams-357%20Clubs%20%26%20Nations-purple?style=flat-square" alt="Teams">
@@ -81,6 +81,16 @@ You aren't just a spectator. In Touchline XI, clicking a tactical shout delivers
 | 🎯 **Shoot On Sight** | *"JUST SHOOT FROM THERE!"* | Increases long-range shot trigger probability by +65%. |
 | 🔄 **Work Into Box** | *"WAIT FOR THE RUN, STOP HOOFING IT!"* | Demands patient passing in zone 14; yields fewer shots but higher individual chance xG (~0.45+). |
 | 🔥 **Demand More** | *"WAKE UP, WE ARE LOSING AT HOME!"* | Manager speech boost: immediately lifts team tempo and grants a mid-match stamina second wind. |
+
+### 📺 Cinematic Match Events & Broadcast Graphics
+
+Touchline XI features a modern TV broadcast graphics suite (`src/match-effects.js`) that elevates match immersion while preserving deterministic simulation:
+- **Cinematic Goal Celebrations**: Displays scoring club crest, scorer name, assist provider, updated scoreline, and match context (*Opener, Equalizer, Hat-Trick, Late Winner, Penalty, Extra Time*).
+- **Disciplinary Cards & Dismissals**: Yellow card entries, straight red cards with an explicit `⚠️ REDUCED TO 10 PLAYERS` alert, and a dual-card flipper animating a second-yellow into a red dismissal.
+- **Opposing Directional Substitutions**: Broadcast lower-third panel animating incoming players (`▲ ON` in emerald) sliding against outgoing starters (`▼ OFF` in crimson).
+- **Dual Presentation Modes**: Toggle between **Broadcast Mode** (cinematic holds with `"Resume Match ␣"` action) and **Continuous Mode** (non-blocking overlays).
+- **TV Half-Time & Full-Time Reports**: Comprehensive match summaries complete with team crests, score, and key comparative metrics (Possession, Shots on Target, xG).
+- **Procedural Stadium Audio**: Real-time Web Audio referee whistles, crowd roar surges, board chimes, and trophy fanfares.
 
 ---
 

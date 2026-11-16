@@ -188,6 +188,35 @@ $$\text{xG} = \left(\text{distFactor}^2 \times 0.40 + \text{angleFactor} \times 
 - Fatigue threshold ($\le 40\%$) triggers `#quickSubAlert` recommending tactical substitutions.
 - Contested challenges trigger fouls ($\sim 8-10/\text{match}$), bookings ($\sim 2.0/\text{match}$), and dismissals ($\sim 0.25/\text{match}$). A red card reduces team pitch nodes from 11 to 10, widening defensive gaps.
 
+### J. Cinematic Match Events & Broadcast Graphics Architecture (`src/match-effects.js`)
+Touchline XI incorporates a centralized, responsive football broadcast graphics system inspired by premium television coverage and modern football simulation titles:
+- **Priority Queue System**: Orders concurrent match events by dramatic significance:
+  1. `GOAL` (Priority 100)
+  2. `TOURNAMENT_WINNER` (Priority 95)
+  3. `RED_CARD` / `SECOND_YELLOW` (Priority 90–92)
+  4. `FULL_TIME` / `EXTRA_TIME` / `HALF_TIME` (Priority 70–85)
+  5. `PENALTY_SAVED` / `WOODWORK` (Priority 75)
+  6. `YELLOW_CARD` (Priority 60)
+  7. `SUBSTITUTION` (Priority 50)
+  8. `OFFSIDE` / `MAJOR_SAVE` (Priority 35–40)
+  9. `INJURY_TIME` (Priority 25)
+- **Dual Presentation Modes (User Configurable via `#presentationModeBtn`)**:
+  - **Broadcast Mode (Default)**: Pauses simulation temporarily on major events (`GOAL`, `RED_CARD`, `HALF_TIME`, `FULL_TIME`) to hold the graphic for dramatic effect, featuring a `"Resume Match ␣"` action and Spacebar/Escape hotkeys without generating extra simulation ticks.
+  - **Continuous Mode**: Renders graphics as non-blocking lower-third cards and toasts while match clock and physics continue seamlessly.
+- **Context-Aware Goal Detection**:
+  - **Opener**: 1st goal of the contest (`⚽ OPENING GOAL`).
+  - **Equalizer**: Score drawn level (`⚡ EQUALIZER!`).
+  - **Hat-Trick**: 3rd goal scored by a single footballer (`🔥 HAT-TRICK!`).
+  - **Late Winner**: Match-winning breakthrough at 80′+ (`⏱️ LATE DRAMA!`).
+  - **Penalty Goal**: Spot-kick conversion (`🎯 PENALTY GOAL`).
+  - **Extra Time**: Knockout goals beyond 90′ (`🏆 EXTRA TIME GOAL`).
+- **Second-Yellow Dismissal Sequencer**: Seamlessly animates the initial 🟨 Yellow Card flipper transitioning into the 🟥 Red Card dismissal with an explicit `⚠️ REDUCED TO 10 PLAYERS` tactical alert.
+- **Opposing Directional Substitution Banners**: Displays incoming players (`▲ ON` in vibrant emerald) sliding against outgoing starters (`▼ OFF` in crimson) with kit numbers and tactical roles.
+- **TV Half-Time & Full-Time Reports**: Center modal broadcast cards displaying team crests, score, goalscorer recaps, and real-time comparative metrics (Possession %, Shots on Target, xG).
+- **Procedural Audio Synchronization**: Syncs with Web Audio referee whistles, crowd roar surges, electronic board beeps, and triumphant tournament fanfare.
+- **Strict Invariance Guarantee**: The graphics controller is strictly decoupled from authoritative match state — it **NEVER** modifies simulation scores, player coordinates, or football statistics.
+- **Accessibility & Replay Safety**: Full support for `prefers-reduced-motion`, screen-reader announcements (`aria-live="assertive"`), and deduplication preventing replay scrubbing from generating duplicate cards.
+
 ---
 
 ## 5. Audio Synthesizer & Stadium Music Player
@@ -228,13 +257,13 @@ Touchline XI features vector crest renderers producing crisp, retina-ready SVG e
 The codebase enforces strict, automated verification pipelines with zero tolerance for broken IDs, missing classes, or syntax regressions:
 
 ```bash
-# 1. Run Unit & Engine Test Suite (32 tests)
+# 1. Run Unit, Engine & Match Effects Test Suite (43 tests)
 npm test
 
-# 2. Validate DOM ID Consistency (148 unique IDs queried in JS)
+# 2. Validate DOM ID Consistency (152 unique IDs queried in JS)
 node tests/check_dom_ids.mjs
 
-# 3. Validate CSS Class Coverage (235 unique HTML classes)
+# 3. Validate CSS Class Coverage (238 unique HTML classes)
 node tests/find_missing_css_classes.mjs
 
 # 4. Verify Multi-Page View Routing & Modal Interactions (Chrome CDP)
@@ -243,17 +272,21 @@ node tests/verify_pages.mjs
 # 5. Verify UX Audit Fixes & Database Search (Chrome CDP)
 node tests/verify_ux_fixes.mjs
 
-# 6. Build & Verify Standalone Offline Single-File Executable
+# 6. Verify Cinematic Broadcast Graphics & Responsive Screenshots (Chrome CDP)
+node tests/verify_broadcast_graphics.mjs
+
+# 7. Build & Verify Standalone Offline Single-File Executable
 npm run build
 node tests/check_bundle.mjs
 ```
 
-### Automated Test Coverage Matrix (32 Tests Passing Cleanly):
+### Automated Test Coverage Matrix (43 Tests Passing Cleanly):
 - **`tests/engine.test.mjs` (19 tests)**: Mulberry32 determinism, 90-minute bounds, frame replay parity, goal/shot consistency, formation live updates, substitution invariants, goalkeeper rules, extra time, penalty shootouts, disciplinary cards, and extended squad depth ($\ge 36$ players/team).
 - **`tests/spatial_engine.test.mjs` (6 tests)**: Continuous spatial world model, 22-player boundary constraints, Mulberry32 trajectory determinism, pitch renderer sync, penalty box rule enforcement, and organic low-block counter-attacking underdog upsets.
+- **`tests/match_effects.test.mjs` (11 tests)**: Broadcast vs Continuous presentation modes, context-aware goal detection (Opener, Equalizer, Hat-Trick, Late Winner, Penalty), yellow card non-blocking display, straight red card 10-men warning, second-yellow dismissal flipper, penalty saved goalkeeper heroics, opposing directional substitution cards (▲ ON / ▼ OFF), replay event deduplication, priority queue preemption, and immutable simulation state guarantees.
 - **`tests/statistical_audit.test.mjs` (1 test · 500 matches)**: 500-match Monte Carlo simulation audit verifying averages: $3.7$ goals/match, $22.3$ shots, $9.7$ on target, $4.2$ corners, $2.0$ yellows, $0.26$ reds, $43.4\%$ home wins, $20.4\%$ draws, $36.2\%$ away wins.
 - **`tests/interaction_audit.test.mjs` (6 tests)**: E2E cross-database player search, tournament bracket preservation during AI sim, and null-safety guards.
-- **`tests/verify_ux_fixes.mjs`**: Headless Chrome test validating 350+ team quick filter, scouting empty state reset, pause banner spacebar resume, and Escape key modal dismissal.
+- **`tests/verify_broadcast_graphics.mjs`**: Headless Chrome test capturing retina desktop and mobile ($390\times 844$) screenshots of goals, red cards, substitutions, and full-time summaries.
 
 ---
 
@@ -278,8 +311,9 @@ touchline-xi/
 │   ├── badges.js                    # Vector heraldry badge renderer for 357 teams
 │   ├── data.js                      # Core data exporter, tactical formations, play styles
 │   ├── engine.js                    # Mulberry32 deterministic match simulation engine
+│   ├── match-effects.js             # Cinematic match events controller & TV broadcast graphics
 │   ├── pitch.js                     # 2D pitch visualizer and player trajectory animator
-│   ├── sound.js                     # Web Audio API whistle, kick, and cheer synthesizer
+│   ├── sound.js                     # Web Audio API whistle, kick, cheer & broadcast synthesizer
 │   ├── tournament.js                # Knockout bracket manager, extra time & penalty shootouts
 │   └── data/
 │       ├── clubs.js                 # 207 global clubs across 5 continents (7,518 players)
@@ -288,13 +322,15 @@ touchline-xi/
 │       └── icons_peak.json          # Curated historical peak player cards
 ├── tests/
 │   ├── engine.test.mjs              # Unit tests for match simulation engine
+│   ├── match_effects.test.mjs       # Unit tests for broadcast event graphics & priority queue
 │   ├── statistical_audit.test.mjs   # 500-match Monte Carlo statistical validation
 │   ├── interaction_audit.test.mjs   # E2E interaction and search tests
 │   ├── check_dom_ids.mjs            # DOM ID synchronizer
 │   ├── find_missing_css_classes.mjs # CSS class auditor
 │   ├── check_bundle.mjs             # Standalone bundle parser & syntax check
 │   ├── verify_pages.mjs             # Headless Chrome CDP page router test
-│   └── verify_ux_fixes.mjs          # Headless Chrome CDP UX audit verification test
+│   ├── verify_ux_fixes.mjs          # Headless Chrome CDP UX audit verification test
+│   └── verify_broadcast_graphics.mjs # Headless Chrome CDP broadcast graphics & screenshots test
 ├── tools/
 │   ├── build-standalone.mjs         # Standalone HTML packager and asset inliner
 │   ├── expand_database.py           # Squad depth generator & strongest XI selector

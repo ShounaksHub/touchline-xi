@@ -1,9 +1,9 @@
 # Touchline XI — Simulation Calibration & Statistical Benchmark
 
-**Date of Execution:** 2026-11-16T10:00:40.016Z
+**Date of Execution:** 2026-11-16T18:48:25.282Z
 **Matches Simulated:** 500
 **Engine Version:** Mulberry32 Seeded Deterministic Simulator v2.0
-**Execution Time:** 7177ms (14.35ms per match)
+**Execution Time:** 17581ms (35.16ms per match)
 
 ---
 

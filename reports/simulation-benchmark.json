@@ -1,7 +1,7 @@
 {
   "sampleSize": 500,
-  "elapsedMs": 7177,
-  "avgExecutionMsPerMatch": 14.35,
+  "elapsedMs": 17581,
+  "avgExecutionMsPerMatch": 35.16,
   "metrics": {
     "avgGoalsPerMatch": 3.91,
     "avgShotsPerMatch": 28.49,

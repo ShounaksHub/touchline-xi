@@ -143,6 +143,7 @@
                     <button type="button" class="pause-resume-btn" id="pauseResumeBtn">Resume Match ␣</button>
                   </div>
                 </div>
+                <div class="broadcast-graphics-overlay" id="broadcastGraphicsOverlay" aria-live="assertive" aria-atomic="true"></div>
                 <div class="quick-sub-alert" id="quickSubAlert" role="status" aria-live="polite">
                   <div><strong>QUICK SUB RECOMMENDED</strong><span id="quickSubText">A tired player is losing energy.</span></div>
                   <button type="button" id="quickSubBtn">Open squad</button>
@@ -174,6 +175,9 @@
                     <button class="speed-button" data-speed="2">2×</button>
                     <button class="speed-button" data-speed="5">5×</button>
                   </div>
+                  <button type="button" class="text-button broadcast-mode-toggle" id="presentationModeBtn" title="Toggle Broadcast vs Continuous event graphics">
+                    <span class="mode-icon" id="presentationModeIcon">📺</span> <span id="presentationModeText">Broadcast</span>
+                  </button>
                   <button class="text-button skip-button" id="fullTimeBtn">Sim to FT <span>↗</span></button>
                 </div>
               </div>

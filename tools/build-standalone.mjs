@@ -19,6 +19,7 @@ const dataModule = strip(read('src/data.js'));
 const engineModule = strip(read('src/engine.js'));
 const tournamentModule = strip(read('src/tournament.js'));
 const pitchModule = strip(read('src/pitch.js'));
+const matchEffectsModule = strip(read('src/match-effects.js'));
 const appModule = strip(read('src/app.js'));
 
 const bundledJs = `
@@ -62,16 +63,22 @@ const Pitch = (({ getTeam, getPlayer, FORMATIONS }) => {
   return { renderPitch };
 })(Data);
 
+const MatchEffects = (({ getTeam, getPlayer }, { getTeamBadgeSvg }, { sound }) => {
+  ${matchEffectsModule}
+  return { MatchEffectsController, createMatchEffects };
+})(Data, Badges, Sound);
+
 ((
   { TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS, registerCustomTeam },
   { createMatch, advanceMinute, playFullMatch, matchFromFrame, applyTactic, changeFormation, swapPlayer, resetStartingXI, resultLabel, applyShout, applyTeamTalk, simulatePenaltyShootout },
   { renderPitch },
   { sound },
   { createTournament, loadTournament, saveTournament, clearTournament, simulateAIMatch, recordTournamentResult, getLeaderboard, TOURNAMENT_PRESETS },
-  { getTeamBadgeSvg }
+  { getTeamBadgeSvg },
+  { MatchEffectsController, createMatchEffects }
 ) => {
   ${appModule}
-})(Data, Engine, Pitch, Sound, Tournament, Badges);
+})(Data, Engine, Pitch, Sound, Tournament, Badges, MatchEffects);
 `;
 
 const template = read('index.template.html');
