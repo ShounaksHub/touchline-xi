@@ -1200,21 +1200,21 @@ function renderSquad(){
 
 function renderFlow(){
   const home=getTeam(match.homeId),away=getTeam(match.awayId);
-  $('#homeLegendDot').style.background='#578750';$('#homeLegendDot').style.border='none';
-  $('#awayLegendDot').style.background='#8da4b1';$('#awayLegendDot').style.border='none';
+  $('#homeLegendDot').style.background='var(--color-accent)';$('#homeLegendDot').style.border='none';
+  $('#awayLegendDot').style.background='#92C8F0';$('#awayLegendDot').style.border='none';
   $('#flowHomeName').textContent=(home.name || '').toUpperCase();$('#flowAwayName').textContent=(away.name || '').toUpperCase();
   const maxMins = (match.knockout || (replay && replay.source.knockout)) ? 120 : 90;
   const frames=match.frames.slice(0,match.minute+1);const w=640,h=139,x0=43,y0=17;
   const mx=Math.max(1,...frames.flatMap(f=>[f.stats.home.xg,f.stats.away.xg]));const yMax=Math.ceil(mx*2)/2;
   const px=m=>x0+(m/maxMins)*w,py=v=>y0+h-(v/yMax)*h;
   let svg='';
-  for(let i=0;i<=4;i++){let val=yMax*i/4,y=py(val);svg+=`<line x1="43" y1="${y}" x2="683" y2="${y}" stroke="#e6ece5" stroke-width="1" stroke-dasharray="3 5"/><text x="35" y="${y+3}" text-anchor="end" fill="#96a399" font-family="Arial" font-size="9" font-weight="700">${val.toFixed(1)}</text>`;}
+  for(let i=0;i<=4;i++){let val=yMax*i/4,y=py(val);svg+=`<line x1="43" y1="${y}" x2="683" y2="${y}" stroke="var(--color-border)" stroke-width="1" stroke-dasharray="3 5"/><text x="35" y="${y+3}" text-anchor="end" fill="var(--color-text-muted)" font-family="var(--font-interface)" font-size="9" font-weight="700">${val.toFixed(1)}</text>`;}
   const step = maxMins > 90 ? 20 : 15;
-  for(let i=0;i<=maxMins;i+=step){svg+=`<text x="${px(i)}" y="179" text-anchor="middle" fill="#96a399" font-family="Arial" font-size="9" font-weight="700">${i}′</text>`;}
-  for(const [side,color] of [['home','#578750'],['away','#8da4b1']]){
+  for(let i=0;i<=maxMins;i+=step){svg+=`<text x="${px(i)}" y="179" text-anchor="middle" fill="var(--color-text-muted)" font-family="var(--font-interface)" font-size="9" font-weight="700">${i}′</text>`;}
+  for(const [side,color] of [['home','var(--color-accent)'],['away','#92C8F0']]){
     const pts=frames.map(f=>`${px(f.minute)},${py(f.stats[side].xg)}`).join(' ');
     svg+=`<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
-    const last=frames.at(-1);if(last)svg+=`<circle cx="${px(last.minute)}" cy="${py(last.stats[side].xg)}" r="4" fill="${color}" stroke="#fff" stroke-width="2"/>`;
+    const last=frames.at(-1);if(last)svg+=`<circle cx="${px(last.minute)}" cy="${py(last.stats[side].xg)}" r="4" fill="${color}" stroke="var(--color-bg)" stroke-width="2"/>`;
   }
   $('#flowChart').innerHTML=svg;
   const moment=[...match.events].reverse().find(e=>['goal','save','shot','card','shootout'].includes(e.type));
