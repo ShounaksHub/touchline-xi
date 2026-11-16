@@ -1109,14 +1109,15 @@ function handleDraftSlotFilled(user, slotIndex) {
     draftState.phase = 'CAPTAIN_PICK_1';
     draftState.currentTurnUser = draftState.tossWinner;
     renderDraftTurnBanner();
+    renderDuelMode();
     return;
   }
 
-  // Next turn: alternate user or advance position slot
+  // Strictly alternate turns between users: one player lock per turn
   const otherUser = user === 'u1' ? 'u2' : 'u1';
   draftState.currentTurnUser = otherUser;
 
-  // If next user already drafted this slot index, find first vacant slot
+  // Find the earliest vacant slot in the next user's squad to lock next
   const nextSquad = otherUser === 'u1' ? user1Squad : user2Squad;
   const nextVacantIndex = nextSquad.findIndex(p => p.isVacant);
   if (nextVacantIndex !== -1) {
@@ -1124,6 +1125,7 @@ function handleDraftSlotFilled(user, slotIndex) {
   }
 
   renderDraftTurnBanner();
+  renderDuelMode();
 }
 
 function handleCaptainSelected(user, playerId) {
@@ -1263,17 +1265,28 @@ function renderDuelMode() {
     const renderSquadSlots = (squad, gridId, userPrefix) => {
       const container = $(gridId);
       if (!container) return;
-      const isMyTurn = draftState.currentTurnUser === userPrefix && draftState.phase === 'PLAYER_DRAFT';
+      const isMyTurn = draftState.active && draftState.currentTurnUser === userPrefix && draftState.phase === 'PLAYER_DRAFT';
 
       container.innerHTML = squad.map((p, idx) => {
         const isCurrentActiveSlot = isMyTurn && idx === draftState.currentPickIndex;
+        // In turn draft mode, any slot that is not the currently active drafting slot for this user is locked
+        const isSlotLocked = draftState.active && draftState.phase === 'PLAYER_DRAFT' && !isCurrentActiveSlot;
         const isCaptain = (userPrefix === 'u1' && user1CaptainId === p.id) || (userPrefix === 'u2' && user2CaptainId === p.id);
         const ovrVal = p.isVacant ? '--' : p.ovr;
         const nameVal = p.isVacant ? `Vacant Slot (${escapeHtml(p.role)})` : escapeHtml(p.name);
-        const metaVal = p.isVacant ? 'Tap to draft' : `${escapeHtml(p.role)} · 🌍 ${escapeHtml(p.nat)}`;
+        let metaVal = p.isVacant ? 'Tap to draft' : `${escapeHtml(p.role)} · 🌍 ${escapeHtml(p.nat)}`;
+        if (draftState.active && draftState.phase === 'PLAYER_DRAFT') {
+          if (isCurrentActiveSlot) {
+            metaVal = `⚡ Lock ${escapeHtml(p.role)} (Your Turn)`;
+          } else if (p.isVacant) {
+            metaVal = isMyTurn ? `Waiting (Slot ${idx + 1})` : `Opponent's Turn`;
+          } else {
+            metaVal = `🔒 Locked · ${escapeHtml(p.role)} (${escapeHtml(p.nat)})`;
+          }
+        }
 
         return `
-          <div class="duel-squad-slot ${isCurrentActiveSlot ? 'is-active-slot' : ''} ${isCaptain ? 'is-captain' : ''}" data-user="${userPrefix}" data-slot-index="${idx}">
+          <div class="duel-squad-slot ${isCurrentActiveSlot ? 'is-active-slot' : ''} ${isSlotLocked ? 'is-locked-slot' : ''} ${isCaptain ? 'is-captain' : ''}" data-user="${userPrefix}" data-slot-index="${idx}">
             <span class="duel-slot-num">${idx === 0 ? 'GK' : idx + 1}</span>
             <div class="duel-slot-info">
               <strong>${nameVal}</strong>
@@ -2648,14 +2661,15 @@ function bind(){
     const current = targetSquad[index];
     if (!current) return;
 
-    // During active turn draft, encourage user to draft active turn slot
+    // Strictly enforce 1 player lock per turn:
+    // Only the active user can pick, and only their current turn slot can be clicked
     if (draftState.active && draftState.phase === 'PLAYER_DRAFT') {
       if (user !== draftState.currentTurnUser) {
-        toast(`It's currently ${draftState.currentTurnUser === 'u1' ? 'User 1' : 'User 2'}'s turn to pick!`);
+        toast(`⚠️ It's ${draftState.currentTurnUser === 'u1' ? 'User 1' : 'User 2'}'s turn! Each user locks 1 player at a time for fair drafting.`);
         return;
       }
       if (index !== draftState.currentPickIndex) {
-        toast(`Please pick slot ${draftState.currentPickIndex + 1} (${targetSquad[draftState.currentPickIndex]?.role || 'current position'}) first!`);
+        toast(`⚠️ Please lock slot ${draftState.currentPickIndex + 1} (${targetSquad[draftState.currentPickIndex]?.role || 'current position'}) first!`);
         return;
       }
     }

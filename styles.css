@@ -6449,6 +6449,18 @@ h1, h2, h3, h4,
   background: var(--color-surface-hover);
   box-shadow: 0 0 10px rgba(212, 183, 123, 0.3);
   animation: activeSlotPulse 1.5s infinite ease-in-out;
+  cursor: pointer;
+}
+
+.duel-squad-slot.is-locked-slot {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
+}
+
+.duel-squad-slot.is-locked-slot:hover {
+  border-color: var(--color-border);
+  background: var(--color-surface-elevated);
 }
 
 @keyframes activeSlotPulse {
