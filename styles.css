@@ -6307,3 +6307,275 @@ h1, h2, h3, h4,
   border-radius: 4px;
 }
 
+/* =========================================================================
+   INTERACTIVE ONBOARDING & GUIDED TUTORIAL SYSTEM
+   ========================================================================= */
+
+.welcome-tour-launcher-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-accent-subtle);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.welcome-tour-info {
+  flex: 1;
+  min-width: 240px;
+}
+
+.welcome-tour-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: var(--color-accent);
+  margin-bottom: 4px;
+}
+
+.welcome-tour-info h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.welcome-tour-info p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.welcome-tour-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.welcome-mode-tours-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.mode-tours-label {
+  font-size: 11px;
+  font-weight: 750;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.mode-tours-chips {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mode-tour-chip {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-family: var(--font-interface);
+  font-size: 11px;
+  font-weight: 650;
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-tour-chip:hover {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-accent);
+  color: var(--color-text-primary);
+}
+
+.welcome-footer-btns {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+/* Tutorial Highlighting Overlay & Spotlight */
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.tutorial-overlay.is-active {
+  pointer-events: auto;
+  opacity: 1;
+  visibility: visible;
+}
+
+.tutorial-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 12, 16, 0.72);
+  backdrop-filter: blur(2px);
+}
+
+.tutorial-spotlight {
+  position: absolute;
+  border-radius: 6px;
+  box-shadow: 0 0 0 9999px rgba(10, 12, 16, 0.76), 0 0 24px rgba(212, 183, 123, 0.65);
+  border: 2px solid var(--color-accent);
+  pointer-events: none;
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+}
+
+.tutorial-card {
+  position: absolute;
+  width: 380px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
+  border-radius: 8px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.75);
+  padding: 18px 20px;
+  z-index: 10002;
+  transition: top 0.25s ease, left 0.25s ease, transform 0.25s ease;
+  animation: tutPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes tutPop {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.tutorial-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.tutorial-badge-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.tutorial-step-badge {
+  background: var(--color-surface-sunken);
+  color: var(--color-accent);
+  border: 1px solid var(--color-border-subtle);
+  font-family: var(--font-interface);
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.tutorial-mode-badge {
+  background: var(--color-surface-elevated);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border-subtle);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.tutorial-close-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 2px 6px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.tutorial-close-btn:hover {
+  color: var(--color-text-primary);
+}
+
+.tutorial-card-body h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 850;
+  color: var(--color-text-primary);
+  line-height: 1.25;
+}
+
+.tutorial-card-body p {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
+.tutorial-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 12px;
+}
+
+.tutorial-btn {
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: 750;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tutorial-btn-subtle {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+}
+
+.tutorial-btn-subtle:hover {
+  color: var(--color-text-primary);
+  text-decoration: underline;
+}
+
+.tutorial-card-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.tutorial-btn-secondary {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.tutorial-btn-secondary:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text-primary);
+}
+
+.tutorial-btn-primary {
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent-light);
+  color: #0E1014;
+  font-weight: 850;
+}
+
+.tutorial-btn-primary:hover {
+  background: var(--color-accent-light);
+  box-shadow: 0 0 12px rgba(212, 183, 123, 0.4);
+}
+
+

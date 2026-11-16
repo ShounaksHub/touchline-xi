@@ -6,6 +6,7 @@ import {createTournament, loadTournament, saveTournament, clearTournament, simul
 import {getTeamBadgeSvg} from './badges.js';
 import {MatchEffectsController} from './match-effects.js';
 import {createPlayerDuel, advanceDuelTick, playFullDuel, renderDuelPitch, DUEL_TYPES} from './duel.js';
+import {TutorialController, TUTORIAL_MODES} from './tutorial.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
@@ -2428,15 +2429,28 @@ function bind(){
 
   $('#duelSaveReplayBtn')?.addEventListener('click', saveDuelToVault);
 
+  // Tutorial & Onboarding Controller
+  const tutorial = new TutorialController({
+    onNavigate: (section) => {
+      showPage(section);
+      scrollToSection(`#${section}`);
+    }
+  });
+
   // Welcome & How to Play Pop-Out Modal
   const welcomeModal = $('#welcomeModal');
   if (welcomeModal) {
     let hideWelcome = false;
-    try { hideWelcome = localStorage.getItem('touchline_hide_welcome') === 'true'; } catch {}
+    try {
+      hideWelcome = localStorage.getItem('touchline_hide_welcome') === 'true' ||
+                    (tutorial.storage.status === 'completed' || tutorial.storage.status === 'skipped');
+    } catch {}
+
     if (!hideWelcome) {
       welcomeModal.classList.add('is-open');
       welcomeModal.setAttribute('aria-hidden', 'false');
     }
+
     const closeWelcome = () => {
       welcomeModal.classList.remove('is-open');
       welcomeModal.setAttribute('aria-hidden', 'true');
@@ -2444,7 +2458,38 @@ function bind(){
         try { localStorage.setItem('touchline_hide_welcome', 'true'); } catch {}
       }
     };
+
     $('#closeWelcomeBtn')?.addEventListener('click', closeWelcome);
+    $('#skipTutorialBtn')?.addEventListener('click', () => {
+      closeWelcome();
+      tutorial.markSkipped();
+      toast('Tutorial skipped. Replay anytime from the Guide button in the topbar.');
+    });
+
+    $('#startGuidedTourBtn')?.addEventListener('click', () => {
+      closeWelcome();
+      tutorial.startTutorial();
+    });
+
+    $('#quickStartBtn')?.addEventListener('click', () => {
+      closeWelcome();
+      musicPlayer.play();
+      if ($('#musicPlayBtn')) {
+        $('#musicPlayBtn').textContent = '⏸ Pause';
+        $('#musicPlayBtn').classList.add('is-playing');
+      }
+      toast('Welcome to the Touchline. Best of luck today!');
+    });
+
+    // Mode specific tutorial chips
+    $$('.mode-tour-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.replayMode;
+        closeWelcome();
+        tutorial.startTutorial(mode);
+      });
+    });
+
     $('#startPlayingBtn')?.addEventListener('click', () => {
       closeWelcome();
       musicPlayer.play();
@@ -2454,9 +2499,11 @@ function bind(){
       }
       toast('Welcome to the Touchline. Best of luck today');
     });
+
     welcomeModal.addEventListener('click', (e) => {
       if (e.target === welcomeModal) closeWelcome();
     });
+
     $('#helpModalBtn')?.addEventListener('click', () => {
       welcomeModal.classList.add('is-open');
       welcomeModal.setAttribute('aria-hidden', 'false');

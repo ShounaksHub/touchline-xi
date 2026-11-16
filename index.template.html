@@ -825,7 +825,34 @@
       </div>
 
       <div class="welcome-modal-body">
-        <!-- 3 Feature Highlights Cards -->
+        <!-- Interactive Mode Replay / Guided Tour Launcher Row -->
+        <div class="welcome-tour-launcher-card">
+          <div class="welcome-tour-info">
+            <span class="welcome-tour-badge">INTERACTIVE ONBOARDING</span>
+            <h3>New to Touchline XI? Take the interactive tour</h3>
+            <p>Learn matchday controls, tactical formations, tournament progression, and player scouting with a live guided tour.</p>
+          </div>
+          <div class="welcome-tour-actions">
+            <button type="button" class="primary-button" id="startGuidedTourBtn">⭐ Start Guided Tour</button>
+            <button type="button" class="secondary-button" id="quickStartBtn">⚡ Quick Start</button>
+          </div>
+        </div>
+
+        <!-- Mode Specific Tutorial Replay Dropdown / Buttons -->
+        <div class="welcome-mode-tours-row">
+          <span class="mode-tours-label">Replay Specific Tutorial:</span>
+          <div class="mode-tours-chips">
+            <button type="button" class="mode-tour-chip" data-replay-mode="matchday">Match Centre</button>
+            <button type="button" class="mode-tour-chip" data-replay-mode="squad">Squad Lab</button>
+            <button type="button" class="mode-tour-chip" data-replay-mode="tournament">Tournament</button>
+            <button type="button" class="mode-tour-chip" data-replay-mode="dreamteam">Dream Team</button>
+            <button type="button" class="mode-tour-chip" data-replay-mode="scouting">Scouting</button>
+            <button type="button" class="mode-tour-chip" data-replay-mode="duel">1v1 &amp; Team Duel</button>
+            <button type="button" class="mode-tour-chip" data-replay-mode="vault">Replay Vault</button>
+          </div>
+        </div>
+
+        <!-- 4 Feature Highlights Cards -->
         <div class="welcome-cards-grid">
           <div class="welcome-card">
             <div class="welcome-card-icon">01</div>
@@ -877,7 +904,10 @@
           <input type="checkbox" id="dontShowWelcomeAgain" />
           <span>Don't show this briefing automatically on startup</span>
         </label>
-        <button class="primary-button" id="startPlayingBtn">Enter the field ↗</button>
+        <div class="welcome-footer-btns">
+          <button type="button" class="secondary-button" id="skipTutorialBtn">Skip for Now</button>
+          <button type="button" class="primary-button" id="startPlayingBtn">Enter the field ↗</button>
+        </div>
       </div>
     </div>
   </div>
