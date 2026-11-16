@@ -6,7 +6,7 @@ const settings={ctx:null,lastSize:null};
 
 export function playerPositions(match, side, time=0) {
   // If match has authoritative spatial playerStates from continuous simulation, use them!
-  if (match.playerStates && match.playerStates[side] && match.playerStates[side].length === 11) {
+  if (match.playerStates && match.playerStates[side] && match.playerStates[side].length > 0) {
     return match.playerStates[side].map((p, i) => {
       const idleX = Math.sin(time / 1200 + i * 4.2 + (match.minute || 0) * 0.6) * 0.5;
       const idleY = Math.cos(time / 1500 + i * 3.4 + (match.minute || 0) * 0.5) * 0.5;

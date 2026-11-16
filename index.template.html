@@ -593,11 +593,17 @@
             <div class="duel-versus-card">
               <div class="duel-versus-badge">VS</div>
               <div class="duel-mode-picker">
-                <label for="duelTypeSelect">Duel Challenge</label>
+                <label for="duelTypeSelect">Duel Challenge / Mode</label>
                 <select id="duelTypeSelect">
-                  <option value="attack_defence">Attack vs Defence</option>
-                  <option value="dribbling">Dribbling Duel</option>
-                  <option value="skill_challenge">Skill Challenge</option>
+                  <optgroup label="👤 1v1 Individual Duels">
+                    <option value="attack_defence" selected>1v1 Attack vs Defence</option>
+                    <option value="dribbling">1v1 Dribbling Duel</option>
+                    <option value="skill_challenge">1v1 Skill Challenge</option>
+                  </optgroup>
+                  <optgroup label="👥 Team vs Team (1 Player Per Nation)">
+                    <option value="team_5aside">5-a-side Match (1 Player / Nation)</option>
+                    <option value="team_11aside">11-a-side Match (1 Player / Nation)</option>
+                  </optgroup>
                 </select>
               </div>
               <div class="duel-rounds-picker">
@@ -618,6 +624,40 @@
               </div>
               <div class="duel-selected-preview" id="duelP2Preview">
                 <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Team vs Team Squad Roster Builder (Visible in 5-aside or 11-aside modes) -->
+          <div class="duel-team-builder-card" id="duelTeamBuilderCard" style="display:none;">
+            <div class="duel-team-builder-header">
+              <div>
+                <span class="step-badge" id="duelTeamModeBadge">5-A-SIDE · 1 PLAYER PER NATION</span>
+                <h3>Draft User 1 &amp; User 2 Squads</h3>
+                <p class="section-sub">Each squad must feature exactly one player per nation. Tap any slot to swap in any star from the 16,396 global player database.</p>
+              </div>
+              <div class="duel-team-builder-actions">
+                <button class="secondary-button" id="duelAutoDraftTeamsBtn" type="button">🎲 Auto-Draft Balanced Nations</button>
+              </div>
+            </div>
+
+            <div class="duel-teams-grid">
+              <!-- User 1 Squad -->
+              <div class="duel-team-column">
+                <div class="duel-team-column-header">
+                  <h4>USER 1 SQUAD</h4>
+                  <span id="duelU1Summary">OVR: 91 · 5 Nations</span>
+                </div>
+                <div class="duel-team-slots" id="duelU1SlotsGrid"></div>
+              </div>
+
+              <!-- User 2 Squad -->
+              <div class="duel-team-column">
+                <div class="duel-team-column-header">
+                  <h4>USER 2 SQUAD</h4>
+                  <span id="duelU2Summary">OVR: 91 · 5 Nations</span>
+                </div>
+                <div class="duel-team-slots" id="duelU2SlotsGrid"></div>
               </div>
             </div>
           </div>

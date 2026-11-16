@@ -6135,6 +6135,150 @@ h1, h2, h3, h4,
   flex-wrap: wrap;
 }
 
+/* 5-a-side & 11-a-side Multi-User Team vs Team Builder */
+.duel-team-builder-card {
+  margin-top: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.duel-team-builder-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.duel-team-builder-header h3 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 850;
+  color: var(--color-text-primary);
+}
+
+.duel-team-builder-header p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.duel-team-builder-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.duel-teams-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 800px) {
+  .duel-teams-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.duel-team-column {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  padding: 16px;
+}
+
+.duel-team-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.duel-team-column-header h4 {
+  margin: 0 0 2px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.duel-team-column-header small {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.duel-team-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.duel-squad-slot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.duel-squad-slot:hover {
+  border-color: var(--color-accent);
+  background: var(--color-surface-sunken);
+  transform: translateX(2px);
+}
+
+.duel-slot-num {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--color-accent);
+  width: 24px;
+  text-align: center;
+}
+
+.duel-slot-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.duel-slot-info strong {
+  font-size: 13px;
+  font-weight: 750;
+  color: var(--color-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.duel-slot-info span {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.duel-slot-ovr {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--color-accent);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-subtle);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+
 </style>
   
 </head>
@@ -6720,11 +6864,17 @@ h1, h2, h3, h4,
             <div class="duel-versus-card">
               <div class="duel-versus-badge">VS</div>
               <div class="duel-mode-picker">
-                <label for="duelTypeSelect">Duel Challenge</label>
+                <label for="duelTypeSelect">Duel Challenge / Mode</label>
                 <select id="duelTypeSelect">
-                  <option value="attack_defence">Attack vs Defence</option>
-                  <option value="dribbling">Dribbling Duel</option>
-                  <option value="skill_challenge">Skill Challenge</option>
+                  <optgroup label="👤 1v1 Individual Duels">
+                    <option value="attack_defence" selected>1v1 Attack vs Defence</option>
+                    <option value="dribbling">1v1 Dribbling Duel</option>
+                    <option value="skill_challenge">1v1 Skill Challenge</option>
+                  </optgroup>
+                  <optgroup label="👥 Team vs Team (1 Player Per Nation)">
+                    <option value="team_5aside">5-a-side Match (1 Player / Nation)</option>
+                    <option value="team_11aside">11-a-side Match (1 Player / Nation)</option>
+                  </optgroup>
                 </select>
               </div>
               <div class="duel-rounds-picker">
@@ -6745,6 +6895,40 @@ h1, h2, h3, h4,
               </div>
               <div class="duel-selected-preview" id="duelP2Preview">
                 <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Team vs Team Squad Roster Builder (Visible in 5-aside or 11-aside modes) -->
+          <div class="duel-team-builder-card" id="duelTeamBuilderCard" style="display:none;">
+            <div class="duel-team-builder-header">
+              <div>
+                <span class="step-badge" id="duelTeamModeBadge">5-A-SIDE · 1 PLAYER PER NATION</span>
+                <h3>Draft User 1 &amp; User 2 Squads</h3>
+                <p class="section-sub">Each squad must feature exactly one player per nation. Tap any slot to swap in any star from the 16,396 global player database.</p>
+              </div>
+              <div class="duel-team-builder-actions">
+                <button class="secondary-button" id="duelAutoDraftTeamsBtn" type="button">🎲 Auto-Draft Balanced Nations</button>
+              </div>
+            </div>
+
+            <div class="duel-teams-grid">
+              <!-- User 1 Squad -->
+              <div class="duel-team-column">
+                <div class="duel-team-column-header">
+                  <h4>USER 1 SQUAD</h4>
+                  <span id="duelU1Summary">OVR: 91 · 5 Nations</span>
+                </div>
+                <div class="duel-team-slots" id="duelU1SlotsGrid"></div>
+              </div>
+
+              <!-- User 2 Squad -->
+              <div class="duel-team-column">
+                <div class="duel-team-column-header">
+                  <h4>USER 2 SQUAD</h4>
+                  <span id="duelU2Summary">OVR: 91 · 5 Nations</span>
+                </div>
+                <div class="duel-team-slots" id="duelU2SlotsGrid"></div>
               </div>
             </div>
           </div>
@@ -246050,6 +246234,16 @@ const FORMATIONS = {
     ['LM',48,14], ['CM',46,38], ['CM',46,62], ['RM',48,86],
     ['LW',72,18], ['ST',78,50], ['RW',72,82]
   ],
+  // 5-a-side Formations
+  '1-2-1': [
+    ['GK',7,50], ['CB',28,32], ['CB',28,68], ['CM',54,50], ['ST',78,50]
+  ],
+  '2-1-1': [
+    ['GK',7,50], ['LB',28,25], ['RB',28,75], ['CM',52,50], ['ST',78,50]
+  ],
+  '1-1-2': [
+    ['GK',7,50], ['CB',28,50], ['CM',52,50], ['LW',76,28], ['RW',76,72]
+  ]
 };
 
 const PLAY_STYLES = {
@@ -246483,9 +246677,12 @@ const emptyStats = () => ({
 });
 
 function validateLineup(teamId, ids) {
-  if (!Array.isArray(ids) || ids.length !== 11 || new Set(ids).size !== 11) {
-    return false;
-  }
+  if (!Array.isArray(ids)) return false;
+  const count = ids.length;
+  // Supports standard 11-a-side and 5-a-side
+  if (count !== 11 && count !== 5) return false;
+  if (new Set(ids).size !== count) return false;
+
   const team = getTeam(teamId);
   if (!team) return false;
   
@@ -246495,8 +246692,8 @@ function validateLineup(teamId, ids) {
     return false;
   }
 
-  // Outfield slots 1..10 must not be goalkeepers (unless squad has no outfield players)
-  for (let i = 1; i < 11; i++) {
+  // Outfield slots 1..N-1 must not be goalkeepers (unless squad has no outfield players)
+  for (let i = 1; i < count; i++) {
     const p = getPlayer(team, ids[i]);
     if (p && p.role === 'GK') {
       return false;
@@ -246628,8 +246825,8 @@ function createMatch(options = {}) {
   const injuryFirstHalf = 1 + (seedToState(`${seed}-inj1`) % 4);
   const injurySecondHalf = 2 + (seedToState(`${seed}-inj2`) % 5);
 
-  const homeFormation = options.formation && FORMATIONS[options.formation] ? options.formation : '4-3-3';
-  const awayFormation = '4-3-3';
+  const homeFormation = options.formation && FORMATIONS[options.formation] ? options.formation : (lineups.home.length === 5 ? '1-2-1' : '4-3-3');
+  const awayFormation = options.awayFormation && FORMATIONS[options.awayFormation] ? options.awayFormation : (lineups.away.length === 5 ? '1-2-1' : '4-3-3');
 
   const homeTactics = { ...DEFAULT_TACTICS, ...(options.tactics ?? {}) };
   const awayTactics = {
@@ -246651,9 +246848,9 @@ function createMatch(options = {}) {
     z: 0,
     vx: 0,
     vy: 0,
-    carrierId: playerStates.home[9]?.id || lineups.home[9] || null, // Striker has kickoff
+    carrierId: playerStates.home.at(-1)?.id || lineups.home.at(-1) || null, // Forward has kickoff
     carrierSide: 'home',
-    lastCarrierId: playerStates.home[9]?.id || null,
+    lastCarrierId: playerStates.home.at(-1)?.id || null,
     lastSide: 'home',
     inPlay: true
   };
@@ -247788,7 +247985,7 @@ const settings={ctx:null,lastSize:null};
 
 function playerPositions(match, side, time=0) {
   // If match has authoritative spatial playerStates from continuous simulation, use them!
-  if (match.playerStates && match.playerStates[side] && match.playerStates[side].length === 11) {
+  if (match.playerStates && match.playerStates[side] && match.playerStates[side].length > 0) {
     return match.playerStates[side].map((p, i) => {
       const idleX = Math.sin(time / 1200 + i * 4.2 + (match.minute || 0) * 0.6) * 0.5;
       const idleY = Math.cos(time / 1500 + i * 3.4 + (match.minute || 0) * 0.5) * 0.5;
@@ -249974,12 +250171,20 @@ function renderModalPlayers() {
   const query = $('#playerSearchInput').value.trim().toLowerCase();
   const filterCat = $('#modalRoleFilter').value;
 
-  const isDuel = activeModalTarget && (activeModalTarget.type === 'duelP1' || activeModalTarget.type === 'duelP2');
+  const is1v1Duel = activeModalTarget && (activeModalTarget.type === 'duelP1' || activeModalTarget.type === 'duelP2');
+  const isTeamSlot = activeModalTarget && (activeModalTarget.type === 'duelU1' || activeModalTarget.type === 'duelU2');
 
   const filtered = ALL_PLAYERS_POOL.filter(p => {
-    if (!isDuel) {
+    if (!is1v1Duel) {
       if (activeModalTarget.role === 'GK' && p.role !== 'GK') return false;
       if (activeModalTarget.role !== 'GK' && p.role === 'GK') return false;
+    }
+
+    // In Team vs Team mode, enforce distinct nations
+    if (isTeamSlot) {
+      const squad = activeModalTarget.type === 'duelU1' ? user1Squad : user2Squad;
+      const currentNats = squad.map((x, i) => i === activeModalTarget.index ? null : x.nat).filter(Boolean);
+      if (currentNats.includes(p.nat)) return false;
     }
 
     if (filterCat !== 'ALL') {
@@ -250031,6 +250236,34 @@ function selectPlayerFromModal(playerId) {
     $('#playerPickerModal').classList.remove('is-open');
     renderDuelMode();
     toast(`${chosen.name} selected as Player 2!`);
+    return;
+  }
+
+  if (activeModalTarget.type === 'duelU1') {
+    // Check one player per nation
+    const currentNats = user1Squad.map((p, i) => i === activeModalTarget.index ? null : p.nat).filter(Boolean);
+    if (currentNats.includes(chosen.nat)) {
+      toast(`User 1 squad already has a player from ${chosen.nat}. Exactly one player per nation is allowed.`);
+      return;
+    }
+    user1Squad[activeModalTarget.index] = { ...chosen };
+    $('#playerPickerModal').classList.remove('is-open');
+    renderDuelMode();
+    toast(`${chosen.name} (${chosen.nat}) selected for User 1!`);
+    return;
+  }
+
+  if (activeModalTarget.type === 'duelU2') {
+    // Check one player per nation
+    const currentNats = user2Squad.map((p, i) => i === activeModalTarget.index ? null : p.nat).filter(Boolean);
+    if (currentNats.includes(chosen.nat)) {
+      toast(`User 2 squad already has a player from ${chosen.nat}. Exactly one player per nation is allowed.`);
+      return;
+    }
+    user2Squad[activeModalTarget.index] = { ...chosen };
+    $('#playerPickerModal').classList.remove('is-open');
+    renderDuelMode();
+    toast(`${chosen.name} (${chosen.nat}) selected for User 2!`);
     return;
   }
 
@@ -250508,7 +250741,7 @@ function quickSimulateTournamentMatch(matchId) {
 }
 
 // ==========================================
-// 4. 1v1 Player Duel Mode
+// 4. 1v1 Player Duel & Team vs Team Mode
 // ==========================================
 let duelP1 = ALL_PLAYERS_POOL[0]; // Top rated (e.g. Messi)
 let duelP2 = ALL_PLAYERS_POOL[1]; // Second top rated (e.g. Ronaldo)
@@ -250517,7 +250750,133 @@ let duelRunning = false;
 let duelAccumulator = 0;
 let duelReplay = null;
 
+// Multi-user Team vs Team State (1 Player per Nation)
+let user1Squad = [];
+let user2Squad = [];
+
+function initDefaultUserSquads(mode = '5aside') {
+  const size = mode === '5aside' ? 5 : 11;
+  const usedNations = new Set();
+
+  const pickDistinctNation = (rolePredicate) => {
+    const p = ALL_PLAYERS_POOL.find(x => rolePredicate(x.role) && !usedNations.has(x.nat));
+    if (p) {
+      usedNations.add(p.nat);
+      return { ...p };
+    }
+    // Fallback if nations exhausted
+    const fallback = ALL_PLAYERS_POOL.find(x => rolePredicate(x.role));
+    return fallback ? { ...fallback } : { ...ALL_PLAYERS_POOL[0] };
+  };
+
+  // Draft User 1 Squad
+  usedNations.clear();
+  if (size === 5) {
+    user1Squad = [
+      pickDistinctNation(r => r === 'GK'),
+      pickDistinctNation(r => ['CB','LB','RB'].includes(r)),
+      pickDistinctNation(r => ['CB','LB','RB','CDM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM','LM','RM'].includes(r)),
+      pickDistinctNation(r => ['ST','LW','RW'].includes(r))
+    ];
+  } else {
+    user1Squad = [
+      pickDistinctNation(r => r === 'GK'),
+      pickDistinctNation(r => ['LB','LWB'].includes(r)),
+      pickDistinctNation(r => r === 'CB'),
+      pickDistinctNation(r => r === 'CB'),
+      pickDistinctNation(r => ['RB','RWB'].includes(r)),
+      pickDistinctNation(r => ['CDM','CM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM'].includes(r)),
+      pickDistinctNation(r => ['LW','LM'].includes(r)),
+      pickDistinctNation(r => r === 'ST'),
+      pickDistinctNation(r => ['RW','RM'].includes(r))
+    ];
+  }
+
+  // Draft User 2 Squad
+  usedNations.clear();
+  if (size === 5) {
+    user2Squad = [
+      pickDistinctNation(r => r === 'GK'),
+      pickDistinctNation(r => ['CB','LB','RB'].includes(r)),
+      pickDistinctNation(r => ['CB','LB','RB','CDM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM','LM','RM'].includes(r)),
+      pickDistinctNation(r => ['ST','LW','RW'].includes(r))
+    ];
+  } else {
+    user2Squad = [
+      pickDistinctNation(r => r === 'GK'),
+      pickDistinctNation(r => ['LB','LWB'].includes(r)),
+      pickDistinctNation(r => r === 'CB'),
+      pickDistinctNation(r => r === 'CB'),
+      pickDistinctNation(r => ['RB','RWB'].includes(r)),
+      pickDistinctNation(r => ['CDM','CM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM'].includes(r)),
+      pickDistinctNation(r => ['LW','LM'].includes(r)),
+      pickDistinctNation(r => r === 'ST'),
+      pickDistinctNation(r => ['RW','RM'].includes(r))
+    ];
+  }
+}
+
+initDefaultUserSquads('5aside');
+
 function renderDuelMode() {
+  const modeVal = $('#duelTypeSelect')?.value || 'attack_defence';
+  const isTeamMode = modeVal.startsWith('team_');
+
+  // Toggle visible sections depending on mode
+  if (isTeamMode) {
+    $('.duel-setup-grid').style.display = 'none';
+    $('#duelComparisonCard').style.display = 'none';
+    $('#duelTeamBuilderCard').style.display = 'block';
+
+    const count = modeVal === 'team_5aside' ? 5 : 11;
+    if (user1Squad.length !== count) {
+      initDefaultUserSquads(modeVal === 'team_5aside' ? '5aside' : '11aside');
+    }
+
+    $('#duelTeamModeBadge').textContent = `${count}-A-SIDE · 1 PLAYER PER NATION`;
+
+    const renderSquadSlots = (squad, gridId, userPrefix) => {
+      const container = $(gridId);
+      if (!container) return;
+      container.innerHTML = squad.map((p, idx) => `
+        <div class="duel-squad-slot" data-user="${userPrefix}" data-slot-index="${idx}">
+          <span class="duel-slot-num">${idx === 0 ? 'GK' : idx + 1}</span>
+          <div class="duel-slot-info">
+            <strong>${escapeHtml(p.name)}</strong>
+            <span>${escapeHtml(p.role)} · 🌍 ${escapeHtml(p.nat)}</span>
+          </div>
+          <span class="duel-slot-ovr">${p.ovr}</span>
+        </div>
+      `).join('');
+    };
+
+    renderSquadSlots(user1Squad, '#duelU1SlotsGrid', 'u1');
+    renderSquadSlots(user2Squad, '#duelU2SlotsGrid', 'u2');
+
+    const u1Avg = Math.round(user1Squad.reduce((a, b) => a + b.ovr, 0) / user1Squad.length);
+    const u2Avg = Math.round(user2Squad.reduce((a, b) => a + b.ovr, 0) / user2Squad.length);
+    const u1Nats = new Set(user1Squad.map(p => p.nat)).size;
+    const u2Nats = new Set(user2Squad.map(p => p.nat)).size;
+
+    $('#duelU1Summary').textContent = `OVR: ${u1Avg} · ${u1Nats}/${count} Nations`;
+    $('#duelU2Summary').textContent = `OVR: ${u2Avg} · ${u2Nats}/${count} Nations`;
+
+    $('#startDuelBtn').textContent = `▶ Kick Off ${count}v${count} Match`;
+    return;
+  }
+
+  // 1v1 Mode
+  $('.duel-setup-grid').style.display = 'grid';
+  $('#duelComparisonCard').style.display = 'block';
+  $('#duelTeamBuilderCard').style.display = 'none';
+  $('#startDuelBtn').textContent = '▶ Start Duel';
+
   if (!duelP1 || !duelP2) return;
 
   const renderCard = (p, elId) => {
@@ -250571,6 +250930,12 @@ function renderDuelMode() {
 
 function startDuelMatch() {
   const duelType = $('#duelTypeSelect').value;
+
+  if (duelType.startsWith('team_')) {
+    deployUserTeamMatch(duelType);
+    return;
+  }
+
   const rounds = parseInt($('#duelRoundsSelect').value, 10) || 5;
 
   currentDuel = createPlayerDuel(duelP1, duelP2, duelType, rounds);
@@ -250586,6 +250951,79 @@ function startDuelMatch() {
   updateDuelDisplay();
   scrollToSection('#duelArenaCard');
   toast(`⚔️ 1v1 Duel started! ${duelP1.name} vs ${duelP2.name} in ${duelType.replace('_', ' ').toUpperCase()} challenge!`);
+}
+
+function deployUserTeamMatch(duelType) {
+  stop();
+  const count = duelType === 'team_5aside' ? 5 : 11;
+  const formation = count === 5 ? '1-2-1' : '4-3-3';
+
+  // Strict validation: one player per nation
+  const u1Nats = user1Squad.map(p => p.nat);
+  const u2Nats = user2Squad.map(p => p.nat);
+
+  if (new Set(u1Nats).size !== count) {
+    toast(`User 1 must select exactly one player per nation (${new Set(u1Nats).size}/${count} unique).`);
+    return;
+  }
+  if (new Set(u2Nats).size !== count) {
+    toast(`User 2 must select exactly one player per nation (${new Set(u2Nats).size}/${count} unique).`);
+    return;
+  }
+
+  const user1Team = {
+    id: 'user1_xi',
+    name: 'User 1 FC',
+    short: 'U1',
+    city: 'All-Nations',
+    primary: '#d8ff69',
+    secondary: '#17241e',
+    crest: '1',
+    isCustom: true,
+    players: user1Squad.map((p, idx) => ({ ...p, number: idx + 1, overall: p.ovr, ovr: p.ovr, keeping: p.role === 'GK' ? p.ovr : 5 })),
+    starting: user1Squad.map(p => p.id),
+    substitutes: []
+  };
+
+  const user2Team = {
+    id: 'user2_xi',
+    name: 'User 2 FC',
+    short: 'U2',
+    city: 'All-Nations',
+    primary: '#92C8F0',
+    secondary: '#171B21',
+    crest: '2',
+    isCustom: true,
+    players: user2Squad.map((p, idx) => ({ ...p, number: idx + 1, overall: p.ovr, ovr: p.ovr, keeping: p.role === 'GK' ? p.ovr : 5 })),
+    starting: user2Squad.map(p => p.id),
+    substitutes: []
+  };
+
+  registerCustomTeam(user1Team);
+  registerCustomTeam(user2Team);
+
+  match = createMatch({
+    customHomeTeam: user1Team,
+    homeId: user1Team.id,
+    awayId: user2Team.id,
+    customAwayTeam: user2Team,
+    seed: `TEAM-VS-${count}-${Math.floor(Math.random() * 90000)}`,
+    formation,
+    awayFormation: formation,
+    homeLineup: user1Team.starting
+  });
+
+  renderSelects();
+  persistPrefs();
+  render();
+
+  showPage('matchday');
+  scrollToSection('#matchday');
+  running = true;
+  accumulator = 0;
+  updatePlayButton();
+  sound.playWhistle(0.25);
+  toast(`⚔️ User 1 FC vs User 2 FC (${count}-a-side) kicked off! Exactly 1 player per nation.`);
 }
 
 function updateDuelDisplay() {
@@ -251659,7 +252097,49 @@ function bind(){
     }
   });
 
-  // 1v1 Player Duel Bindings
+  // 1v1 Player Duel & Team vs Team Bindings
+  $('#duelTypeSelect')?.addEventListener('change', () => {
+    const val = $('#duelTypeSelect').value;
+    if (val === 'team_5aside') {
+      initDefaultUserSquads('5aside');
+    } else if (val === 'team_11aside') {
+      initDefaultUserSquads('11aside');
+    }
+    renderDuelMode();
+  });
+
+  $('#duelAutoDraftTeamsBtn')?.addEventListener('click', () => {
+    const val = $('#duelTypeSelect')?.value || 'team_5aside';
+    initDefaultUserSquads(val === 'team_5aside' ? '5aside' : '11aside');
+    renderDuelMode();
+    toast('✨ Auto-drafted squads with 1 unique player per nation!');
+  });
+
+  const handleSlotClick = (e) => {
+    const slot = e.target.closest('.duel-squad-slot');
+    if (!slot) return;
+    const user = slot.dataset.user; // 'u1' or 'u2'
+    const index = parseInt(slot.dataset.slotIndex, 10);
+    const targetSquad = user === 'u1' ? user1Squad : user2Squad;
+    const current = targetSquad[index];
+    if (!current) return;
+
+    activeModalTarget = {
+      type: user === 'u1' ? 'duelU1' : 'duelU2',
+      index,
+      role: index === 0 ? 'GK' : current.role
+    };
+
+    $('#modalSlotTitle').textContent = `Select ${index === 0 ? 'Goalkeeper' : 'Outfield'} for ${user === 'u1' ? 'User 1' : 'User 2'} (Slot ${index + 1}: ${current.name})`;
+    $('#playerPickerModal').classList.add('is-open');
+    $('#playerSearchInput').value = '';
+    $('#modalRoleFilter').value = index === 0 ? 'GK' : 'ALL';
+    renderModalPlayers();
+  };
+
+  $('#duelU1SlotsGrid')?.addEventListener('click', handleSlotClick);
+  $('#duelU2SlotsGrid')?.addEventListener('click', handleSlotClick);
+
   $('#duelPickP1Btn')?.addEventListener('click', () => {
     activeModalTarget = { type: 'duelP1' };
     $('#modalSlotTitle').textContent = `Select Player 1 (Current: ${duelP1.name})`;

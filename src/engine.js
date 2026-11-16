@@ -88,9 +88,12 @@ const emptyStats = () => ({
 });
 
 export function validateLineup(teamId, ids) {
-  if (!Array.isArray(ids) || ids.length !== 11 || new Set(ids).size !== 11) {
-    return false;
-  }
+  if (!Array.isArray(ids)) return false;
+  const count = ids.length;
+  // Supports standard 11-a-side and 5-a-side
+  if (count !== 11 && count !== 5) return false;
+  if (new Set(ids).size !== count) return false;
+
   const team = getTeam(teamId);
   if (!team) return false;
   
@@ -100,8 +103,8 @@ export function validateLineup(teamId, ids) {
     return false;
   }
 
-  // Outfield slots 1..10 must not be goalkeepers (unless squad has no outfield players)
-  for (let i = 1; i < 11; i++) {
+  // Outfield slots 1..N-1 must not be goalkeepers (unless squad has no outfield players)
+  for (let i = 1; i < count; i++) {
     const p = getPlayer(team, ids[i]);
     if (p && p.role === 'GK') {
       return false;
@@ -233,8 +236,8 @@ export function createMatch(options = {}) {
   const injuryFirstHalf = 1 + (seedToState(`${seed}-inj1`) % 4);
   const injurySecondHalf = 2 + (seedToState(`${seed}-inj2`) % 5);
 
-  const homeFormation = options.formation && FORMATIONS[options.formation] ? options.formation : '4-3-3';
-  const awayFormation = '4-3-3';
+  const homeFormation = options.formation && FORMATIONS[options.formation] ? options.formation : (lineups.home.length === 5 ? '1-2-1' : '4-3-3');
+  const awayFormation = options.awayFormation && FORMATIONS[options.awayFormation] ? options.awayFormation : (lineups.away.length === 5 ? '1-2-1' : '4-3-3');
 
   const homeTactics = { ...DEFAULT_TACTICS, ...(options.tactics ?? {}) };
   const awayTactics = {
@@ -256,9 +259,9 @@ export function createMatch(options = {}) {
     z: 0,
     vx: 0,
     vy: 0,
-    carrierId: playerStates.home[9]?.id || lineups.home[9] || null, // Striker has kickoff
+    carrierId: playerStates.home.at(-1)?.id || lineups.home.at(-1) || null, // Forward has kickoff
     carrierSide: 'home',
-    lastCarrierId: playerStates.home[9]?.id || null,
+    lastCarrierId: playerStates.home.at(-1)?.id || null,
     lastSide: 'home',
     inPlay: true
   };

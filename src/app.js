@@ -385,12 +385,20 @@ function renderModalPlayers() {
   const query = $('#playerSearchInput').value.trim().toLowerCase();
   const filterCat = $('#modalRoleFilter').value;
 
-  const isDuel = activeModalTarget && (activeModalTarget.type === 'duelP1' || activeModalTarget.type === 'duelP2');
+  const is1v1Duel = activeModalTarget && (activeModalTarget.type === 'duelP1' || activeModalTarget.type === 'duelP2');
+  const isTeamSlot = activeModalTarget && (activeModalTarget.type === 'duelU1' || activeModalTarget.type === 'duelU2');
 
   const filtered = ALL_PLAYERS_POOL.filter(p => {
-    if (!isDuel) {
+    if (!is1v1Duel) {
       if (activeModalTarget.role === 'GK' && p.role !== 'GK') return false;
       if (activeModalTarget.role !== 'GK' && p.role === 'GK') return false;
+    }
+
+    // In Team vs Team mode, enforce distinct nations
+    if (isTeamSlot) {
+      const squad = activeModalTarget.type === 'duelU1' ? user1Squad : user2Squad;
+      const currentNats = squad.map((x, i) => i === activeModalTarget.index ? null : x.nat).filter(Boolean);
+      if (currentNats.includes(p.nat)) return false;
     }
 
     if (filterCat !== 'ALL') {
@@ -442,6 +450,34 @@ function selectPlayerFromModal(playerId) {
     $('#playerPickerModal').classList.remove('is-open');
     renderDuelMode();
     toast(`${chosen.name} selected as Player 2!`);
+    return;
+  }
+
+  if (activeModalTarget.type === 'duelU1') {
+    // Check one player per nation
+    const currentNats = user1Squad.map((p, i) => i === activeModalTarget.index ? null : p.nat).filter(Boolean);
+    if (currentNats.includes(chosen.nat)) {
+      toast(`User 1 squad already has a player from ${chosen.nat}. Exactly one player per nation is allowed.`);
+      return;
+    }
+    user1Squad[activeModalTarget.index] = { ...chosen };
+    $('#playerPickerModal').classList.remove('is-open');
+    renderDuelMode();
+    toast(`${chosen.name} (${chosen.nat}) selected for User 1!`);
+    return;
+  }
+
+  if (activeModalTarget.type === 'duelU2') {
+    // Check one player per nation
+    const currentNats = user2Squad.map((p, i) => i === activeModalTarget.index ? null : p.nat).filter(Boolean);
+    if (currentNats.includes(chosen.nat)) {
+      toast(`User 2 squad already has a player from ${chosen.nat}. Exactly one player per nation is allowed.`);
+      return;
+    }
+    user2Squad[activeModalTarget.index] = { ...chosen };
+    $('#playerPickerModal').classList.remove('is-open');
+    renderDuelMode();
+    toast(`${chosen.name} (${chosen.nat}) selected for User 2!`);
     return;
   }
 
@@ -919,7 +955,7 @@ function quickSimulateTournamentMatch(matchId) {
 }
 
 // ==========================================
-// 4. 1v1 Player Duel Mode
+// 4. 1v1 Player Duel & Team vs Team Mode
 // ==========================================
 let duelP1 = ALL_PLAYERS_POOL[0]; // Top rated (e.g. Messi)
 let duelP2 = ALL_PLAYERS_POOL[1]; // Second top rated (e.g. Ronaldo)
@@ -928,7 +964,133 @@ let duelRunning = false;
 let duelAccumulator = 0;
 let duelReplay = null;
 
+// Multi-user Team vs Team State (1 Player per Nation)
+let user1Squad = [];
+let user2Squad = [];
+
+function initDefaultUserSquads(mode = '5aside') {
+  const size = mode === '5aside' ? 5 : 11;
+  const usedNations = new Set();
+
+  const pickDistinctNation = (rolePredicate) => {
+    const p = ALL_PLAYERS_POOL.find(x => rolePredicate(x.role) && !usedNations.has(x.nat));
+    if (p) {
+      usedNations.add(p.nat);
+      return { ...p };
+    }
+    // Fallback if nations exhausted
+    const fallback = ALL_PLAYERS_POOL.find(x => rolePredicate(x.role));
+    return fallback ? { ...fallback } : { ...ALL_PLAYERS_POOL[0] };
+  };
+
+  // Draft User 1 Squad
+  usedNations.clear();
+  if (size === 5) {
+    user1Squad = [
+      pickDistinctNation(r => r === 'GK'),
+      pickDistinctNation(r => ['CB','LB','RB'].includes(r)),
+      pickDistinctNation(r => ['CB','LB','RB','CDM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM','LM','RM'].includes(r)),
+      pickDistinctNation(r => ['ST','LW','RW'].includes(r))
+    ];
+  } else {
+    user1Squad = [
+      pickDistinctNation(r => r === 'GK'),
+      pickDistinctNation(r => ['LB','LWB'].includes(r)),
+      pickDistinctNation(r => r === 'CB'),
+      pickDistinctNation(r => r === 'CB'),
+      pickDistinctNation(r => ['RB','RWB'].includes(r)),
+      pickDistinctNation(r => ['CDM','CM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM'].includes(r)),
+      pickDistinctNation(r => ['LW','LM'].includes(r)),
+      pickDistinctNation(r => r === 'ST'),
+      pickDistinctNation(r => ['RW','RM'].includes(r))
+    ];
+  }
+
+  // Draft User 2 Squad
+  usedNations.clear();
+  if (size === 5) {
+    user2Squad = [
+      pickDistinctNation(r => r === 'GK'),
+      pickDistinctNation(r => ['CB','LB','RB'].includes(r)),
+      pickDistinctNation(r => ['CB','LB','RB','CDM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM','LM','RM'].includes(r)),
+      pickDistinctNation(r => ['ST','LW','RW'].includes(r))
+    ];
+  } else {
+    user2Squad = [
+      pickDistinctNation(r => r === 'GK'),
+      pickDistinctNation(r => ['LB','LWB'].includes(r)),
+      pickDistinctNation(r => r === 'CB'),
+      pickDistinctNation(r => r === 'CB'),
+      pickDistinctNation(r => ['RB','RWB'].includes(r)),
+      pickDistinctNation(r => ['CDM','CM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM'].includes(r)),
+      pickDistinctNation(r => ['CM','CAM'].includes(r)),
+      pickDistinctNation(r => ['LW','LM'].includes(r)),
+      pickDistinctNation(r => r === 'ST'),
+      pickDistinctNation(r => ['RW','RM'].includes(r))
+    ];
+  }
+}
+
+initDefaultUserSquads('5aside');
+
 function renderDuelMode() {
+  const modeVal = $('#duelTypeSelect')?.value || 'attack_defence';
+  const isTeamMode = modeVal.startsWith('team_');
+
+  // Toggle visible sections depending on mode
+  if (isTeamMode) {
+    $('.duel-setup-grid').style.display = 'none';
+    $('#duelComparisonCard').style.display = 'none';
+    $('#duelTeamBuilderCard').style.display = 'block';
+
+    const count = modeVal === 'team_5aside' ? 5 : 11;
+    if (user1Squad.length !== count) {
+      initDefaultUserSquads(modeVal === 'team_5aside' ? '5aside' : '11aside');
+    }
+
+    $('#duelTeamModeBadge').textContent = `${count}-A-SIDE · 1 PLAYER PER NATION`;
+
+    const renderSquadSlots = (squad, gridId, userPrefix) => {
+      const container = $(gridId);
+      if (!container) return;
+      container.innerHTML = squad.map((p, idx) => `
+        <div class="duel-squad-slot" data-user="${userPrefix}" data-slot-index="${idx}">
+          <span class="duel-slot-num">${idx === 0 ? 'GK' : idx + 1}</span>
+          <div class="duel-slot-info">
+            <strong>${escapeHtml(p.name)}</strong>
+            <span>${escapeHtml(p.role)} · 🌍 ${escapeHtml(p.nat)}</span>
+          </div>
+          <span class="duel-slot-ovr">${p.ovr}</span>
+        </div>
+      `).join('');
+    };
+
+    renderSquadSlots(user1Squad, '#duelU1SlotsGrid', 'u1');
+    renderSquadSlots(user2Squad, '#duelU2SlotsGrid', 'u2');
+
+    const u1Avg = Math.round(user1Squad.reduce((a, b) => a + b.ovr, 0) / user1Squad.length);
+    const u2Avg = Math.round(user2Squad.reduce((a, b) => a + b.ovr, 0) / user2Squad.length);
+    const u1Nats = new Set(user1Squad.map(p => p.nat)).size;
+    const u2Nats = new Set(user2Squad.map(p => p.nat)).size;
+
+    $('#duelU1Summary').textContent = `OVR: ${u1Avg} · ${u1Nats}/${count} Nations`;
+    $('#duelU2Summary').textContent = `OVR: ${u2Avg} · ${u2Nats}/${count} Nations`;
+
+    $('#startDuelBtn').textContent = `▶ Kick Off ${count}v${count} Match`;
+    return;
+  }
+
+  // 1v1 Mode
+  $('.duel-setup-grid').style.display = 'grid';
+  $('#duelComparisonCard').style.display = 'block';
+  $('#duelTeamBuilderCard').style.display = 'none';
+  $('#startDuelBtn').textContent = '▶ Start Duel';
+
   if (!duelP1 || !duelP2) return;
 
   const renderCard = (p, elId) => {
@@ -982,6 +1144,12 @@ function renderDuelMode() {
 
 function startDuelMatch() {
   const duelType = $('#duelTypeSelect').value;
+
+  if (duelType.startsWith('team_')) {
+    deployUserTeamMatch(duelType);
+    return;
+  }
+
   const rounds = parseInt($('#duelRoundsSelect').value, 10) || 5;
 
   currentDuel = createPlayerDuel(duelP1, duelP2, duelType, rounds);
@@ -997,6 +1165,79 @@ function startDuelMatch() {
   updateDuelDisplay();
   scrollToSection('#duelArenaCard');
   toast(`⚔️ 1v1 Duel started! ${duelP1.name} vs ${duelP2.name} in ${duelType.replace('_', ' ').toUpperCase()} challenge!`);
+}
+
+function deployUserTeamMatch(duelType) {
+  stop();
+  const count = duelType === 'team_5aside' ? 5 : 11;
+  const formation = count === 5 ? '1-2-1' : '4-3-3';
+
+  // Strict validation: one player per nation
+  const u1Nats = user1Squad.map(p => p.nat);
+  const u2Nats = user2Squad.map(p => p.nat);
+
+  if (new Set(u1Nats).size !== count) {
+    toast(`User 1 must select exactly one player per nation (${new Set(u1Nats).size}/${count} unique).`);
+    return;
+  }
+  if (new Set(u2Nats).size !== count) {
+    toast(`User 2 must select exactly one player per nation (${new Set(u2Nats).size}/${count} unique).`);
+    return;
+  }
+
+  const user1Team = {
+    id: 'user1_xi',
+    name: 'User 1 FC',
+    short: 'U1',
+    city: 'All-Nations',
+    primary: '#d8ff69',
+    secondary: '#17241e',
+    crest: '1',
+    isCustom: true,
+    players: user1Squad.map((p, idx) => ({ ...p, number: idx + 1, overall: p.ovr, ovr: p.ovr, keeping: p.role === 'GK' ? p.ovr : 5 })),
+    starting: user1Squad.map(p => p.id),
+    substitutes: []
+  };
+
+  const user2Team = {
+    id: 'user2_xi',
+    name: 'User 2 FC',
+    short: 'U2',
+    city: 'All-Nations',
+    primary: '#92C8F0',
+    secondary: '#171B21',
+    crest: '2',
+    isCustom: true,
+    players: user2Squad.map((p, idx) => ({ ...p, number: idx + 1, overall: p.ovr, ovr: p.ovr, keeping: p.role === 'GK' ? p.ovr : 5 })),
+    starting: user2Squad.map(p => p.id),
+    substitutes: []
+  };
+
+  registerCustomTeam(user1Team);
+  registerCustomTeam(user2Team);
+
+  match = createMatch({
+    customHomeTeam: user1Team,
+    homeId: user1Team.id,
+    awayId: user2Team.id,
+    customAwayTeam: user2Team,
+    seed: `TEAM-VS-${count}-${Math.floor(Math.random() * 90000)}`,
+    formation,
+    awayFormation: formation,
+    homeLineup: user1Team.starting
+  });
+
+  renderSelects();
+  persistPrefs();
+  render();
+
+  showPage('matchday');
+  scrollToSection('#matchday');
+  running = true;
+  accumulator = 0;
+  updatePlayButton();
+  sound.playWhistle(0.25);
+  toast(`⚔️ User 1 FC vs User 2 FC (${count}-a-side) kicked off! Exactly 1 player per nation.`);
 }
 
 function updateDuelDisplay() {
@@ -2070,7 +2311,49 @@ function bind(){
     }
   });
 
-  // 1v1 Player Duel Bindings
+  // 1v1 Player Duel & Team vs Team Bindings
+  $('#duelTypeSelect')?.addEventListener('change', () => {
+    const val = $('#duelTypeSelect').value;
+    if (val === 'team_5aside') {
+      initDefaultUserSquads('5aside');
+    } else if (val === 'team_11aside') {
+      initDefaultUserSquads('11aside');
+    }
+    renderDuelMode();
+  });
+
+  $('#duelAutoDraftTeamsBtn')?.addEventListener('click', () => {
+    const val = $('#duelTypeSelect')?.value || 'team_5aside';
+    initDefaultUserSquads(val === 'team_5aside' ? '5aside' : '11aside');
+    renderDuelMode();
+    toast('✨ Auto-drafted squads with 1 unique player per nation!');
+  });
+
+  const handleSlotClick = (e) => {
+    const slot = e.target.closest('.duel-squad-slot');
+    if (!slot) return;
+    const user = slot.dataset.user; // 'u1' or 'u2'
+    const index = parseInt(slot.dataset.slotIndex, 10);
+    const targetSquad = user === 'u1' ? user1Squad : user2Squad;
+    const current = targetSquad[index];
+    if (!current) return;
+
+    activeModalTarget = {
+      type: user === 'u1' ? 'duelU1' : 'duelU2',
+      index,
+      role: index === 0 ? 'GK' : current.role
+    };
+
+    $('#modalSlotTitle').textContent = `Select ${index === 0 ? 'Goalkeeper' : 'Outfield'} for ${user === 'u1' ? 'User 1' : 'User 2'} (Slot ${index + 1}: ${current.name})`;
+    $('#playerPickerModal').classList.add('is-open');
+    $('#playerSearchInput').value = '';
+    $('#modalRoleFilter').value = index === 0 ? 'GK' : 'ALL';
+    renderModalPlayers();
+  };
+
+  $('#duelU1SlotsGrid')?.addEventListener('click', handleSlotClick);
+  $('#duelU2SlotsGrid')?.addEventListener('click', handleSlotClick);
+
   $('#duelPickP1Btn')?.addEventListener('click', () => {
     activeModalTarget = { type: 'duelP1' };
     $('#modalSlotTitle').textContent = `Select Player 1 (Current: ${duelP1.name})`;
