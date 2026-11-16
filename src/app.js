@@ -1,4 +1,4 @@
-import {TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS} from './data.js';
+import {TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS, registerCustomTeam} from './data.js';
 import {createMatch, advanceMinute, playFullMatch, matchFromFrame, applyTactic, changeFormation, swapPlayer, resetStartingXI, resultLabel, applyShout, applyTeamTalk, simulatePenaltyShootout} from './engine.js';
 import {renderPitch} from './pitch.js';
 import {sound} from './sound.js';
@@ -207,10 +207,10 @@ function buildTeamOptionsHtml(selectedId, includeAllOption = false, filterQuery 
     html += '</optgroup>';
   }
 
-  if (q && selectedId && !selectedMatched) {
+  if (selectedId && !selectedMatched) {
     const selTeam = getTeam(selectedId);
     if (selTeam) {
-      html = `<optgroup label="📌 Currently Selected"><option value="${selTeam.id}" selected>${escapeHtml(selTeam.name)}</option></optgroup>` + html;
+      html = `<optgroup label="📌 Active Match Fixture"><option value="${selTeam.id}" selected>${escapeHtml(selTeam.name)}</option></optgroup>` + html;
     }
   }
 
@@ -426,9 +426,17 @@ function deployDreamTeamAndPlay() {
       players: aiPlayers.map((p, index) => ({ ...p, number: index + 1, overall: p.ovr, keeping: p.role === 'GK' ? p.ovr : 5 })),
       starting: aiDraft.starters.map(p => p.id), substitutes: aiDraft.bench.map(p => p.id)
     };
+    registerCustomTeam(customAwayTeam);
+    const existingAiIdx = TEAMS.findIndex(t => t.id === 'ai_dream_team');
+    if (existingAiIdx >= 0) {
+      TEAMS[existingAiIdx] = customAwayTeam;
+    } else {
+      TEAMS.unshift(customAwayTeam);
+    }
     awayId = customAwayTeam.id;
   }
 
+  registerCustomTeam(dreamTeamObj);
   const existingDreamIdx = TEAMS.findIndex(t => t.id === 'dream_team');
   if (existingDreamIdx >= 0) {
     TEAMS[existingDreamIdx] = dreamTeamObj;
@@ -458,7 +466,12 @@ function deployDreamTeamAndPlay() {
   render();
 
   showPage('matchday');
-  toast(`Dream Team deployed in a ${dreamConfig.formation} (${dreamConfig.style}) vs ${getTeam(awayId).name}`);
+  scrollToSection('#matchday');
+  running = true;
+  accumulator = 0;
+  updatePlayButton();
+  sound.playWhistle(0.25);
+  toast(`⚔️ Dream Team deployed & kicked off in a ${dreamConfig.formation} (${dreamConfig.style}) vs ${getTeam(awayId).name}!`);
 }
 
 function randomizeGalacticos() {
@@ -1882,6 +1895,7 @@ function frame(now){
       if(!running)break;
     }
   }
+  if (match) match.speed = speed;
   renderPitch($('#pitchCanvas'),match,now);
   requestAnimationFrame(frame);
 }

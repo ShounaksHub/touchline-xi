@@ -92,40 +92,100 @@ export function renderPitch(canvas,match,t=0) {
   const toPixel=(pos)=>({x:x+(pos.x/100)*w,y:y+(pos.y/100)*h});
   const homeTeam=getTeam(match.homeId),awayTeam=getTeam(match.awayId);
   const home=playerPositions(match,'home',t),away=playerPositions(match,'away',t);
-  const ballTarget=toPixel(match.ball);
-  const teams=[{name:'home',players:home,team:homeTeam},{name:'away',players:away,team:awayTeam}];
-  // Put the active ball carrier close to the actual ball and keep movement smooth.
-  const playing=teams.find(q=>q.name===match.possession)||teams[0];
-  let activeIdx=1,minDist=Infinity;
-  playing.players.forEach((p,i)=>{
-    if(i===0)return;
-    const pos=toPixel(p);const dist=(pos.x-ballTarget.x)**2+(pos.y-ballTarget.y)**2;
-    if(dist<minDist){minDist=dist;activeIdx=i;}
-  });
-  if(match.minute>0){
-    const p=playing.players[activeIdx];
-    const original=toPixel(p);
-    const move=clamp(.53,0,1);
-    p.x=lerp(p.x,match.ball.x,move);p.y=lerp(p.y,match.ball.y,move);
+
+  // Initialize or update persistent 60 FPS smooth visual interpolation state on the canvas
+  if (!canvas._vis) {
+    canvas._vis = {
+      lastT: t,
+      seed: match.seed,
+      ball: { x: (match.ball?.x ?? 50) / 100 * w + x, y: (match.ball?.y ?? 50) / 100 * h + y, trail: [] },
+      players: new Map()
+    };
   }
-  // Draw subtle passing channels between nearest players, only visible on the active side.
-  if(match.minute>0){
-    const nearest=playing.players.slice(1).map(p=>({p,dist:(p.x-match.ball.x)**2+(p.y-match.ball.y)**2})).sort((a,b)=>a.dist-b.dist).slice(0,3);
-    ctx.strokeStyle='rgba(211,255,173,.16)';ctx.lineWidth=1;ctx.setLineDash([3,7]);
-    nearest.slice(1).forEach(({p})=>{let pt=toPixel(p);ctx.beginPath();ctx.moveTo(ballTarget.x,ballTarget.y);ctx.lineTo(pt.x,pt.y);ctx.stroke();});
+  const vis = canvas._vis;
+  if (vis.seed !== match.seed || (match.minute === 0 && match.phase === 'PRE_MATCH')) {
+    vis.seed = match.seed;
+    vis.ball.x = (match.ball?.x ?? 50) / 100 * w + x;
+    vis.ball.y = (match.ball?.y ?? 50) / 100 * h + y;
+    vis.ball.trail = [];
+    vis.players.clear();
+  }
+
+  const dt = vis.lastT ? Math.min(48, Math.max(1, t - vis.lastT)) : 16;
+  vis.lastT = t;
+
+  const spd = Math.max(1, Math.min(5, match.speed || 1));
+  const playerBlend = 1 - Math.exp(-dt * 0.009 * spd);
+  const ballBlend = 1 - Math.exp(-dt * 0.016 * spd);
+
+  // Smooth ball glide towards target
+  const ballTarget = toPixel(match.ball);
+  vis.ball.x = lerp(vis.ball.x, ballTarget.x, ballBlend);
+  vis.ball.y = lerp(vis.ball.y, ballTarget.y, ballBlend);
+
+  // Motion trail when ball is traveling fast
+  const ballDist = Math.hypot(ballTarget.x - vis.ball.x, ballTarget.y - vis.ball.y);
+  if (ballDist > 2.5) {
+    vis.ball.trail.push({ x: vis.ball.x, y: vis.ball.y });
+    if (vis.ball.trail.length > 5) vis.ball.trail.shift();
+  } else if (vis.ball.trail.length > 0) {
+    vis.ball.trail.shift();
+  }
+
+  const teams=[{name:'home',players:home,team:homeTeam},{name:'away',players:away,team:awayTeam}];
+  const carrierId = match.ballState?.carrierId;
+  const activeSide = match.possession || 'home';
+
+  // Draw subtle passing channels between nearest players, dynamically anchored to the moving ball
+  if(match.minute > 0){
+    const playing = teams.find(q => q.name === activeSide) || teams[0];
+    const nearest = playing.players.slice(1).map(p => ({ p, dist: (p.x - match.ball.x)**2 + (p.y - match.ball.y)**2 })).sort((a,b) => a.dist - b.dist).slice(0, 3);
+    ctx.strokeStyle = 'rgba(211,255,173,.18)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 7]);
+    nearest.slice(1).forEach(({p}) => {
+      const pt = toPixel(p);
+      ctx.beginPath();
+      ctx.moveTo(vis.ball.x, vis.ball.y);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.stroke();
+    });
     ctx.setLineDash([]);
   }
+
   for(const {name,players,team} of teams){
-    const active=name===match.possession;
+    const active = name === activeSide;
     players.forEach((p,i)=>{
       const pl=getPlayer(team,p.id);if(!pl)return;
-      const pt=toPixel(p),r=clamp(W*.014,8,14.2);
+      const targetPt = toPixel(p);
+
+      // Smooth visual interpolation for each player node
+      const pKey = `${name}-${p.id}`;
+      let vp = vis.players.get(pKey);
+      if (!vp) {
+        vp = { x: targetPt.x, y: targetPt.y };
+        vis.players.set(pKey, vp);
+      } else {
+        vp.x = lerp(vp.x, targetPt.x, playerBlend);
+        vp.y = lerp(vp.y, targetPt.y, playerBlend);
+      }
+      const pt = { x: vp.x, y: vp.y };
+      const r = clamp(W*.014,8,14.2);
+
       ctx.save();ctx.shadowColor='rgba(0,0,0,.39)';ctx.shadowBlur=9;ctx.shadowOffsetY=3;
       ctx.fillStyle=team.primary;ctx.strokeStyle=team.secondary;ctx.lineWidth=2.5;
       ctx.beginPath();ctx.arc(pt.x,pt.y,r,0,Math.PI*2);ctx.fill();ctx.stroke();
       ctx.shadowBlur=0;ctx.shadowOffsetY=0;
-      if(active&&match.minute>0&&i===activeIdx){
-        ctx.strokeStyle='rgba(237,255,188,.95)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(pt.x,pt.y,r+4,0,Math.PI*2);ctx.stroke();
+
+      // Active ball carrier indicator
+      const isCarrier = (active && (carrierId ? p.id === carrierId : (i === 9 || i === 1)));
+      if(isCarrier && match.minute > 0){
+        const pulse = 1.0 + Math.sin(t / 200) * 0.18;
+        ctx.strokeStyle='rgba(237,255,188,.95)';
+        ctx.lineWidth=2.0;
+        ctx.beginPath();
+        ctx.arc(pt.x,pt.y,r + 4.5 * pulse,0,Math.PI*2);
+        ctx.stroke();
       }
       setText(ctx,team.secondary,`800 ${Math.max(8,Math.round(r*.96))}px Arial`);ctx.fillText(String(pl.number),pt.x,pt.y+.5);
       
@@ -164,10 +224,32 @@ export function renderPitch(canvas,match,t=0) {
       ctx.restore();
     });
   }
-  // Ball path indicator and white ball.
-  const b=ballTarget;
-  ctx.save();ctx.shadowColor='rgba(255,255,255,.8)';ctx.shadowBlur=10;
-  ctx.beginPath();ctx.arc(b.x,b.y,Math.max(3.5,W*.0054),0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();ctx.strokeStyle='#15261e';ctx.lineWidth=1;ctx.stroke();
+
+  // Draw ball motion trail
+  if (vis.ball.trail.length > 1) {
+    for (let ti = 0; ti < vis.ball.trail.length - 1; ti++) {
+      const alpha = ((ti + 1) / (vis.ball.trail.length + 1)) * 0.40;
+      ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.lineWidth = Math.max(1.5, W * 0.0035);
+      ctx.beginPath();
+      ctx.moveTo(vis.ball.trail[ti].x, vis.ball.trail[ti].y);
+      ctx.lineTo(vis.ball.trail[ti + 1].x, vis.ball.trail[ti + 1].y);
+      ctx.stroke();
+    }
+  }
+
+  // Draw smooth glowing white ball
+  const b = { x: vis.ball.x, y: vis.ball.y };
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,255,255,.9)';
+  ctx.shadowBlur = 12;
+  ctx.beginPath();
+  ctx.arc(b.x, b.y, Math.max(3.5, W * 0.0054), 0, Math.PI * 2);
+  ctx.fillStyle = '#ffffff';
+  ctx.fill();
+  ctx.strokeStyle = '#15261e';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
   ctx.restore();
   // Edge scales.
   ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='rgba(236,255,224,.37)';ctx.font=`700 ${Math.max(8,W*.010)}px Arial`;

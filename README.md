@@ -48,8 +48,8 @@ Touchline XI features a **true multi-page stadium architecture** with instant ta
 | **🏟️ Match Centre** | `#matchday` | **The Broadcast Arena.** Live 2D pitch radar with ball physics, in-match manager shouts, live commentary wire, cumulative xG graph, and scoreboard. |
 | **📋 Squad Lab** | `#squad` | **The Gaffer's War Room.** Starting XI and bench swaps with real-time stamina gauges, formation pitch diagrams, and tactical sliders (*Low Block → Heavy Metal Press*). |
 | **🏆 Tournament Cup** | `#tournament` | **Knockout Championship.** Battle through Quarter-Finals, Semi-Finals, and Final with Extra Time (90′–120′) and sudden-death penalty shootouts. |
-| **✨ Dream Team Studio** | `#dreamteam` | **Fantasy Galácticos.** Draft any world legend or active superstar into your custom fantasy squad and test them against adaptive AI managers. |
-| **🔍 Global Scouting** | `#scouting` | **Transfer Database.** Search and inspect 12,900+ footballers across 350+ clubs and nations with metallic FUT-style player cards, attribute radars, and bio inspections. |
+| **✨ Dream Team Studio** | `#dreamteam` | **Fantasy Galácticos.** Draft any world legend or active superstar into your custom fantasy squad, deploy in 1 click, and play immediately against adaptive AI managers. |
+| **🔍 Global Scouting** | `#scouting` | **Transfer Database.** Search and inspect 19,900+ footballers across 350+ clubs and nations with metallic FUT-style player cards, attribute radars, and bio inspections. |
 | **📼 Replay Vault** | `#vault` | **The Archive.** Frame-by-frame scrubbable match tape recorder. Export or import full match JSON replays to prove your 94th-minute screamer happened. |
 
 ---
@@ -63,6 +63,7 @@ Touchline XI features a **true multi-page stadium architecture** with instant ta
 ### 📐 Continuous Spatial World Model & Organic Underdogs
 
 Touchline XI's next-generation simulation engine is driven by a continuous 2D spatial world model:
+- **60 FPS Fluid Pitch Animation**: Canvas visual state (`canvas._vis`) uses exponential smoothing to eliminate micro-stuttering and coordinate teleportation, rendering silky-smooth player runs and dynamic ball motion trails.
 - **105m × 68m FIFA Pitch Geometry**: Standard metric pitch normalized to 100 × 100 space with true 18-yard penalty box coordinates ($X \in [84.3, 100]$ or $[0, 15.7]$), penalty spots ($X = 12, 88$), and goal boundaries.
 - **Dynamic 22-Player Tracking**: Live coordinates $(x, y)$, velocities $(vx, vy)$, tactical targets, fatigue, and individual attributes for every footballer on the pitch.
 - **Passing Lane Clearances**: Midfield passing and through-balls calculate true geometric line-segment distances to nearby defenders (`distToSegmentM`) to resolve clean passes vs. interceptions.

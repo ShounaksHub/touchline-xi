@@ -91,10 +91,11 @@ Touchline XI is engineered with a multi-page stadium architecture featuring inst
 - **Custom Galácticos Draft**: Build an all-time fantasy squad by selecting starters and bench players from any club or era.
 - **Tactical Philosophies**: Tiki-Taka, Gegenpress, Counter-Attack, Total Football, Park The Bus, Balanced.
 - **AI Difficulty Controls**: Amateur, Semi-Pro, World Class, Legendary AI manager adaptations.
-- **1-Click Deployment**: Direct export into Match Centre as the active Home Team.
+- **1-Click Deployment & Immediate Play (`#deployDreamBtn`)**: Direct export into Match Centre as the active Home Team. Registers both custom teams into the safe custom team registry (`registerCustomTeam`), injects selected `<option>` entries into Matchday dropdowns, updates route to `#matchday`, resets accumulator, blows the kick-off whistle, and automatically sets `running = true` with live `#playBtn` toggle so the user immediately watches the match play smoothly.
+- **Bundle IIFE Scope Isolation**: `tools/build-standalone.mjs` explicitly exports `registerCustomTeam` from `Data` and provides it to `Engine` and `appModule` closures, preventing runtime `ReferenceError` crashes in single-file offline bundles.
 
 ### 5. Global Scouting Hub (`#scouting`)
-- **Database Browser**: Indexes all 12,944 players with pagination (`SCOUT_PAGE_SIZE = 72`).
+- **Database Browser**: Indexes all 19,904 players with pagination (`SCOUT_PAGE_SIZE = 72`).
 - **Multi-Parametric Filters**: Position (`GK`, `DEF`, `MID`, `FWD`), Tier (`95+ Icons`, `90-94 World Class`, `85-89 Elite`, `80-84 Senior`), Club/Nation dropdown, and keyword search.
 - **Empty Filter State & Recovery**: Friendly `.scout-empty-state` with a one-click `"Reset All Filters ↻"` button (`#scoutResetBtn`).
 - **FUT / FM-Style Metallic Card Inspector**: Full modal dialog featuring player rating, rarity borders (Gold Rare, Icon Moments, TOTY), hexagonal attribute radar, physical stats, and one-click "Draft to Dream Team" action.
@@ -125,7 +126,13 @@ Every match maintains live dynamic state for all 22 on-pitch footballers and the
 - **Player State**: `{ id, name, role, number, x, y, vx, vy, targetX, targetY, stamina, pace, shooting, passing, defending, physical, keeping, ovr, side }`.
 - **Ball State**: `{ x, y, carrierId, carrierSide, lastCarrierId, lastSide }`.
 - **10 Ticks / Minute**: Each minute executes 10 tactical micro-phases simulating dynamic positional adjustments, ball travel, defender tackles, passing decisions, and shots.
-- **Visual Pitch Synchronization**: `src/pitch.js` consumes `match.playerStates` directly, ensuring the 2D canvas radar renders the exact spatial coordinates computed by the simulation.
+- **Visual Pitch Synchronization & 60 FPS Fluid Interpolation (`src/pitch.js`)**: 
+  - `src/pitch.js` maintains a persistent canvas visual state (`canvas._vis`) with exponential frame smoothing:
+    $$\text{pos}_{\text{render}} \leftarrow \text{pos}_{\text{render}} + (\text{pos}_{\text{target}} - \text{pos}_{\text{render}}) \times (1 - e^{-\Delta t \times \text{rate} \times \text{speed}})$$
+  - Eliminates micro-stutter and teleportation, yielding continuous, fluid 60 FPS player sprints and ball travel across 1x, 2x, and 5x playback speeds.
+  - **Dynamic Ball Motion Trail**: Generates high-speed motion blurs during blistering shots and through-balls.
+  - **Possession Pulse Indicator**: Directly identifies and highlights the active carrier via `match.ballState.carrierId`.
+  - **Dynamic Passing Lanes**: Passing channels dynamically anchor to the interpolated moving ball coordinate.
 
 ### C. Carrier Decision AI & Passing Lanes
 At every tick, the ball carrier evaluates multiple tactical options:

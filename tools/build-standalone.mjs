@@ -32,7 +32,7 @@ const Badges = (() => {
 
 const Data = (() => {
   ${dataModule}
-  return { TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS };
+  return { TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS, registerCustomTeam };
 })();
 
 const Sound = (() => {
@@ -40,7 +40,7 @@ const Sound = (() => {
   return { sound };
 })();
 
-const Engine = (({ getTeam, getPlayer, DEFAULT_TACTICS, FORMATIONS, TEAMS }) => {
+const Engine = (({ getTeam, getPlayer, DEFAULT_TACTICS, FORMATIONS, TEAMS, registerCustomTeam }) => {
   ${engineModule}
   return {
     createMatch, advanceMinute, playFullMatch, matchFromFrame,
@@ -63,7 +63,7 @@ const Pitch = (({ getTeam, getPlayer, FORMATIONS }) => {
 })(Data);
 
 ((
-  { TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS },
+  { TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS, registerCustomTeam },
   { createMatch, advanceMinute, playFullMatch, matchFromFrame, applyTactic, changeFormation, swapPlayer, resetStartingXI, resultLabel, applyShout, applyTeamTalk, simulatePenaltyShootout },
   { renderPitch },
   { sound },
