@@ -1269,13 +1269,16 @@ function renderDuelMode() {
 
       container.innerHTML = squad.map((p, idx) => {
         const isCurrentActiveSlot = isMyTurn && idx === draftState.currentPickIndex;
-        // In turn draft mode, any slot that is not the currently active drafting slot for this user is locked
-        const isSlotLocked = draftState.active && draftState.phase === 'PLAYER_DRAFT' && !isCurrentActiveSlot;
+        // In turn draft mode, any slot that is not the currently active drafting slot is locked
+        const isFormationStage = draftState.active && (draftState.phase === 'TOSS' || draftState.phase === 'FORMATION_PICK_1' || draftState.phase === 'FORMATION_PICK_2');
+        const isSlotLocked = isFormationStage || (draftState.active && draftState.phase === 'PLAYER_DRAFT' && !isCurrentActiveSlot);
         const isCaptain = (userPrefix === 'u1' && user1CaptainId === p.id) || (userPrefix === 'u2' && user2CaptainId === p.id);
         const ovrVal = p.isVacant ? '--' : p.ovr;
         const nameVal = p.isVacant ? `Vacant Slot (${escapeHtml(p.role)})` : escapeHtml(p.name);
         let metaVal = p.isVacant ? 'Tap to draft' : `${escapeHtml(p.role)} · 🌍 ${escapeHtml(p.nat)}`;
-        if (draftState.active && draftState.phase === 'PLAYER_DRAFT') {
+        if (isFormationStage) {
+          metaVal = 'Tactical Formation Choice Pending';
+        } else if (draftState.active && draftState.phase === 'PLAYER_DRAFT') {
           if (isCurrentActiveSlot) {
             metaVal = `⚡ Lock ${escapeHtml(p.role)} (Your Turn)`;
           } else if (p.isVacant) {
@@ -2661,7 +2664,14 @@ function bind(){
     const current = targetSquad[index];
     if (!current) return;
 
-    // Strictly enforce 1 player lock per turn:
+    // In turn draft mode:
+    // 1. Formation must be selected first before any player drafting!
+    if (draftState.active && (draftState.phase === 'TOSS' || draftState.phase === 'FORMATION_PICK_1' || draftState.phase === 'FORMATION_PICK_2')) {
+      toast(`⚠️ Please choose tactical formations first before drafting players! (Current turn: ${draftState.currentTurnUser === 'u1' ? 'User 1' : 'User 2'})`);
+      return;
+    }
+
+    // 2. Strictly enforce 1 player lock per turn during PLAYER_DRAFT:
     // Only the active user can pick, and only their current turn slot can be clicked
     if (draftState.active && draftState.phase === 'PLAYER_DRAFT') {
       if (user !== draftState.currentTurnUser) {
