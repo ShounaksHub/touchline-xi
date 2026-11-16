@@ -1042,6 +1042,16 @@ function renderDuelMode() {
   const modeVal = $('#duelTypeSelect')?.value || 'attack_defence';
   const isTeamMode = modeVal.startsWith('team_');
 
+  // Update mode quick tabs
+  $$('.duel-tab-btn').forEach(btn => {
+    const btnMode = btn.dataset.duelMode;
+    if (btnMode === 'attack_defence') {
+      btn.classList.toggle('is-active', !isTeamMode);
+    } else {
+      btn.classList.toggle('is-active', modeVal === btnMode);
+    }
+  });
+
   // Toggle visible sections depending on mode
   if (isTeamMode) {
     $('.duel-setup-grid').style.display = 'none';
@@ -2312,6 +2322,22 @@ function bind(){
   });
 
   // 1v1 Player Duel & Team vs Team Bindings
+  $$('.duel-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.duelMode;
+      const sel = $('#duelTypeSelect');
+      if (sel) {
+        sel.value = mode;
+        if (mode === 'team_5aside') {
+          initDefaultUserSquads('5aside');
+        } else if (mode === 'team_11aside') {
+          initDefaultUserSquads('11aside');
+        }
+        renderDuelMode();
+      }
+    });
+  });
+
   $('#duelTypeSelect')?.addEventListener('change', () => {
     const val = $('#duelTypeSelect').value;
     if (val === 'team_5aside') {

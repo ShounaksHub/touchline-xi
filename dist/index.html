@@ -5776,6 +5776,43 @@ h1, h2, h3, h4,
   gap: 12px;
 }
 
+/* Duel Format Quick Switcher Tabs */
+.duel-mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 6px;
+  flex-wrap: wrap;
+}
+
+.duel-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 750;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.duel-tab-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-elevated);
+}
+
+.duel-tab-btn.is-active {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-subtle);
+  color: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
 .duel-setup-grid {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -6295,7 +6332,7 @@ h1, h2, h3, h4,
         <button class="nav-link" data-section="tournament" data-page="page-tournament">Tournament</button>
         <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam">Dream Team</button>
         <button class="nav-link" data-section="scouting" data-page="page-scouting">Scouting</button>
-        <button class="nav-link" data-section="duel" data-page="page-duel">1v1 Duel</button>
+        <button class="nav-link" data-section="duel" data-page="page-duel">1v1 &amp; Team Duel</button>
         <button class="nav-link" data-section="vault" data-page="page-vault">Replay Vault</button>
       </nav>
       <div class="topbar-right">
@@ -6832,19 +6869,26 @@ h1, h2, h3, h4,
       </div><!-- end page--scouting -->
 
 
-      <!-- PAGE 6: 1v1 Player Duel -->
+      <!-- PAGE 6: 1v1 Player Duel & Team vs Team Match -->
       <div class="page page--duel" id="page-duel">
         <section class="duel-section" id="duel">
           <div class="duel-header">
             <div>
               <div class="eyebrow"><span class="eyebrow-index">06 /</span> HEAD-TO-HEAD SHOWDOWN</div>
-              <h2>1v1 Player Duel<span class="brand-period">.</span></h2>
-              <p class="section-sub">Select two world-class footballers, compare attributes head-to-head, and simulate realistic 1v1 spatial challenges.</p>
+              <h2>1v1 Duel &amp; Team vs Team (5v5 / 11v11)<span class="brand-period">.</span></h2>
+              <p class="section-sub">Compete in 1v1 Individual Duels or build 2-user 5-a-side &amp; 11-a-side squads with exactly 1 player per nation allowed.</p>
             </div>
             <div class="duel-top-actions">
               <button class="secondary-button" id="duelSwapPlayersBtn" type="button">⇄ Swap Sides</button>
               <button class="primary-button" id="startDuelBtn" type="button">▶ Start Duel</button>
             </div>
+          </div>
+
+          <!-- Mode Quick Switcher Tabs -->
+          <div class="duel-mode-tabs" role="tablist" aria-label="Duel Format Switcher">
+            <button type="button" class="duel-tab-btn is-active" data-duel-mode="attack_defence">👤 1v1 Player Duel</button>
+            <button type="button" class="duel-tab-btn" data-duel-mode="team_5aside">👥 5v5 Team Match (1 / Nation)</button>
+            <button type="button" class="duel-tab-btn" data-duel-mode="team_11aside">👥 11v11 Team Match (1 / Nation)</button>
           </div>
 
           <!-- Duel Configurator: 2-Player Selection & Head-to-Head Comparison -->
@@ -250828,6 +250872,16 @@ function renderDuelMode() {
   const modeVal = $('#duelTypeSelect')?.value || 'attack_defence';
   const isTeamMode = modeVal.startsWith('team_');
 
+  // Update mode quick tabs
+  $$('.duel-tab-btn').forEach(btn => {
+    const btnMode = btn.dataset.duelMode;
+    if (btnMode === 'attack_defence') {
+      btn.classList.toggle('is-active', !isTeamMode);
+    } else {
+      btn.classList.toggle('is-active', modeVal === btnMode);
+    }
+  });
+
   // Toggle visible sections depending on mode
   if (isTeamMode) {
     $('.duel-setup-grid').style.display = 'none';
@@ -252098,6 +252152,22 @@ function bind(){
   });
 
   // 1v1 Player Duel & Team vs Team Bindings
+  $$('.duel-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.duelMode;
+      const sel = $('#duelTypeSelect');
+      if (sel) {
+        sel.value = mode;
+        if (mode === 'team_5aside') {
+          initDefaultUserSquads('5aside');
+        } else if (mode === 'team_11aside') {
+          initDefaultUserSquads('11aside');
+        }
+        renderDuelMode();
+      }
+    });
+  });
+
   $('#duelTypeSelect')?.addEventListener('change', () => {
     const val = $('#duelTypeSelect').value;
     if (val === 'team_5aside') {

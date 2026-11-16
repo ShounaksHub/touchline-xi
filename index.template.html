@@ -24,7 +24,7 @@
         <button class="nav-link" data-section="tournament" data-page="page-tournament">Tournament</button>
         <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam">Dream Team</button>
         <button class="nav-link" data-section="scouting" data-page="page-scouting">Scouting</button>
-        <button class="nav-link" data-section="duel" data-page="page-duel">1v1 Duel</button>
+        <button class="nav-link" data-section="duel" data-page="page-duel">1v1 &amp; Team Duel</button>
         <button class="nav-link" data-section="vault" data-page="page-vault">Replay Vault</button>
       </nav>
       <div class="topbar-right">
@@ -561,19 +561,26 @@
       </div><!-- end page--scouting -->
 
 
-      <!-- PAGE 6: 1v1 Player Duel -->
+      <!-- PAGE 6: 1v1 Player Duel & Team vs Team Match -->
       <div class="page page--duel" id="page-duel">
         <section class="duel-section" id="duel">
           <div class="duel-header">
             <div>
               <div class="eyebrow"><span class="eyebrow-index">06 /</span> HEAD-TO-HEAD SHOWDOWN</div>
-              <h2>1v1 Player Duel<span class="brand-period">.</span></h2>
-              <p class="section-sub">Select two world-class footballers, compare attributes head-to-head, and simulate realistic 1v1 spatial challenges.</p>
+              <h2>1v1 Duel &amp; Team vs Team (5v5 / 11v11)<span class="brand-period">.</span></h2>
+              <p class="section-sub">Compete in 1v1 Individual Duels or build 2-user 5-a-side &amp; 11-a-side squads with exactly 1 player per nation allowed.</p>
             </div>
             <div class="duel-top-actions">
               <button class="secondary-button" id="duelSwapPlayersBtn" type="button">⇄ Swap Sides</button>
               <button class="primary-button" id="startDuelBtn" type="button">▶ Start Duel</button>
             </div>
+          </div>
+
+          <!-- Mode Quick Switcher Tabs -->
+          <div class="duel-mode-tabs" role="tablist" aria-label="Duel Format Switcher">
+            <button type="button" class="duel-tab-btn is-active" data-duel-mode="attack_defence">👤 1v1 Player Duel</button>
+            <button type="button" class="duel-tab-btn" data-duel-mode="team_5aside">👥 5v5 Team Match (1 / Nation)</button>
+            <button type="button" class="duel-tab-btn" data-duel-mode="team_11aside">👥 11v11 Team Match (1 / Nation)</button>
           </div>
 
           <!-- Duel Configurator: 2-Player Selection & Head-to-Head Comparison -->

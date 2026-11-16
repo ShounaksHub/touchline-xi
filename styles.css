@@ -5765,6 +5765,43 @@ h1, h2, h3, h4,
   gap: 12px;
 }
 
+/* Duel Format Quick Switcher Tabs */
+.duel-mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0 22px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 6px;
+  flex-wrap: wrap;
+}
+
+.duel-tab-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-interface);
+  font-size: 13px;
+  font-weight: 750;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.duel-tab-btn:hover {
+  color: var(--color-text-primary);
+  background: var(--color-surface-elevated);
+}
+
+.duel-tab-btn.is-active {
+  background: var(--color-surface-elevated);
+  border-color: var(--color-border-subtle);
+  color: var(--color-accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
 .duel-setup-grid {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
