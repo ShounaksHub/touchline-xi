@@ -5746,6 +5746,395 @@ h1, h2, h3, h4,
   height: 16px;
 }
 
+/* ==========================================================================
+   1v1 PLAYER DUEL MODE STYLING (Obsidian & Champagne Gold)
+   ========================================================================== */
+.page--duel {
+  padding: 40px 0 64px;
+}
+
+.duel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.duel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.brand-period {
+  color: var(--color-accent);
+}
+
+.duel-top-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.duel-setup-grid {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+@media (max-width: 820px) {
+  .duel-setup-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.duel-player-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.duel-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.duel-pick-btn {
+  padding: 6px 12px;
+  font-size: 11px;
+}
+
+.duel-selected-preview {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.duel-player-ovr-circle {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--color-accent);
+  color: var(--color-accent);
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px var(--color-accent-subtle);
+}
+
+.duel-player-meta h4 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  font-weight: 850;
+  color: var(--color-text-primary);
+}
+
+.duel-player-meta span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.duel-versus-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.duel-versus-badge {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--color-accent);
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 16px rgba(212, 183, 123, 0.3);
+}
+
+.duel-mode-picker,
+.duel-rounds-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.duel-mode-picker label,
+.duel-rounds-picker label {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.duel-mode-picker select,
+.duel-rounds-picker select {
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.duel-comparison-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.duel-comparison-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding-bottom: 12px;
+}
+
+.duel-comparison-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 850;
+  color: var(--color-text-primary);
+}
+
+.duel-comparison-header span {
+  font-size: 12px;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.duel-comparison-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.duel-stat-row {
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  gap: 14px;
+  align-items: center;
+}
+
+.duel-stat-val {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.duel-stat-val.is-lead {
+  color: var(--color-accent);
+  text-shadow: 0 0 8px rgba(212, 183, 123, 0.3);
+}
+
+.duel-stat-bars {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.duel-stat-bar-track {
+  height: 6px;
+  background: var(--color-surface-sunken);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.duel-stat-bar-track.left span {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+  margin-left: auto;
+  border-radius: 3px;
+}
+
+.duel-stat-bar-track.right span {
+  display: block;
+  height: 100%;
+  background: #92C8F0;
+  border-radius: 3px;
+}
+
+.duel-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.duel-arena-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.duel-arena-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.duel-live-score {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.duel-live-score b {
+  font-family: var(--font-display);
+  font-size: 24px;
+  color: var(--color-accent);
+  letter-spacing: 0.05em;
+}
+
+.duel-round-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+}
+
+.duel-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.duel-canvas-wrap {
+  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+}
+
+.duel-ticker {
+  margin-top: 14px;
+  padding: 10px 14px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.duel-result-card {
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--color-accent);
+  border-radius: 8px;
+  padding: 28px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  animation: modalPopIn 0.25s ease;
+}
+
+.duel-result-trophy {
+  font-size: 42px;
+  margin-bottom: 8px;
+}
+
+.duel-result-card h3 {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--color-accent);
+}
+
+.duel-result-card p {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.duel-result-stats-table {
+  max-width: 540px;
+  margin: 0 auto 24px;
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.duel-table-header {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 10px 14px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.duel-table-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 12px;
+  align-items: center;
+}
+
+.duel-table-row:last-child {
+  border-bottom: none;
+}
+
+.duel-table-row b {
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: var(--color-text-primary);
+}
+
+.duel-table-row span {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.duel-result-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 </style>
   
 </head>
@@ -5762,6 +6151,7 @@ h1, h2, h3, h4,
         <button class="nav-link" data-section="tournament" data-page="page-tournament">Tournament</button>
         <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam">Dream Team</button>
         <button class="nav-link" data-section="scouting" data-page="page-scouting">Scouting</button>
+        <button class="nav-link" data-section="duel" data-page="page-duel">1v1 Duel</button>
         <button class="nav-link" data-section="vault" data-page="page-vault">Replay Vault</button>
       </nav>
       <div class="topbar-right">
@@ -6298,7 +6688,121 @@ h1, h2, h3, h4,
       </div><!-- end page--scouting -->
 
 
-      <!-- PAGE 6: Replay Vault -->
+      <!-- PAGE 6: 1v1 Player Duel -->
+      <div class="page page--duel" id="page-duel">
+        <section class="duel-section" id="duel">
+          <div class="duel-header">
+            <div>
+              <div class="eyebrow"><span class="eyebrow-index">06 /</span> HEAD-TO-HEAD SHOWDOWN</div>
+              <h2>1v1 Player Duel<span class="brand-period">.</span></h2>
+              <p class="section-sub">Select two world-class footballers, compare attributes head-to-head, and simulate realistic 1v1 spatial challenges.</p>
+            </div>
+            <div class="duel-top-actions">
+              <button class="secondary-button" id="duelSwapPlayersBtn" type="button">⇄ Swap Sides</button>
+              <button class="primary-button" id="startDuelBtn" type="button">▶ Start Duel</button>
+            </div>
+          </div>
+
+          <!-- Duel Configurator: 2-Player Selection & Head-to-Head Comparison -->
+          <div class="duel-setup-grid">
+            <!-- Player 1 Card -->
+            <div class="duel-player-card" id="duelP1Card">
+              <div class="duel-player-header">
+                <span class="step-badge">PLAYER 1</span>
+                <button class="secondary-button duel-pick-btn" id="duelPickP1Btn" type="button">Change Player</button>
+              </div>
+              <div class="duel-selected-preview" id="duelP1Preview">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- VS Badge & Challenge Config -->
+            <div class="duel-versus-card">
+              <div class="duel-versus-badge">VS</div>
+              <div class="duel-mode-picker">
+                <label for="duelTypeSelect">Duel Challenge</label>
+                <select id="duelTypeSelect">
+                  <option value="attack_defence">Attack vs Defence</option>
+                  <option value="dribbling">Dribbling Duel</option>
+                  <option value="skill_challenge">Skill Challenge</option>
+                </select>
+              </div>
+              <div class="duel-rounds-picker">
+                <label for="duelRoundsSelect">Rounds</label>
+                <select id="duelRoundsSelect">
+                  <option value="3">3 Rounds</option>
+                  <option value="5" selected>5 Rounds (Standard)</option>
+                  <option value="7">7 Rounds (Championship)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Player 2 Card -->
+            <div class="duel-player-card" id="duelP2Card">
+              <div class="duel-player-header">
+                <span class="step-badge">PLAYER 2</span>
+                <button class="secondary-button duel-pick-btn" id="duelPickP2Btn" type="button">Change Player</button>
+              </div>
+              <div class="duel-selected-preview" id="duelP2Preview">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Head-to-Head Attribute Comparison -->
+          <div class="duel-comparison-card" id="duelComparisonCard">
+            <div class="duel-comparison-header">
+              <h3>Head-to-Head Radar &amp; Attribute Matrix</h3>
+              <span id="duelMatchupHeadline">Casillas vs Mbappé</span>
+            </div>
+            <div class="duel-comparison-grid" id="duelComparisonGrid">
+              <!-- Dynamically populated attribute bars -->
+            </div>
+          </div>
+
+          <!-- Duel Live Arena & Canvas -->
+          <div class="duel-arena-card" id="duelArenaCard" style="display:none;">
+            <div class="duel-arena-topbar">
+              <div class="duel-live-score">
+                <span id="duelArenaP1Name">Player 1</span>
+                <b id="duelArenaScore">0 - 0</b>
+                <span id="duelArenaP2Name">Player 2</span>
+              </div>
+              <div class="duel-round-indicator">
+                <span id="duelRoundText">ROUND 1 of 5</span>
+                <span class="state-pill" id="duelPhasePill">LIVE</span>
+              </div>
+              <div class="duel-controls-row">
+                <button class="square-button" id="duelPlayPauseBtn" title="Play / Pause Duel">⏸</button>
+                <button class="square-button" id="duelRestartBtn" title="Restart Duel">↺</button>
+                <button class="secondary-button" id="duelRematchBtn">Rematch</button>
+              </div>
+            </div>
+
+            <div class="duel-canvas-wrap">
+              <canvas id="duelPitchCanvas" width="900" height="540" style="width:100%;height:auto;aspect-ratio:5/3;border-radius:6px;display:block;"></canvas>
+            </div>
+
+            <div class="duel-ticker" id="duelTickerText">Duel match ready. Waiting for kick-off...</div>
+          </div>
+
+          <!-- Duel Result Modal / Overlay -->
+          <div class="duel-result-card" id="duelResultCard" style="display:none;">
+            <div class="duel-result-trophy">🏆</div>
+            <h3 id="duelWinnerHeadline">Player 1 Triumphs!</h3>
+            <p id="duelResultSummary">Final Score: 3 - 2 across 5 rounds</p>
+            <div class="duel-result-stats-table" id="duelResultStatsTable"></div>
+            <div class="duel-result-actions">
+              <button class="secondary-button" id="duelSaveReplayBtn">Save Duel Replay</button>
+              <button class="secondary-button" id="duelResultRematchBtn">Play Again</button>
+              <button class="primary-button" id="duelChangePlayersBtn">Choose New Players</button>
+            </div>
+          </div>
+        </section>
+      </div><!-- end page--duel -->
+
+
+      <!-- PAGE 7: Replay Vault -->
       <div class="page page--vault" id="page-vault">
         <section class="vault" id="vault">
           <div class="vault-heading">
@@ -248526,6 +249030,562 @@ function createMatchEffects(options = {}) {
   return { MatchEffectsController, createMatchEffects };
 })(Data, Badges, Sound);
 
+const Duel = (({ getPlayer }) => {
+  const DUEL_TYPES = {
+  ATTACK_DEFENCE: 'attack_defence',
+  DRIBBLING: 'dribbling',
+  SKILL_CHALLENGE: 'skill_challenge'
+};
+
+const DUEL_PITCH = {
+  width: 100,
+  height: 60,
+  goalX: 96,
+  goalYMin: 24,
+  goalYMax: 36,
+  goalCenterY: 30,
+  dribbleTargetX: 90
+};
+
+function dist2D(x1, y1, x2, y2) {
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
+function clamp(v, min, max) {
+  return Math.max(min, Math.min(max, v));
+}
+
+// Mulberry32 deterministic PRNG
+function duelRand(duel) {
+  duel.rng = (duel.rng + 0x6D2B79F5) >>> 0;
+  let t = duel.rng;
+  t = Math.imul(t ^ (t >>> 15), t | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+function initRoundPhysics(duel) {
+  const round = duel.currentRound;
+  // In ATTACK_DEFENCE and DRIBBLING, players alternate roles each round:
+  // Even rounds (0, 2, 4): P1 attacks, P2 defends
+  // Odd rounds (1, 3): P2 attacks, P1 defends
+  // In SKILL_CHALLENGE: both run mirrored attempts, round tracks turn
+  const isP1Attacking = round % 2 === 0;
+  duel.attackerId = isP1Attacking ? duel.p1.id : duel.p2.id;
+  duel.defenderId = isP1Attacking ? duel.p2.id : duel.p1.id;
+  
+  const attacker = isP1Attacking ? duel.p1 : duel.p2;
+  const defender = isP1Attacking ? duel.p2 : duel.p1;
+
+  // Spatial starting coordinates
+  duel.state = {
+    roundTime: 0,
+    maxRoundTime: 18, // 18 seconds per round
+    phase: 'active', // active, goal, defended, scored, round_over
+    outcome: null, // text summary
+    ball: {
+      x: 20,
+      y: 30,
+      vx: 0,
+      vy: 0,
+      carrierId: attacker.id,
+      inAir: false
+    },
+    players: {
+      [attacker.id]: {
+        x: 18,
+        y: 30,
+        vx: 0,
+        vy: 0,
+        speed: (attacker.pace || 80) / 100 * 2.8,
+        control: (attacker.dribbling || attacker.ovr || 80) / 100,
+        tackle: (attacker.defending || 70) / 100,
+        shooting: (attacker.shooting || 75) / 100,
+        stamina: 100,
+        role: 'attacker'
+      },
+      [defender.id]: {
+        x: 58,
+        y: 30,
+        vx: 0,
+        vy: 0,
+        speed: (defender.pace || 80) / 100 * 2.6,
+        control: (defender.dribbling || defender.ovr || 80) / 100,
+        tackle: (defender.defending || 75) / 100,
+        shooting: (defender.shooting || 70) / 100,
+        stamina: 100,
+        role: 'defender'
+      }
+    },
+    gk: {
+      x: 95,
+      y: 30,
+      vy: 0.8,
+      keeping: Math.max(65, Math.min(92, Math.round(((attacker.ovr + defender.ovr) / 2) * 0.95)))
+    }
+  };
+}
+
+function createPlayerDuel(p1, p2, duelType = DUEL_TYPES.ATTACK_DEFENCE, totalRounds = 5, seed = null) {
+  if (!p1 || !p2) throw new Error('Both Player 1 and Player 2 must be provided for a duel.');
+  if (p1.id === p2.id) throw new Error('Cannot duel a player against themselves.');
+
+  const duelSeed = seed || `DUEL-${p1.id.slice(0, 5)}-vs-${p2.id.slice(0, 5)}-${Date.now()}`;
+  let h = 2166136261;
+  for (let i = 0; i < duelSeed.length; i++) {
+    h ^= duelSeed.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+
+  const duel = {
+    version: '1v1-v1',
+    seed: duelSeed,
+    rng: h >>> 0,
+    duelType,
+    totalRounds: Math.max(3, Math.min(9, totalRounds)),
+    currentRound: 0,
+    isComplete: false,
+    winner: null,
+    p1: {
+      id: p1.id,
+      name: p1.name,
+      role: p1.role,
+      ovr: p1.ovr || p1.overall || 85,
+      pace: p1.pace || 80,
+      shooting: p1.shooting || 75,
+      passing: p1.passing || 80,
+      dribbling: p1.dribbling || p1.ovr || 82,
+      defending: p1.defending || 70,
+      physical: p1.physical || 75,
+      keeping: p1.keeping || (p1.role === 'GK' ? 85 : 5),
+      nat: p1.nat || 'International',
+      club: p1.club || p1.teamName || 'World XI'
+    },
+    p2: {
+      id: p2.id,
+      name: p2.name,
+      role: p2.role,
+      ovr: p2.ovr || p2.overall || 85,
+      pace: p2.pace || 80,
+      shooting: p2.shooting || 75,
+      passing: p2.passing || 80,
+      dribbling: p2.dribbling || p2.ovr || 82,
+      defending: p2.defending || 70,
+      physical: p2.physical || 75,
+      keeping: p2.keeping || (p2.role === 'GK' ? 85 : 5),
+      nat: p2.nat || 'International',
+      club: p2.club || p2.teamName || 'World XI'
+    },
+    score: {
+      [p1.id]: 0,
+      [p2.id]: 0
+    },
+    stats: {
+      [p1.id]: { goals: 0, dribbles: 0, tackles: 0, shots: 0, points: 0, roundsWon: 0 },
+      [p2.id]: { goals: 0, dribbles: 0, tackles: 0, shots: 0, points: 0, roundsWon: 0 }
+    },
+    roundHistory: [],
+    events: [],
+    frames: []
+  };
+
+  initRoundPhysics(duel);
+  recordDuelFrame(duel);
+  return duel;
+}
+
+function recordDuelFrame(duel) {
+  const f = {
+    round: duel.currentRound,
+    time: duel.state.roundTime,
+    phase: duel.state.phase,
+    score: { ...duel.score },
+    ball: { ...duel.state.ball },
+    players: {
+      [duel.p1.id]: { ...duel.state.players[duel.p1.id] },
+      [duel.p2.id]: { ...duel.state.players[duel.p2.id] }
+    },
+    gk: { ...duel.state.gk },
+    outcome: duel.state.outcome
+  };
+  duel.frames.push(f);
+}
+
+function advanceDuelTick(duel, dt = 0.25) {
+  if (duel.isComplete) return duel;
+
+  const state = duel.state;
+  state.roundTime += dt;
+
+  // Move GK in goal mouth
+  state.gk.y += state.gk.vy * (dt * 6);
+  if (state.gk.y > DUEL_PITCH.goalYMax - 2) {
+    state.gk.y = DUEL_PITCH.goalYMax - 2;
+    state.gk.vy *= -1;
+  } else if (state.gk.y < DUEL_PITCH.goalYMin + 2) {
+    state.gk.y = DUEL_PITCH.goalYMin + 2;
+    state.gk.vy *= -1;
+  }
+
+  const att = state.players[duel.attackerId];
+  const def = state.players[duel.defenderId];
+  const ball = state.ball;
+
+  // AI Steer Attacker
+  if (duel.duelType === DUEL_TYPES.ATTACK_DEFENCE || duel.duelType === DUEL_TYPES.DRIBBLING) {
+    // Attacker target: Move toward goal area (X=85, Y=30)
+    let targetX = 85;
+    let targetY = 30;
+
+    // If defender is blocking directly in front, attempt a lateral dribble juke
+    const distToDef = dist2D(att.x, att.y, def.x, def.y);
+    if (distToDef < 12 && def.x > att.x) {
+      targetY = def.y > 30 ? 16 : 44; // Feint to the open flank
+      const jukeChance = (att.control * 0.7) - (def.tackle * 0.4) + (duelRand(duel) * 0.4);
+      if (jukeChance > 0.45 && ball.carrierId === duel.attackerId && att.x < def.x + 2) {
+        // Successful burst of acceleration
+        att.x += 1.8 * dt * att.speed;
+        duel.stats[duel.attackerId].dribbles++;
+        duel.events.push({
+          type: 'dribble',
+          round: duel.currentRound,
+          time: Math.round(state.roundTime),
+          text: `${duel.attackerId === duel.p1.id ? duel.p1.name : duel.p2.name} beats defender with lightning footwork!`
+        });
+      }
+    }
+
+    const dirX = targetX - att.x;
+    const dirY = targetY - att.y;
+    const len = Math.max(0.1, Math.sqrt(dirX * dirX + dirY * dirY));
+    att.vx = (dirX / len) * att.speed * 2.2;
+    att.vy = (dirY / len) * att.speed * 2.2;
+
+    att.x = clamp(att.x + att.vx * dt, 4, 95);
+    att.y = clamp(att.y + att.vy * dt, 4, 56);
+
+    // Defender AI: close down attacker and tackle
+    const defDirX = att.x - def.x;
+    const defDirY = att.y - def.y;
+    const defLen = Math.max(0.1, Math.sqrt(defDirX * defDirX + defDirY * defDirY));
+    def.vx = (defDirX / defLen) * def.speed * 2.1;
+    def.vy = (defDirY / defLen) * def.speed * 2.1;
+
+    def.x = clamp(def.x + def.vx * dt, 10, 92);
+    def.y = clamp(def.y + def.vy * dt, 4, 56);
+
+    // Ball follows carrier
+    if (ball.carrierId === duel.attackerId) {
+      ball.x = att.x + 1.2;
+      ball.y = att.y;
+
+      // Check for tackle if defender gets within 3.5 units
+      if (dist2D(att.x, att.y, def.x, def.y) < 3.8) {
+        const tackleSkill = (def.tackle * 0.65) + (duelRand(duel) * 0.45);
+        const retainSkill = (att.control * 0.60) + (duelRand(duel) * 0.35);
+
+        if (tackleSkill > retainSkill) {
+          // Defender strips the ball!
+          ball.carrierId = duel.defenderId;
+          duel.stats[duel.defenderId].tackles++;
+          duel.score[duel.defenderId]++;
+          state.phase = 'defended';
+          state.outcome = `${duel.defenderId === duel.p1.id ? duel.p1.name : duel.p2.name} makes a clean slide tackle!`;
+          duel.events.push({
+            type: 'tackle',
+            round: duel.currentRound,
+            time: Math.round(state.roundTime),
+            text: state.outcome
+          });
+          endDuelRound(duel);
+          return duel;
+        }
+      }
+
+      // Check for Shot in ATTACK_DEFENCE
+      if (duel.duelType === DUEL_TYPES.ATTACK_DEFENCE && att.x >= 70 && state.phase === 'active') {
+        duel.stats[duel.attackerId].shots++;
+        const shotAccuracy = att.shooting * 0.7 + duelRand(duel) * 0.45;
+        const gkSaveSkill = (state.gk.keeping / 100) * 0.7 + duelRand(duel) * 0.4;
+
+        if (shotAccuracy > gkSaveSkill) {
+          // GOAL!
+          duel.score[duel.attackerId]++;
+          duel.stats[duel.attackerId].goals++;
+          state.phase = 'goal';
+          state.outcome = `GOAL! ${duel.attackerId === duel.p1.id ? duel.p1.name : duel.p2.name} smashes it into the corner!`;
+          duel.events.push({
+            type: 'goal',
+            round: duel.currentRound,
+            time: Math.round(state.roundTime),
+            text: state.outcome
+          });
+          endDuelRound(duel);
+          return duel;
+        } else {
+          // SAVED!
+          state.phase = 'defended';
+          state.outcome = `SAVED! Goalkeeper tips the shot wide of the post!`;
+          duel.score[duel.defenderId]++;
+          duel.events.push({
+            type: 'save',
+            round: duel.currentRound,
+            time: Math.round(state.roundTime),
+            text: state.outcome
+          });
+          endDuelRound(duel);
+          return duel;
+        }
+      }
+
+      // Check for Objective Reach in DRIBBLING duel
+      if (duel.duelType === DUEL_TYPES.DRIBBLING && att.x >= DUEL_PITCH.dribbleTargetX && state.phase === 'active') {
+        duel.score[duel.attackerId]++;
+        state.phase = 'scored';
+        state.outcome = `${duel.attackerId === duel.p1.id ? duel.p1.name : duel.p2.name} dribbles across the finish line!`;
+        duel.events.push({
+          type: 'dribble_success',
+          round: duel.currentRound,
+          time: Math.round(state.roundTime),
+          text: state.outcome
+        });
+        endDuelRound(duel);
+        return duel;
+      }
+    }
+  } else if (duel.duelType === DUEL_TYPES.SKILL_CHALLENGE) {
+    // Both players complete comparable shooting / passing accuracy drills
+    // We simulate progressive drill execution
+    att.x = clamp(att.x + (att.speed * 2.5 * dt), 10, 85);
+    def.x = clamp(def.x + (def.speed * 2.5 * dt), 10, 85);
+
+    if (state.roundTime >= 5.0 && state.phase === 'active') {
+      const p1Skill = (duel.p1.shooting * 0.4 + duel.p1.passing * 0.4 + duel.p1.dribbling * 0.2) / 100;
+      const p2Skill = (duel.p2.shooting * 0.4 + duel.p2.passing * 0.4 + duel.p2.dribbling * 0.2) / 100;
+      const p1Score = p1Skill + (duelRand(duel) * 0.35);
+      const p2Score = p2Skill + (duelRand(duel) * 0.35);
+
+      if (p1Score >= p2Score) {
+        duel.score[duel.p1.id]++;
+        state.outcome = `${duel.p1.name} hits the bullseye target (${Math.round(p1Score * 100)} pts)!`;
+      } else {
+        duel.score[duel.p2.id]++;
+        state.outcome = `${duel.p2.name} hits the bullseye target (${Math.round(p2Score * 100)} pts)!`;
+      }
+      state.phase = 'scored';
+      duel.events.push({
+        type: 'skill_target',
+        round: duel.currentRound,
+        time: Math.round(state.roundTime),
+        text: state.outcome
+      });
+      endDuelRound(duel);
+      return duel;
+    }
+  }
+
+  // Round Timeout (Defender wins round on clock expiry)
+  if (state.roundTime >= state.maxRoundTime && state.phase === 'active') {
+    state.phase = 'defended';
+    state.outcome = `Time expired! Defensive stand by ${duel.defenderId === duel.p1.id ? duel.p1.name : duel.p2.name}!`;
+    duel.score[duel.defenderId]++;
+    duel.events.push({
+      type: 'timeout',
+      round: duel.currentRound,
+      time: Math.round(state.roundTime),
+      text: state.outcome
+    });
+    endDuelRound(duel);
+    return duel;
+  }
+
+  recordDuelFrame(duel);
+  return duel;
+}
+
+function endDuelRound(duel) {
+  duel.roundHistory.push({
+    round: duel.currentRound + 1,
+    attacker: duel.attackerId === duel.p1.id ? duel.p1.name : duel.p2.name,
+    defender: duel.defenderId === duel.p1.id ? duel.p1.name : duel.p2.name,
+    outcome: duel.state.outcome,
+    score: { ...duel.score }
+  });
+
+  recordDuelFrame(duel);
+
+  if (duel.currentRound + 1 >= duel.totalRounds) {
+    // Check for tie-breaker if equal points
+    if (duel.score[duel.p1.id] === duel.score[duel.p2.id]) {
+      // Golden goal extra round!
+      duel.totalRounds++;
+      duel.currentRound++;
+      initRoundPhysics(duel);
+      duel.events.push({
+        type: 'tiebreak',
+        round: duel.currentRound,
+        time: 0,
+        text: 'Scores level! Sudden-death tie-breaker round initiated!'
+      });
+      return;
+    }
+
+    duel.isComplete = true;
+    duel.winner = duel.score[duel.p1.id] > duel.score[duel.p2.id] ? duel.p1 : duel.p2;
+    duel.events.push({
+      type: 'duel_won',
+      round: duel.currentRound + 1,
+      time: Math.round(duel.state.roundTime),
+      text: `🏆 ${duel.winner.name} wins the 1v1 Player Duel (${duel.score[duel.p1.id]} - ${duel.score[duel.p2.id]})!`
+    });
+  } else {
+    duel.currentRound++;
+    initRoundPhysics(duel);
+  }
+}
+
+function playFullDuel(duel) {
+  while (!duel.isComplete && duel.frames.length < 1500) {
+    advanceDuelTick(duel, 0.25);
+  }
+  return duel;
+}
+
+function renderDuelPitch(canvas, duel) {
+  if (!canvas || !duel || !duel.state) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const scale = Math.min(window.devicePixelRatio || 1, 2);
+  const wPx = Math.max(1, Math.round(rect.width * scale));
+  const hPx = Math.max(1, Math.round(rect.height * scale));
+  if (canvas.width !== wPx || canvas.height !== hPx) {
+    canvas.width = wPx;
+    canvas.height = hPx;
+  }
+  const W = rect.width;
+  const H = rect.height;
+
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+
+  // Deep obsidian turf with grass striping
+  const grad = ctx.createLinearGradient(0, 0, W, H);
+  grad.addColorStop(0, '#122e22');
+  grad.addColorStop(1, '#0e241b');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Pitch boundary
+  const pX = W * 0.06;
+  const pY = H * 0.08;
+  const pW = W * 0.88;
+  const pH = H * 0.84;
+
+  ctx.strokeStyle = 'rgba(212, 183, 123, 0.4)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(pX, pY, pW, pH);
+
+  // Half-way line
+  ctx.beginPath();
+  ctx.moveTo(pX + pW / 2, pY);
+  ctx.lineTo(pX + pW / 2, pY + pH);
+  ctx.stroke();
+
+  // Center circle
+  ctx.beginPath();
+  ctx.arc(pX + pW / 2, pY + pH / 2, pH * 0.25, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Goal on right side
+  const gY1 = pY + (pH * (DUEL_PITCH.goalYMin / 60));
+  const gH = pH * ((DUEL_PITCH.goalYMax - DUEL_PITCH.goalYMin) / 60);
+  ctx.fillStyle = 'rgba(212, 183, 123, 0.15)';
+  ctx.strokeStyle = '#D4B77B';
+  ctx.lineWidth = 3;
+  ctx.fillRect(pX + pW - 8, gY1, 16, gH);
+  ctx.strokeRect(pX + pW - 8, gY1, 16, gH);
+
+  // Coordinate mapper from 0-100 X, 0-60 Y
+  const mapX = x => pX + (x / 100) * pW;
+  const mapY = y => pY + (y / 60) * pH;
+
+  // Draw Goalkeeper
+  const gk = duel.state.gk;
+  ctx.fillStyle = '#F4CF67';
+  ctx.beginPath();
+  ctx.arc(mapX(gk.x), mapY(gk.y), 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#0E1014';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw Players
+  const p1State = duel.state.players[duel.p1.id];
+  const p2State = duel.state.players[duel.p2.id];
+
+  // Player 1 (Champagne Gold kit)
+  if (p1State) {
+    ctx.fillStyle = '#D4B77B';
+    ctx.beginPath();
+    ctx.arc(mapX(p1State.x), mapY(p1State.y), 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#0E1014';
+    ctx.font = 'bold 9px Barlow Condensed, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('P1', mapX(p1State.x), mapY(p1State.y));
+
+    // Player 1 Name tag
+    ctx.fillStyle = '#F4F2EC';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillText(duel.p1.name.split(' ').pop(), mapX(p1State.x), mapY(p1State.y) - 14);
+  }
+
+  // Player 2 (Electric Sky Blue kit)
+  if (p2State) {
+    ctx.fillStyle = '#92C8F0';
+    ctx.beginPath();
+    ctx.arc(mapX(p2State.x), mapY(p2State.y), 9, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = '#0E1014';
+    ctx.font = 'bold 9px Barlow Condensed, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('P2', mapX(p2State.x), mapY(p2State.y));
+
+    // Player 2 Name tag
+    ctx.fillStyle = '#F4F2EC';
+    ctx.font = '10px Inter, sans-serif';
+    ctx.fillText(duel.p2.name.split(' ').pop(), mapX(p2State.x), mapY(p2State.y) - 14);
+  }
+
+  // Draw Ball
+  const ball = duel.state.ball;
+  ctx.fillStyle = '#FFFFFF';
+  ctx.beginPath();
+  ctx.arc(mapX(ball.x), mapY(ball.y), 5, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#0E1014';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+}
+
+  return { createPlayerDuel, advanceDuelTick, playFullDuel, renderDuelPitch, DUEL_TYPES, DUEL_PITCH };
+})(Data);
+
 ((
   { TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS, registerCustomTeam },
   { createMatch, advanceMinute, playFullMatch, matchFromFrame, applyTactic, changeFormation, swapPlayer, resetStartingXI, resultLabel, applyShout, applyTeamTalk, simulatePenaltyShootout },
@@ -248533,7 +249593,8 @@ function createMatchEffects(options = {}) {
   { sound },
   { createTournament, loadTournament, saveTournament, clearTournament, simulateAIMatch, recordTournamentResult, getLeaderboard, TOURNAMENT_PRESETS },
   { getTeamBadgeSvg },
-  { MatchEffectsController, createMatchEffects }
+  { MatchEffectsController, createMatchEffects },
+  { createPlayerDuel, advanceDuelTick, playFullDuel, renderDuelPitch, DUEL_TYPES }
 ) => {
   const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
@@ -248913,9 +249974,13 @@ function renderModalPlayers() {
   const query = $('#playerSearchInput').value.trim().toLowerCase();
   const filterCat = $('#modalRoleFilter').value;
 
+  const isDuel = activeModalTarget && (activeModalTarget.type === 'duelP1' || activeModalTarget.type === 'duelP2');
+
   const filtered = ALL_PLAYERS_POOL.filter(p => {
-    if (activeModalTarget.role === 'GK' && p.role !== 'GK') return false;
-    if (activeModalTarget.role !== 'GK' && p.role === 'GK') return false;
+    if (!isDuel) {
+      if (activeModalTarget.role === 'GK' && p.role !== 'GK') return false;
+      if (activeModalTarget.role !== 'GK' && p.role === 'GK') return false;
+    }
 
     if (filterCat !== 'ALL') {
       if (getRoleCategory(p.role) !== filterCat) return false;
@@ -248944,6 +250009,30 @@ function renderModalPlayers() {
 function selectPlayerFromModal(playerId) {
   const chosen = ALL_PLAYERS_POOL.find(p => p.id === playerId);
   if (!chosen || !activeModalTarget) return;
+
+  if (activeModalTarget.type === 'duelP1') {
+    if (chosen.id === duelP2.id) {
+      toast('Player 1 and Player 2 cannot be the same footballer.');
+      return;
+    }
+    duelP1 = chosen;
+    $('#playerPickerModal').classList.remove('is-open');
+    renderDuelMode();
+    toast(`${chosen.name} selected as Player 1!`);
+    return;
+  }
+
+  if (activeModalTarget.type === 'duelP2') {
+    if (chosen.id === duelP1.id) {
+      toast('Player 2 and Player 1 cannot be the same footballer.');
+      return;
+    }
+    duelP2 = chosen;
+    $('#playerPickerModal').classList.remove('is-open');
+    renderDuelMode();
+    toast(`${chosen.name} selected as Player 2!`);
+    return;
+  }
 
   const target = {
     role: chosen.role,
@@ -249419,7 +250508,156 @@ function quickSimulateTournamentMatch(matchId) {
 }
 
 // ==========================================
-// 4. Core Matchday Engine & Replay
+// 4. 1v1 Player Duel Mode
+// ==========================================
+let duelP1 = ALL_PLAYERS_POOL[0]; // Top rated (e.g. Messi)
+let duelP2 = ALL_PLAYERS_POOL[1]; // Second top rated (e.g. Ronaldo)
+let currentDuel = null;
+let duelRunning = false;
+let duelAccumulator = 0;
+let duelReplay = null;
+
+function renderDuelMode() {
+  if (!duelP1 || !duelP2) return;
+
+  const renderCard = (p, elId) => {
+    const el = $(elId);
+    if (!el) return;
+    el.innerHTML = `
+      <div class="duel-player-ovr-circle">${p.ovr}</div>
+      <div class="duel-player-meta">
+        <h4>${escapeHtml(p.name)}</h4>
+        <span>${escapeHtml(p.role)} · ${escapeHtml(p.club || p.teamName || 'Elite')} (${escapeHtml(p.nat || 'World')})</span>
+      </div>
+    `;
+  };
+
+  renderCard(duelP1, '#duelP1Preview');
+  renderCard(duelP2, '#duelP2Preview');
+
+  $('#duelMatchupHeadline').textContent = `${duelP1.name} vs ${duelP2.name}`;
+
+  // Attribute Matrix
+  const attrs = [
+    { label: 'Overall (OVR)', k1: duelP1.ovr, k2: duelP2.ovr },
+    { label: 'Pace (PAC)', k1: duelP1.pace, k2: duelP2.pace },
+    { label: 'Shooting (SHO)', k1: duelP1.shooting, k2: duelP2.shooting },
+    { label: 'Passing (PAS)', k1: duelP1.passing, k2: duelP2.passing },
+    { label: 'Dribbling (DRI)', k1: duelP1.dribbling, k2: duelP2.dribbling },
+    { label: 'Defending (DEF)', k1: duelP1.defending, k2: duelP2.defending },
+    { label: 'Physicality (PHY)', k1: duelP1.physical, k2: duelP2.physical }
+  ];
+
+  if (duelP1.role === 'GK' || duelP2.role === 'GK') {
+    attrs.push({ label: 'Goalkeeping (GKP)', k1: duelP1.keeping || 5, k2: duelP2.keeping || 5 });
+  }
+
+  $('#duelComparisonGrid').innerHTML = attrs.map(a => {
+    const p1Lead = a.k1 > a.k2;
+    const p2Lead = a.k2 > a.k1;
+    return `
+      <div class="duel-stat-row">
+        <span class="duel-stat-val ${p1Lead ? 'is-lead' : ''}">${a.k1}</span>
+        <div class="duel-stat-bars">
+          <div class="duel-stat-bar-track left"><span style="width:${Math.min(100, a.k1)}%"></span></div>
+          <span class="duel-stat-label">${a.label}</span>
+          <div class="duel-stat-bar-track right"><span style="width:${Math.min(100, a.k2)}%"></span></div>
+        </div>
+        <span class="duel-stat-val ${p2Lead ? 'is-lead' : ''}">${a.k2}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function startDuelMatch() {
+  const duelType = $('#duelTypeSelect').value;
+  const rounds = parseInt($('#duelRoundsSelect').value, 10) || 5;
+
+  currentDuel = createPlayerDuel(duelP1, duelP2, duelType, rounds);
+  duelRunning = true;
+  duelAccumulator = 0;
+
+  $('#duelArenaCard').style.display = 'block';
+  $('#duelResultCard').style.display = 'none';
+  $('#duelArenaP1Name').textContent = duelP1.name;
+  $('#duelArenaP2Name').textContent = duelP2.name;
+  $('#duelPlayPauseBtn').textContent = '⏸';
+
+  updateDuelDisplay();
+  scrollToSection('#duelArenaCard');
+  toast(`⚔️ 1v1 Duel started! ${duelP1.name} vs ${duelP2.name} in ${duelType.replace('_', ' ').toUpperCase()} challenge!`);
+}
+
+function updateDuelDisplay() {
+  if (!currentDuel) return;
+  $('#duelArenaScore').textContent = `${currentDuel.score[duelP1.id]} - ${currentDuel.score[duelP2.id]}`;
+  $('#duelRoundText').textContent = `ROUND ${Math.min(currentDuel.currentRound + 1, currentDuel.totalRounds)} of ${currentDuel.totalRounds}`;
+  $('#duelPhasePill').textContent = currentDuel.isComplete ? 'FULL TIME' : (currentDuel.state?.phase || 'LIVE').toUpperCase();
+  
+  const lastEvent = currentDuel.events.at(-1);
+  if (lastEvent) {
+    $('#duelTickerText').textContent = lastEvent.text;
+  }
+
+  const canvas = $('#duelPitchCanvas');
+  if (canvas) renderDuelPitch(canvas, currentDuel);
+
+  if (currentDuel.isComplete) {
+    showDuelResults();
+  }
+}
+
+function showDuelResults() {
+  duelRunning = false;
+  $('#duelPlayPauseBtn').textContent = '▶';
+  $('#duelResultCard').style.display = 'block';
+
+  const p1Score = currentDuel.score[duelP1.id];
+  const p2Score = currentDuel.score[duelP2.id];
+  const winner = currentDuel.winner;
+
+  $('#duelWinnerHeadline').textContent = `${winner ? winner.name : 'Stalemate'} ${winner ? 'Triumphs!' : 'Draw!'}`;
+  $('#duelResultSummary').textContent = `Final Score: ${duelP1.name} ${p1Score} - ${p2Score} ${duelP2.name} across ${currentDuel.roundHistory.length} simulated rounds`;
+
+  const p1Stats = currentDuel.stats[duelP1.id];
+  const p2Stats = currentDuel.stats[duelP2.id];
+
+  $('#duelResultStatsTable').innerHTML = `
+    <div class="duel-table-header">
+      <span>${escapeHtml(duelP1.name)}</span>
+      <span>METRIC</span>
+      <span>${escapeHtml(duelP2.name)}</span>
+    </div>
+    <div class="duel-table-row"><b>${p1Score}</b><span>Points Won</span><b>${p2Score}</b></div>
+    <div class="duel-table-row"><b>${p1Stats.goals}</b><span>Goals Scored</span><b>${p2Stats.goals}</b></div>
+    <div class="duel-table-row"><b>${p1Stats.dribbles}</b><span>Successful Take-ons</span><b>${p2Stats.dribbles}</b></div>
+    <div class="duel-table-row"><b>${p1Stats.tackles}</b><span>Defensive Stops</span><b>${p2Stats.tackles}</b></div>
+    <div class="duel-table-row"><b>${p1Stats.shots}</b><span>Total Shots</span><b>${p2Stats.shots}</b></div>
+  `;
+}
+
+function saveDuelToVault() {
+  if (!currentDuel) return;
+  const snapshot = JSON.parse(JSON.stringify(currentDuel));
+  const id = `${snapshot.seed}-${Date.now()}`;
+  const vaultItem = {
+    id,
+    savedAt: new Date().toISOString(),
+    isDuel: true,
+    duel: snapshot
+  };
+  vault = [vaultItem, ...vault].slice(0, 12);
+  try {
+    localStorage.setItem(STORAGE, JSON.stringify(vault));
+    renderVault();
+    toast('1v1 Player Duel recorded and saved to Vault!');
+  } catch (err) {
+    toast('Vault storage full.');
+  }
+}
+
+// ==========================================
+// 5. Core Matchday Engine & Replay
 // ==========================================
 let vault=loadVault();
 
@@ -249756,9 +250994,14 @@ function renderFlow(){
 
 function renderVault(){
   const container=$('#vaultList');
-  if(!vault.length){container.innerHTML='<div class="empty-vault">No saved fixtures yet. Play a match and hit “Save this match”.</div>';return;}
+  if(!vault.length){container.innerHTML='<div class="empty-vault">No saved fixtures yet. Play a match or 1v1 duel and hit “Save”.</div>';return;}
   container.innerHTML=vault.map(item=>{
+    if (item.isDuel && item.duel) {
+      const d = item.duel;
+      return `<article class="vault-match"><div class="vault-match-top"><span>1v1 DUEL · ${escapeHtml(new Date(item.savedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase())}</span><span>${d.isComplete ? 'FULL TIME' : 'SAVED'}</span></div><div class="vault-score">${escapeHtml(d.p1.name.split(' ').pop())} ${d.score[d.p1.id]}<span>:</span>${d.score[d.p2.id]} ${escapeHtml(d.p2.name.split(' ').pop())}</div><div class="vault-sub">${escapeHtml(d.duelType.toUpperCase())} · ${d.frames.length} frames</div><div class="vault-match-actions"><button data-replay="${escapeHtml(item.id)}">↻ Replay</button><button data-export="${escapeHtml(item.id)}">↓ Export JSON</button><button data-delete="${escapeHtml(item.id)}">✕</button></div></article>`;
+    }
     const m=item.match;
+    if (!m) return '';
     const h=getTeam(m.homeId),a=getTeam(m.awayId);
     return `<article class="vault-match"><div class="vault-match-top"><span>${escapeHtml(new Date(item.savedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase())}</span><span>${m.minute===90?'FULL TIME':`${m.minute}′ SAVED`}</span></div><div class="vault-score">${h.short} ${m.score.home}<span>:</span>${m.score.away} ${a.short}</div><div class="vault-sub">${escapeHtml(m.seed)} · ${m.frames.length} frames</div><div class="vault-match-actions"><button data-replay="${escapeHtml(item.id)}">↻ Replay</button><button data-export="${escapeHtml(item.id)}">↓ Export JSON</button><button data-delete="${escapeHtml(item.id)}">✕</button></div></article>`;
   }).join('');
@@ -250159,6 +251402,18 @@ function bind(){
     const item=vault.find(v=>v.id===id);
     if(!item) return;
     if(button.hasAttribute('data-replay')){
+      if (item.isDuel && item.duel) {
+        currentDuel = JSON.parse(JSON.stringify(item.duel));
+        duelP1 = currentDuel.p1;
+        duelP2 = currentDuel.p2;
+        showPage('duel');
+        $('#duelArenaCard').style.display = 'block';
+        $('#duelResultCard').style.display = 'block';
+        updateDuelDisplay();
+        showDuelResults();
+        toast('Duel replay loaded from Vault!');
+        return;
+      }
       startReplay(item);
     } else if(button.hasAttribute('data-export')){
       exportReplay(item);
@@ -250404,6 +251659,55 @@ function bind(){
     }
   });
 
+  // 1v1 Player Duel Bindings
+  $('#duelPickP1Btn')?.addEventListener('click', () => {
+    activeModalTarget = { type: 'duelP1' };
+    $('#modalSlotTitle').textContent = `Select Player 1 (Current: ${duelP1.name})`;
+    $('#playerPickerModal').classList.add('is-open');
+    $('#playerSearchInput').value = '';
+    $('#modalRoleFilter').value = 'ALL';
+    renderModalPlayers();
+  });
+
+  $('#duelPickP2Btn')?.addEventListener('click', () => {
+    activeModalTarget = { type: 'duelP2' };
+    $('#modalSlotTitle').textContent = `Select Player 2 (Current: ${duelP2.name})`;
+    $('#playerPickerModal').classList.add('is-open');
+    $('#playerSearchInput').value = '';
+    $('#modalRoleFilter').value = 'ALL';
+    renderModalPlayers();
+  });
+
+  $('#duelSwapPlayersBtn')?.addEventListener('click', () => {
+    const temp = duelP1;
+    duelP1 = duelP2;
+    duelP2 = temp;
+    renderDuelMode();
+    toast('Players swapped sides!');
+  });
+
+  $('#startDuelBtn')?.addEventListener('click', startDuelMatch);
+  $('#duelResultRematchBtn')?.addEventListener('click', startDuelMatch);
+  $('#duelRematchBtn')?.addEventListener('click', startDuelMatch);
+  $('#duelChangePlayersBtn')?.addEventListener('click', () => {
+    $('#duelArenaCard').style.display = 'none';
+    $('#duelResultCard').style.display = 'none';
+    scrollToSection('#duel');
+  });
+
+  $('#duelPlayPauseBtn')?.addEventListener('click', () => {
+    if (!currentDuel || currentDuel.isComplete) return;
+    duelRunning = !duelRunning;
+    $('#duelPlayPauseBtn').textContent = duelRunning ? '⏸' : '▶';
+  });
+
+  $('#duelRestartBtn')?.addEventListener('click', () => {
+    if (!currentDuel) return;
+    startDuelMatch();
+  });
+
+  $('#duelSaveReplayBtn')?.addEventListener('click', saveDuelToVault);
+
   // Welcome & How to Play Pop-Out Modal
   const welcomeModal = $('#welcomeModal');
   if (welcomeModal) {
@@ -250503,6 +251807,19 @@ function frame(now){
       if(!running)break;
     }
   }
+
+  // 1v1 Duel Tick & Render
+  if(duelRunning && currentDuel && !currentDuel.isComplete){
+    duelAccumulator += delta;
+    const duelTickInterval = 120; // smooth 120ms tick
+    while(duelAccumulator >= duelTickInterval){
+      duelAccumulator -= duelTickInterval;
+      advanceDuelTick(currentDuel, 0.25);
+      updateDuelDisplay();
+      if(!duelRunning || currentDuel.isComplete) break;
+    }
+  }
+
   if (match) match.speed = speed;
   renderPitch($('#pitchCanvas'),match,now);
   requestAnimationFrame(frame);
@@ -250515,10 +251832,11 @@ render();
 renderDreamStudio();
 renderScoutingHub();
 renderTournament();
+renderDuelMode();
 renderVault();
 requestAnimationFrame(frame);
 
-})(Data, Engine, Pitch, Sound, Tournament, Badges, MatchEffects);
+})(Data, Engine, Pitch, Sound, Tournament, Badges, MatchEffects, Duel);
 
 </script>
 </body>

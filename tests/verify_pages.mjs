@@ -206,6 +206,7 @@ try {
     { section: 'tournament', expectedPageId: 'page-tournament' },
     { section: 'dreamteam', expectedPageId: 'page-dreamteam' },
     { section: 'scouting', expectedPageId: 'page-scouting' },
+    { section: 'duel', expectedPageId: 'page-duel' },
     { section: 'vault', expectedPageId: 'page-vault' },
     { section: 'squad', expectedPageId: 'page-squad' },
     { section: 'matchday', expectedPageId: 'page-matchday' }

@@ -5,6 +5,7 @@ import {sound} from './sound.js';
 import {createTournament, loadTournament, saveTournament, clearTournament, simulateAIMatch, recordTournamentResult, getLeaderboard, TOURNAMENT_PRESETS} from './tournament.js';
 import {getTeamBadgeSvg} from './badges.js';
 import {MatchEffectsController} from './match-effects.js';
+import {createPlayerDuel, advanceDuelTick, playFullDuel, renderDuelPitch, DUEL_TYPES} from './duel.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
@@ -384,9 +385,13 @@ function renderModalPlayers() {
   const query = $('#playerSearchInput').value.trim().toLowerCase();
   const filterCat = $('#modalRoleFilter').value;
 
+  const isDuel = activeModalTarget && (activeModalTarget.type === 'duelP1' || activeModalTarget.type === 'duelP2');
+
   const filtered = ALL_PLAYERS_POOL.filter(p => {
-    if (activeModalTarget.role === 'GK' && p.role !== 'GK') return false;
-    if (activeModalTarget.role !== 'GK' && p.role === 'GK') return false;
+    if (!isDuel) {
+      if (activeModalTarget.role === 'GK' && p.role !== 'GK') return false;
+      if (activeModalTarget.role !== 'GK' && p.role === 'GK') return false;
+    }
 
     if (filterCat !== 'ALL') {
       if (getRoleCategory(p.role) !== filterCat) return false;
@@ -415,6 +420,30 @@ function renderModalPlayers() {
 function selectPlayerFromModal(playerId) {
   const chosen = ALL_PLAYERS_POOL.find(p => p.id === playerId);
   if (!chosen || !activeModalTarget) return;
+
+  if (activeModalTarget.type === 'duelP1') {
+    if (chosen.id === duelP2.id) {
+      toast('Player 1 and Player 2 cannot be the same footballer.');
+      return;
+    }
+    duelP1 = chosen;
+    $('#playerPickerModal').classList.remove('is-open');
+    renderDuelMode();
+    toast(`${chosen.name} selected as Player 1!`);
+    return;
+  }
+
+  if (activeModalTarget.type === 'duelP2') {
+    if (chosen.id === duelP1.id) {
+      toast('Player 2 and Player 1 cannot be the same footballer.');
+      return;
+    }
+    duelP2 = chosen;
+    $('#playerPickerModal').classList.remove('is-open');
+    renderDuelMode();
+    toast(`${chosen.name} selected as Player 2!`);
+    return;
+  }
 
   const target = {
     role: chosen.role,
@@ -890,7 +919,156 @@ function quickSimulateTournamentMatch(matchId) {
 }
 
 // ==========================================
-// 4. Core Matchday Engine & Replay
+// 4. 1v1 Player Duel Mode
+// ==========================================
+let duelP1 = ALL_PLAYERS_POOL[0]; // Top rated (e.g. Messi)
+let duelP2 = ALL_PLAYERS_POOL[1]; // Second top rated (e.g. Ronaldo)
+let currentDuel = null;
+let duelRunning = false;
+let duelAccumulator = 0;
+let duelReplay = null;
+
+function renderDuelMode() {
+  if (!duelP1 || !duelP2) return;
+
+  const renderCard = (p, elId) => {
+    const el = $(elId);
+    if (!el) return;
+    el.innerHTML = `
+      <div class="duel-player-ovr-circle">${p.ovr}</div>
+      <div class="duel-player-meta">
+        <h4>${escapeHtml(p.name)}</h4>
+        <span>${escapeHtml(p.role)} · ${escapeHtml(p.club || p.teamName || 'Elite')} (${escapeHtml(p.nat || 'World')})</span>
+      </div>
+    `;
+  };
+
+  renderCard(duelP1, '#duelP1Preview');
+  renderCard(duelP2, '#duelP2Preview');
+
+  $('#duelMatchupHeadline').textContent = `${duelP1.name} vs ${duelP2.name}`;
+
+  // Attribute Matrix
+  const attrs = [
+    { label: 'Overall (OVR)', k1: duelP1.ovr, k2: duelP2.ovr },
+    { label: 'Pace (PAC)', k1: duelP1.pace, k2: duelP2.pace },
+    { label: 'Shooting (SHO)', k1: duelP1.shooting, k2: duelP2.shooting },
+    { label: 'Passing (PAS)', k1: duelP1.passing, k2: duelP2.passing },
+    { label: 'Dribbling (DRI)', k1: duelP1.dribbling, k2: duelP2.dribbling },
+    { label: 'Defending (DEF)', k1: duelP1.defending, k2: duelP2.defending },
+    { label: 'Physicality (PHY)', k1: duelP1.physical, k2: duelP2.physical }
+  ];
+
+  if (duelP1.role === 'GK' || duelP2.role === 'GK') {
+    attrs.push({ label: 'Goalkeeping (GKP)', k1: duelP1.keeping || 5, k2: duelP2.keeping || 5 });
+  }
+
+  $('#duelComparisonGrid').innerHTML = attrs.map(a => {
+    const p1Lead = a.k1 > a.k2;
+    const p2Lead = a.k2 > a.k1;
+    return `
+      <div class="duel-stat-row">
+        <span class="duel-stat-val ${p1Lead ? 'is-lead' : ''}">${a.k1}</span>
+        <div class="duel-stat-bars">
+          <div class="duel-stat-bar-track left"><span style="width:${Math.min(100, a.k1)}%"></span></div>
+          <span class="duel-stat-label">${a.label}</span>
+          <div class="duel-stat-bar-track right"><span style="width:${Math.min(100, a.k2)}%"></span></div>
+        </div>
+        <span class="duel-stat-val ${p2Lead ? 'is-lead' : ''}">${a.k2}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function startDuelMatch() {
+  const duelType = $('#duelTypeSelect').value;
+  const rounds = parseInt($('#duelRoundsSelect').value, 10) || 5;
+
+  currentDuel = createPlayerDuel(duelP1, duelP2, duelType, rounds);
+  duelRunning = true;
+  duelAccumulator = 0;
+
+  $('#duelArenaCard').style.display = 'block';
+  $('#duelResultCard').style.display = 'none';
+  $('#duelArenaP1Name').textContent = duelP1.name;
+  $('#duelArenaP2Name').textContent = duelP2.name;
+  $('#duelPlayPauseBtn').textContent = '⏸';
+
+  updateDuelDisplay();
+  scrollToSection('#duelArenaCard');
+  toast(`⚔️ 1v1 Duel started! ${duelP1.name} vs ${duelP2.name} in ${duelType.replace('_', ' ').toUpperCase()} challenge!`);
+}
+
+function updateDuelDisplay() {
+  if (!currentDuel) return;
+  $('#duelArenaScore').textContent = `${currentDuel.score[duelP1.id]} - ${currentDuel.score[duelP2.id]}`;
+  $('#duelRoundText').textContent = `ROUND ${Math.min(currentDuel.currentRound + 1, currentDuel.totalRounds)} of ${currentDuel.totalRounds}`;
+  $('#duelPhasePill').textContent = currentDuel.isComplete ? 'FULL TIME' : (currentDuel.state?.phase || 'LIVE').toUpperCase();
+  
+  const lastEvent = currentDuel.events.at(-1);
+  if (lastEvent) {
+    $('#duelTickerText').textContent = lastEvent.text;
+  }
+
+  const canvas = $('#duelPitchCanvas');
+  if (canvas) renderDuelPitch(canvas, currentDuel);
+
+  if (currentDuel.isComplete) {
+    showDuelResults();
+  }
+}
+
+function showDuelResults() {
+  duelRunning = false;
+  $('#duelPlayPauseBtn').textContent = '▶';
+  $('#duelResultCard').style.display = 'block';
+
+  const p1Score = currentDuel.score[duelP1.id];
+  const p2Score = currentDuel.score[duelP2.id];
+  const winner = currentDuel.winner;
+
+  $('#duelWinnerHeadline').textContent = `${winner ? winner.name : 'Stalemate'} ${winner ? 'Triumphs!' : 'Draw!'}`;
+  $('#duelResultSummary').textContent = `Final Score: ${duelP1.name} ${p1Score} - ${p2Score} ${duelP2.name} across ${currentDuel.roundHistory.length} simulated rounds`;
+
+  const p1Stats = currentDuel.stats[duelP1.id];
+  const p2Stats = currentDuel.stats[duelP2.id];
+
+  $('#duelResultStatsTable').innerHTML = `
+    <div class="duel-table-header">
+      <span>${escapeHtml(duelP1.name)}</span>
+      <span>METRIC</span>
+      <span>${escapeHtml(duelP2.name)}</span>
+    </div>
+    <div class="duel-table-row"><b>${p1Score}</b><span>Points Won</span><b>${p2Score}</b></div>
+    <div class="duel-table-row"><b>${p1Stats.goals}</b><span>Goals Scored</span><b>${p2Stats.goals}</b></div>
+    <div class="duel-table-row"><b>${p1Stats.dribbles}</b><span>Successful Take-ons</span><b>${p2Stats.dribbles}</b></div>
+    <div class="duel-table-row"><b>${p1Stats.tackles}</b><span>Defensive Stops</span><b>${p2Stats.tackles}</b></div>
+    <div class="duel-table-row"><b>${p1Stats.shots}</b><span>Total Shots</span><b>${p2Stats.shots}</b></div>
+  `;
+}
+
+function saveDuelToVault() {
+  if (!currentDuel) return;
+  const snapshot = JSON.parse(JSON.stringify(currentDuel));
+  const id = `${snapshot.seed}-${Date.now()}`;
+  const vaultItem = {
+    id,
+    savedAt: new Date().toISOString(),
+    isDuel: true,
+    duel: snapshot
+  };
+  vault = [vaultItem, ...vault].slice(0, 12);
+  try {
+    localStorage.setItem(STORAGE, JSON.stringify(vault));
+    renderVault();
+    toast('1v1 Player Duel recorded and saved to Vault!');
+  } catch (err) {
+    toast('Vault storage full.');
+  }
+}
+
+// ==========================================
+// 5. Core Matchday Engine & Replay
 // ==========================================
 let vault=loadVault();
 
@@ -1227,9 +1405,14 @@ function renderFlow(){
 
 function renderVault(){
   const container=$('#vaultList');
-  if(!vault.length){container.innerHTML='<div class="empty-vault">No saved fixtures yet. Play a match and hit “Save this match”.</div>';return;}
+  if(!vault.length){container.innerHTML='<div class="empty-vault">No saved fixtures yet. Play a match or 1v1 duel and hit “Save”.</div>';return;}
   container.innerHTML=vault.map(item=>{
+    if (item.isDuel && item.duel) {
+      const d = item.duel;
+      return `<article class="vault-match"><div class="vault-match-top"><span>1v1 DUEL · ${escapeHtml(new Date(item.savedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase())}</span><span>${d.isComplete ? 'FULL TIME' : 'SAVED'}</span></div><div class="vault-score">${escapeHtml(d.p1.name.split(' ').pop())} ${d.score[d.p1.id]}<span>:</span>${d.score[d.p2.id]} ${escapeHtml(d.p2.name.split(' ').pop())}</div><div class="vault-sub">${escapeHtml(d.duelType.toUpperCase())} · ${d.frames.length} frames</div><div class="vault-match-actions"><button data-replay="${escapeHtml(item.id)}">↻ Replay</button><button data-export="${escapeHtml(item.id)}">↓ Export JSON</button><button data-delete="${escapeHtml(item.id)}">✕</button></div></article>`;
+    }
     const m=item.match;
+    if (!m) return '';
     const h=getTeam(m.homeId),a=getTeam(m.awayId);
     return `<article class="vault-match"><div class="vault-match-top"><span>${escapeHtml(new Date(item.savedAt).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase())}</span><span>${m.minute===90?'FULL TIME':`${m.minute}′ SAVED`}</span></div><div class="vault-score">${h.short} ${m.score.home}<span>:</span>${m.score.away} ${a.short}</div><div class="vault-sub">${escapeHtml(m.seed)} · ${m.frames.length} frames</div><div class="vault-match-actions"><button data-replay="${escapeHtml(item.id)}">↻ Replay</button><button data-export="${escapeHtml(item.id)}">↓ Export JSON</button><button data-delete="${escapeHtml(item.id)}">✕</button></div></article>`;
   }).join('');
@@ -1630,6 +1813,18 @@ function bind(){
     const item=vault.find(v=>v.id===id);
     if(!item) return;
     if(button.hasAttribute('data-replay')){
+      if (item.isDuel && item.duel) {
+        currentDuel = JSON.parse(JSON.stringify(item.duel));
+        duelP1 = currentDuel.p1;
+        duelP2 = currentDuel.p2;
+        showPage('duel');
+        $('#duelArenaCard').style.display = 'block';
+        $('#duelResultCard').style.display = 'block';
+        updateDuelDisplay();
+        showDuelResults();
+        toast('Duel replay loaded from Vault!');
+        return;
+      }
       startReplay(item);
     } else if(button.hasAttribute('data-export')){
       exportReplay(item);
@@ -1875,6 +2070,55 @@ function bind(){
     }
   });
 
+  // 1v1 Player Duel Bindings
+  $('#duelPickP1Btn')?.addEventListener('click', () => {
+    activeModalTarget = { type: 'duelP1' };
+    $('#modalSlotTitle').textContent = `Select Player 1 (Current: ${duelP1.name})`;
+    $('#playerPickerModal').classList.add('is-open');
+    $('#playerSearchInput').value = '';
+    $('#modalRoleFilter').value = 'ALL';
+    renderModalPlayers();
+  });
+
+  $('#duelPickP2Btn')?.addEventListener('click', () => {
+    activeModalTarget = { type: 'duelP2' };
+    $('#modalSlotTitle').textContent = `Select Player 2 (Current: ${duelP2.name})`;
+    $('#playerPickerModal').classList.add('is-open');
+    $('#playerSearchInput').value = '';
+    $('#modalRoleFilter').value = 'ALL';
+    renderModalPlayers();
+  });
+
+  $('#duelSwapPlayersBtn')?.addEventListener('click', () => {
+    const temp = duelP1;
+    duelP1 = duelP2;
+    duelP2 = temp;
+    renderDuelMode();
+    toast('Players swapped sides!');
+  });
+
+  $('#startDuelBtn')?.addEventListener('click', startDuelMatch);
+  $('#duelResultRematchBtn')?.addEventListener('click', startDuelMatch);
+  $('#duelRematchBtn')?.addEventListener('click', startDuelMatch);
+  $('#duelChangePlayersBtn')?.addEventListener('click', () => {
+    $('#duelArenaCard').style.display = 'none';
+    $('#duelResultCard').style.display = 'none';
+    scrollToSection('#duel');
+  });
+
+  $('#duelPlayPauseBtn')?.addEventListener('click', () => {
+    if (!currentDuel || currentDuel.isComplete) return;
+    duelRunning = !duelRunning;
+    $('#duelPlayPauseBtn').textContent = duelRunning ? '⏸' : '▶';
+  });
+
+  $('#duelRestartBtn')?.addEventListener('click', () => {
+    if (!currentDuel) return;
+    startDuelMatch();
+  });
+
+  $('#duelSaveReplayBtn')?.addEventListener('click', saveDuelToVault);
+
   // Welcome & How to Play Pop-Out Modal
   const welcomeModal = $('#welcomeModal');
   if (welcomeModal) {
@@ -1974,6 +2218,19 @@ function frame(now){
       if(!running)break;
     }
   }
+
+  // 1v1 Duel Tick & Render
+  if(duelRunning && currentDuel && !currentDuel.isComplete){
+    duelAccumulator += delta;
+    const duelTickInterval = 120; // smooth 120ms tick
+    while(duelAccumulator >= duelTickInterval){
+      duelAccumulator -= duelTickInterval;
+      advanceDuelTick(currentDuel, 0.25);
+      updateDuelDisplay();
+      if(!duelRunning || currentDuel.isComplete) break;
+    }
+  }
+
   if (match) match.speed = speed;
   renderPitch($('#pitchCanvas'),match,now);
   requestAnimationFrame(frame);
@@ -1986,5 +2243,6 @@ render();
 renderDreamStudio();
 renderScoutingHub();
 renderTournament();
+renderDuelMode();
 renderVault();
 requestAnimationFrame(frame);

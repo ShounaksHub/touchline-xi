@@ -300,34 +300,63 @@ Touchline XI features an elite, bespoke visual identity inspired by high-end foo
 The codebase enforces strict, automated verification pipelines with zero tolerance for broken IDs, missing classes, or syntax regressions:
 
 ```bash
-# 1. Run Unit, Engine & Match Effects Test Suite (43 tests)
+# 1. Run Unit, Engine, Match Effects & Player Duel Test Suite (48 tests)
 npm test
 
-# 2. Validate DOM ID Consistency (152 unique IDs queried in JS)
+# 2. Validate DOM ID Consistency (178 unique IDs queried in JS)
 node tests/check_dom_ids.mjs
 
-# 3. Validate CSS Class Coverage (240 unique HTML classes)
+# 3. Validate CSS Class Coverage (268 unique HTML classes)
 node tests/find_missing_css_classes.mjs
 
-# 4. Verify Multi-Page View Routing & Modal Interactions (Chrome CDP)
+# 4. Verify Multi-Page View Routing & Modal Interactions across 7 Modes (Chrome CDP)
 node tests/verify_pages.mjs
 
-# 5. Verify UX Audit Fixes & Database Search (Chrome CDP)
+# 5. Verify 1v1 Player Duel Live Simulation & Arena (Chrome CDP)
+node tests/verify_duel_mode.mjs
+
+# 6. Verify UX Audit Fixes & Database Search (Chrome CDP)
 node tests/verify_ux_fixes.mjs
 
-# 6. Verify Cinematic Broadcast Graphics & Responsive Screenshots (Chrome CDP)
+# 7. Verify Cinematic Broadcast Graphics & Responsive Screenshots (Chrome CDP)
 node tests/verify_broadcast_graphics.mjs
 
-# 7. Build & Verify Standalone Offline Single-File Executable
+# 8. Build & Verify Standalone Offline Single-File Executable
 npm run build
 node tests/check_bundle.mjs
 ```
 
-### Automated Test Coverage Matrix (43 Tests Passing Cleanly):
+### Automated Test Coverage Matrix (48 Tests Passing Cleanly):
+- **`tests/duel.test.mjs` (5 tests)**: Sequential player setup, duplicate selection prevention, Mulberry32 replay determinism, 3 challenge modes (Attack/Defence, Dribbling, Skill Challenge), and alternating round tie-breaking.
 - **`tests/engine.test.mjs` (19 tests)**: Mulberry32 determinism, 90-minute bounds, frame replay parity, goal/shot consistency, formation live updates, substitution invariants, goalkeeper rules, extra time, penalty shootouts, disciplinary cards, and extended squad depth ($\ge 36$ players/team).
 - **`tests/spatial_engine.test.mjs` (6 tests)**: Continuous spatial world model, 22-player boundary constraints, Mulberry32 trajectory determinism, pitch renderer sync, penalty box rule enforcement, and organic low-block counter-attacking underdog upsets.
 - **`tests/match_effects.test.mjs` (11 tests)**: Broadcast vs Continuous presentation modes, context-aware goal detection (Opener, Equalizer, Hat-Trick, Late Winner, Penalty), yellow card non-blocking display, straight red card 10-men warning, second-yellow dismissal flipper, penalty saved goalkeeper heroics, opposing directional substitution cards (▲ ON / ▼ OFF), replay event deduplication, priority queue preemption, and immutable simulation state guarantees.
 - **`tests/statistical_audit.test.mjs` (1 test · 500 matches)**: 500-match Monte Carlo simulation audit verifying averages: $3.7$ goals/match, $22.3$ shots, $9.7$ on target, $4.2$ corners, $2.0$ yellows, $0.26$ reds, $43.4\%$ home wins, $20.4\%$ draws, $36.2\%$ away wins.
+
+---
+
+## 9. 1v1 Player Duel Engine Architecture (`src/duel.js`)
+
+Touchline XI mode 07 provides an authentic, animated individual footballer face-off engine:
+
+### A. Three Distinct Challenge Modes
+1. **Attack vs Defence (`attack_defence`)**:
+   - Alternating attack/defence rounds (Round 1: P1 attacks, P2 defends; Round 2: P2 attacks, P1 defends).
+   - Attacker attempts to beat defender with lateral dribble feints and acceleration bursts, then strike on goal.
+   - Defender tracks, closes down, and executes slide tackles based on physical tackling rating vs. attacker control.
+   - Features simulated goalkeeper with dynamic horizontal goal mouth positioning.
+2. **Dribbling Duel (`dribbling`)**:
+   - Players alternate attacking runs across a spatial course to reach the objective target line ($X \ge 90$).
+   - Scores awarded for successful take-ons, ball retention under pressure, and reaching the objective zone.
+3. **Skill Challenge (`skill_challenge`)**:
+   - Both footballers complete synchronous shooting, passing accuracy, and control drills evaluated through deterministic simulated skill execution.
+
+### B. Micro-Physics, Stamina & Determinism
+- **Field Coordinates**: Dedicated $100 \times 60$ duel pitch with authentic turf striping, center circle, and goal area.
+- **Micro-Ticks**: Simulates real-time physics with player acceleration, maximum speed, ball retention, tackle hitboxes, and reaction times.
+- **Mulberry32 Seed Invariance**: Seeded RNG guarantees that identical challenge seeds reproduce frame-accurate replays.
+- **Sudden-Death Tie-Breaking**: Ties at the conclusion of regular rounds immediately trigger golden-score sudden-death tie-breaker rounds.
+- **Replay Vault Integration**: Full versioned snapshot serialization (`isDuel: true`) allowing duels to be archived, exported as JSON, and replayed from the Replay Vault without conflicting with 11v11 fixtures.
 - **`tests/interaction_audit.test.mjs` (6 tests)**: E2E cross-database player search, tournament bracket preservation during AI sim, and null-safety guards.
 - **`tests/verify_broadcast_graphics.mjs`**: Headless Chrome test capturing retina desktop and mobile ($390\times 844$) screenshots of goals, red cards, substitutions, and full-time summaries.
 

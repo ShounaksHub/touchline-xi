@@ -20,6 +20,7 @@ const engineModule = strip(read('src/engine.js'));
 const tournamentModule = strip(read('src/tournament.js'));
 const pitchModule = strip(read('src/pitch.js'));
 const matchEffectsModule = strip(read('src/match-effects.js'));
+const duelModule = strip(read('src/duel.js'));
 const appModule = strip(read('src/app.js'));
 
 const bundledJs = `
@@ -68,6 +69,11 @@ const MatchEffects = (({ getTeam, getPlayer }, { getTeamBadgeSvg }, { sound }) =
   return { MatchEffectsController, createMatchEffects };
 })(Data, Badges, Sound);
 
+const Duel = (({ getPlayer }) => {
+  ${duelModule}
+  return { createPlayerDuel, advanceDuelTick, playFullDuel, renderDuelPitch, DUEL_TYPES, DUEL_PITCH };
+})(Data);
+
 ((
   { TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS, registerCustomTeam },
   { createMatch, advanceMinute, playFullMatch, matchFromFrame, applyTactic, changeFormation, swapPlayer, resetStartingXI, resultLabel, applyShout, applyTeamTalk, simulatePenaltyShootout },
@@ -75,10 +81,11 @@ const MatchEffects = (({ getTeam, getPlayer }, { getTeamBadgeSvg }, { sound }) =
   { sound },
   { createTournament, loadTournament, saveTournament, clearTournament, simulateAIMatch, recordTournamentResult, getLeaderboard, TOURNAMENT_PRESETS },
   { getTeamBadgeSvg },
-  { MatchEffectsController, createMatchEffects }
+  { MatchEffectsController, createMatchEffects },
+  { createPlayerDuel, advanceDuelTick, playFullDuel, renderDuelPitch, DUEL_TYPES }
 ) => {
   ${appModule}
-})(Data, Engine, Pitch, Sound, Tournament, Badges, MatchEffects);
+})(Data, Engine, Pitch, Sound, Tournament, Badges, MatchEffects, Duel);
 `;
 
 const template = read('index.template.html');

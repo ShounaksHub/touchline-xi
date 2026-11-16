@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Tests-43%20Passing-brightgreen?style=flat-square&logo=node.js&logoColor=white" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-48%20Passing-brightgreen?style=flat-square&logo=node.js&logoColor=white" alt="Tests">
   <img src="https://img.shields.io/badge/Runtime%20Dependencies-0%20(Pure%20Vanilla)-blue?style=flat-square" alt="Zero Dependencies">
   <img src="https://img.shields.io/badge/Unique%20Footballers-16%2C396%20Players-orange?style=flat-square" alt="Players">
   <img src="https://img.shields.io/badge/Teams-357%20Clubs%20%26%20Nations-purple?style=flat-square" alt="Teams">
@@ -35,7 +35,7 @@ Zero npm installs. Zero build tools required to play. Just double-click the HTML
 
 ---
 
-## 🏟️ The 6 Stadium Zones
+## 🏟️ The 7 Stadium Zones
 
 Touchline XI features a **true multi-page stadium architecture** with instant tab transitions, URL hash routing, and zero scroll bleed:
 
@@ -49,8 +49,9 @@ Touchline XI features a **true multi-page stadium architecture** with instant ta
 | **📋 Squad Lab** | `#squad` | **The Gaffer's War Room.** Starting XI and bench swaps with real-time stamina gauges, formation pitch diagrams, and tactical sliders (*Low Block → Heavy Metal Press*). |
 | **🏆 Tournament Cup** | `#tournament` | **Knockout Championship.** Battle through Quarter-Finals, Semi-Finals, and Final with Extra Time (90′–120′) and sudden-death penalty shootouts. |
 | **✨ Dream Team Studio** | `#dreamteam` | **Fantasy Galácticos.** Draft any world legend or active superstar into your custom fantasy squad, deploy in 1 click, and play immediately against adaptive AI managers. |
-| **🔍 Global Scouting** | `#scouting` | **Transfer Database.** Search and inspect 16,390+ unique footballers across 357 clubs and nations with metallic FUT-style player cards, attribute radars, and bio inspections. |
-| **📼 Replay Vault** | `#vault` | **The Archive.** Frame-by-frame scrubbable match tape recorder. Export or import full match JSON replays to prove your 94th-minute screamer happened. |
+| **🔍 Global Scouting** | `#scouting` | **Transfer Database.** Search and inspect 16,396 unique footballers across 357 clubs and nations with metallic FUT-style player cards, attribute radars, and bio inspections. |
+| **⚔️ 1v1 Player Duel** | `#duel` | **Head-to-Head Showdown.** Select any two footballers sequentially, compare attributes across key skill matrices, and battle across Attack vs Defence, Dribbling, or Skill Challenges on a dedicated spatial pitch. |
+| **📼 Replay Vault** | `#vault` | **The Archive.** Frame-by-frame scrubbable match and duel tape recorder. Export or import full match or duel JSON replays to prove your screamer happened. |
 
 ---
 

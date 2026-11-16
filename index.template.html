@@ -24,6 +24,7 @@
         <button class="nav-link" data-section="tournament" data-page="page-tournament">Tournament</button>
         <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam">Dream Team</button>
         <button class="nav-link" data-section="scouting" data-page="page-scouting">Scouting</button>
+        <button class="nav-link" data-section="duel" data-page="page-duel">1v1 Duel</button>
         <button class="nav-link" data-section="vault" data-page="page-vault">Replay Vault</button>
       </nav>
       <div class="topbar-right">
@@ -560,7 +561,121 @@
       </div><!-- end page--scouting -->
 
 
-      <!-- PAGE 6: Replay Vault -->
+      <!-- PAGE 6: 1v1 Player Duel -->
+      <div class="page page--duel" id="page-duel">
+        <section class="duel-section" id="duel">
+          <div class="duel-header">
+            <div>
+              <div class="eyebrow"><span class="eyebrow-index">06 /</span> HEAD-TO-HEAD SHOWDOWN</div>
+              <h2>1v1 Player Duel<span class="brand-period">.</span></h2>
+              <p class="section-sub">Select two world-class footballers, compare attributes head-to-head, and simulate realistic 1v1 spatial challenges.</p>
+            </div>
+            <div class="duel-top-actions">
+              <button class="secondary-button" id="duelSwapPlayersBtn" type="button">⇄ Swap Sides</button>
+              <button class="primary-button" id="startDuelBtn" type="button">▶ Start Duel</button>
+            </div>
+          </div>
+
+          <!-- Duel Configurator: 2-Player Selection & Head-to-Head Comparison -->
+          <div class="duel-setup-grid">
+            <!-- Player 1 Card -->
+            <div class="duel-player-card" id="duelP1Card">
+              <div class="duel-player-header">
+                <span class="step-badge">PLAYER 1</span>
+                <button class="secondary-button duel-pick-btn" id="duelPickP1Btn" type="button">Change Player</button>
+              </div>
+              <div class="duel-selected-preview" id="duelP1Preview">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- VS Badge & Challenge Config -->
+            <div class="duel-versus-card">
+              <div class="duel-versus-badge">VS</div>
+              <div class="duel-mode-picker">
+                <label for="duelTypeSelect">Duel Challenge</label>
+                <select id="duelTypeSelect">
+                  <option value="attack_defence">Attack vs Defence</option>
+                  <option value="dribbling">Dribbling Duel</option>
+                  <option value="skill_challenge">Skill Challenge</option>
+                </select>
+              </div>
+              <div class="duel-rounds-picker">
+                <label for="duelRoundsSelect">Rounds</label>
+                <select id="duelRoundsSelect">
+                  <option value="3">3 Rounds</option>
+                  <option value="5" selected>5 Rounds (Standard)</option>
+                  <option value="7">7 Rounds (Championship)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Player 2 Card -->
+            <div class="duel-player-card" id="duelP2Card">
+              <div class="duel-player-header">
+                <span class="step-badge">PLAYER 2</span>
+                <button class="secondary-button duel-pick-btn" id="duelPickP2Btn" type="button">Change Player</button>
+              </div>
+              <div class="duel-selected-preview" id="duelP2Preview">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Head-to-Head Attribute Comparison -->
+          <div class="duel-comparison-card" id="duelComparisonCard">
+            <div class="duel-comparison-header">
+              <h3>Head-to-Head Radar &amp; Attribute Matrix</h3>
+              <span id="duelMatchupHeadline">Casillas vs Mbappé</span>
+            </div>
+            <div class="duel-comparison-grid" id="duelComparisonGrid">
+              <!-- Dynamically populated attribute bars -->
+            </div>
+          </div>
+
+          <!-- Duel Live Arena & Canvas -->
+          <div class="duel-arena-card" id="duelArenaCard" style="display:none;">
+            <div class="duel-arena-topbar">
+              <div class="duel-live-score">
+                <span id="duelArenaP1Name">Player 1</span>
+                <b id="duelArenaScore">0 - 0</b>
+                <span id="duelArenaP2Name">Player 2</span>
+              </div>
+              <div class="duel-round-indicator">
+                <span id="duelRoundText">ROUND 1 of 5</span>
+                <span class="state-pill" id="duelPhasePill">LIVE</span>
+              </div>
+              <div class="duel-controls-row">
+                <button class="square-button" id="duelPlayPauseBtn" title="Play / Pause Duel">⏸</button>
+                <button class="square-button" id="duelRestartBtn" title="Restart Duel">↺</button>
+                <button class="secondary-button" id="duelRematchBtn">Rematch</button>
+              </div>
+            </div>
+
+            <div class="duel-canvas-wrap">
+              <canvas id="duelPitchCanvas" width="900" height="540" style="width:100%;height:auto;aspect-ratio:5/3;border-radius:6px;display:block;"></canvas>
+            </div>
+
+            <div class="duel-ticker" id="duelTickerText">Duel match ready. Waiting for kick-off...</div>
+          </div>
+
+          <!-- Duel Result Modal / Overlay -->
+          <div class="duel-result-card" id="duelResultCard" style="display:none;">
+            <div class="duel-result-trophy">🏆</div>
+            <h3 id="duelWinnerHeadline">Player 1 Triumphs!</h3>
+            <p id="duelResultSummary">Final Score: 3 - 2 across 5 rounds</p>
+            <div class="duel-result-stats-table" id="duelResultStatsTable"></div>
+            <div class="duel-result-actions">
+              <button class="secondary-button" id="duelSaveReplayBtn">Save Duel Replay</button>
+              <button class="secondary-button" id="duelResultRematchBtn">Play Again</button>
+              <button class="primary-button" id="duelChangePlayersBtn">Choose New Players</button>
+            </div>
+          </div>
+        </section>
+      </div><!-- end page--duel -->
+
+
+      <!-- PAGE 7: Replay Vault -->
       <div class="page page--vault" id="page-vault">
         <section class="vault" id="vault">
           <div class="vault-heading">
