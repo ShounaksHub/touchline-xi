@@ -14,7 +14,7 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Tests-24%20Passing-brightgreen?style=flat-square&logo=node.js&logoColor=white" alt="Tests">
   <img src="https://img.shields.io/badge/Runtime%20Dependencies-0%20(Pure%20Vanilla)-blue?style=flat-square" alt="Zero Dependencies">
-  <img src="https://img.shields.io/badge/Players%20Database-5%2C700%2B%20Authentic-orange?style=flat-square" alt="Players">
+  <img src="https://img.shields.io/badge/Players%20Database-12%2C900%2B%20Authentic-orange?style=flat-square" alt="Players">
   <img src="https://img.shields.io/badge/Teams-350%2B%20Clubs%20%26%20Nations-purple?style=flat-square" alt="Teams">
   <img src="https://img.shields.io/badge/Offline%20First-Single%20HTML%20File-yellow?style=flat-square" alt="Offline Ready">
   <img src="https://img.shields.io/badge/Gaffer%20Morale-100%25-red?style=flat-square" alt="Morale">
@@ -49,7 +49,7 @@ Touchline XI features a **true multi-page stadium architecture** with instant ta
 | **📋 Squad Lab** | `#squad` | **The Gaffer's War Room.** Starting XI and bench swaps with real-time stamina gauges, formation pitch diagrams, and tactical sliders (*Low Block → Heavy Metal Press*). |
 | **🏆 Tournament Cup** | `#tournament` | **Knockout Championship.** Battle through Quarter-Finals, Semi-Finals, and Final with Extra Time (90′–120′) and sudden-death penalty shootouts. |
 | **✨ Dream Team Studio** | `#dreamteam` | **Fantasy Galácticos.** Draft any world legend or active superstar into your custom fantasy squad and test them against adaptive AI managers. |
-| **🔍 Global Scouting** | `#scouting` | **Transfer Database.** Search and inspect 5,700+ footballers across 350+ clubs and nations with metallic FUT-style player cards, attribute radars, and bio inspections. |
+| **🔍 Global Scouting** | `#scouting` | **Transfer Database.** Search and inspect 12,900+ footballers across 350+ clubs and nations with metallic FUT-style player cards, attribute radars, and bio inspections. |
 | **📼 Replay Vault** | `#vault` | **The Archive.** Frame-by-frame scrubbable match tape recorder. Export or import full match JSON replays to prove your 94th-minute screamer happened. |
 
 ---
@@ -155,7 +155,7 @@ touchline-xi/
 │   ├── pitch.js                 # 2D Canvas radar renderer, player ball animations
 │   ├── tournament.js            # Knockout cup brackets, extra time, penalty shootouts
 │   ├── sound.js                 # Web Audio API procedural whistles and crowd noise
-│   └── data.js                  # 350+ clubs & nations, 5,700+ real footballers
+│   └── data.js                  # 350+ clubs & nations, 12,900+ real footballers
 ├── tests/
 │   ├── engine.test.mjs          # Core engine invariants and match rules
 │   ├── statistical_audit.test.mjs # 500-match Monte Carlo simulation validator
