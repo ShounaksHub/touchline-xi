@@ -85,7 +85,11 @@ function updatePresentationModeUi() {
   const isBroadcast = mode === 'broadcast';
   const iconEl = $('#presentationModeIcon');
   const textEl = $('#presentationModeText');
-  if (iconEl) iconEl.textContent = isBroadcast ? '📺' : '⚡';
+  if (iconEl) {
+    iconEl.innerHTML = isBroadcast
+      ? '<svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg>'
+      : '<svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>';
+  }
   if (textEl) textEl.textContent = isBroadcast ? 'Broadcast' : 'Continuous';
   const btn = $('#presentationModeBtn');
   if (btn) {

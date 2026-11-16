@@ -3,11 +3,11 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="theme-color" content="#eef0e8" />
+  <meta name="theme-color" content="#0E1014" />
   <meta name="description" content="Build your eleven. Manage tactics, substitutions, tournaments, and scout all world football players. A deterministic, offline-first football simulation studio." />
   <title>Touchline XI — Football Simulation Studio</title>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="assets/logo.jpg" />
+  <link rel="apple-touch-icon" href="assets/logo.svg" />
   <link rel="stylesheet" href="styles.css" />
   <script type="module" src="src/app.js"></script>
 </head>
@@ -15,7 +15,7 @@
   <div class="site-shell">
     <header class="topbar">
       <a href="#matchday" class="brand" aria-label="Touchline XI home">
-        <img src="assets/logo.jpg" alt="Touchline XI" class="brand-logo-img" />
+        <img src="assets/logo.svg" alt="Touchline XI" class="brand-logo-img" />
         <span class="brand-name">TOUCHLINE<span class="brand-slash">/</span><b>XI</b></span>
       </a>
       <nav class="main-nav" aria-label="Main navigation">
@@ -30,16 +30,16 @@
         <div class="music-controls" aria-label="Matchday music controls">
           <button id="musicPlayBtn" class="music-control-btn" type="button" aria-label="Play matchday music" title="Play / Pause soundtrack">▶ Play</button>
           <div class="music-track-wrap">
-            <span class="music-note-glyph">🎵</span>
+            <span class="music-note-glyph"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
             <select id="musicTrackSelect" aria-label="Choose matchday soundtrack" title="Select song"></select>
           </div>
           <label class="music-volume" for="musicVolume" title="Music Volume">
-            <span class="vol-glyph">🔉</span>
+            <span class="vol-glyph"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></span>
             <input id="musicVolume" type="range" min="0" max="1" step="0.05" value="0.45" />
           </label>
         </div>
-        <button id="helpModalBtn" class="audio-toggle-btn" aria-label="Game rules and guide" style="cursor:pointer;" title="View game guide and rules">📖 Guide</button>
-        <button id="soundToggleBtn" class="audio-toggle-btn" aria-label="Toggle stadium sound" title="Toggle stadium SFX audio">🔊 SFX: <span id="soundStatusText">OFF</span></button>
+        <button id="helpModalBtn" class="audio-toggle-btn" aria-label="Game rules and guide" style="cursor:pointer;" title="View game guide and rules"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Guide</button>
+        <button id="soundToggleBtn" class="audio-toggle-btn" aria-label="Toggle stadium sound" title="Toggle stadium SFX audio"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>SFX: <span id="soundStatusText">OFF</span></button>
       </div>
     </header>
 
@@ -56,7 +56,7 @@
           </div>
           <div class="intro-actions">
             <input id="seedInput" type="hidden" value="" aria-hidden="true" />
-            <button class="secondary-button" id="openSquadLabBtn">📋 Squad Lab &amp; Tactics</button>
+            <button class="secondary-button" id="openSquadLabBtn"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>Squad Lab &amp; Tactics</button>
             <button class="primary-button" id="newMatchBtn"><span>↗</span> New fixture</button>
           </div>
         </section>
@@ -135,7 +135,7 @@
                 </div>
                 <div class="match-pause-banner" id="matchPauseBanner" aria-live="polite" style="display:none;">
                   <div class="pause-banner-content">
-                    <span class="pause-icon" id="pauseBannerIcon">⏸</span>
+                    <span class="pause-icon" id="pauseBannerIcon"><svg class="icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></span>
                     <div class="pause-text-wrap">
                       <strong id="pauseBannerTitle">Match Paused</strong>
                       <span id="pauseBannerSub">Tactical interval. Review positions and shouts.</span>
@@ -176,7 +176,7 @@
                     <button class="speed-button" data-speed="5">5×</button>
                   </div>
                   <button type="button" class="text-button broadcast-mode-toggle" id="presentationModeBtn" title="Toggle Broadcast vs Continuous event graphics">
-                    <span class="mode-icon" id="presentationModeIcon">📺</span> <span id="presentationModeText">Broadcast</span>
+                    <span class="mode-icon" id="presentationModeIcon"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="7" width="20" height="15" rx="2" ry="2"/><polyline points="17 2 12 7 7 2"/></svg></span> <span id="presentationModeText">Broadcast</span>
                   </button>
                   <button class="text-button skip-button" id="fullTimeBtn">Sim to FT <span>↗</span></button>
                 </div>
@@ -189,23 +189,23 @@
                   <small style="color:var(--muted)">Affects live play immediately</small>
                 </div>
                 <div class="shouts-grid">
-                  <button class="shout-btn" data-shout="high_press">⚡ High Press</button>
-                  <button class="shout-btn" data-shout="park_bus">🧱 Park The Bus</button>
-                  <button class="shout-btn" data-shout="shoot_sight">🎯 Shoot On Sight</button>
-                  <button class="shout-btn" data-shout="work_box">🔄 Work Into Box</button>
-                  <button class="shout-btn" data-shout="demand_more">🔥 Demand More</button>
+                  <button class="shout-btn" data-shout="high_press"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>High Press</button>
+                  <button class="shout-btn" data-shout="park_bus"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Park The Bus</button>
+                  <button class="shout-btn" data-shout="shoot_sight"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M22 12h-4M6 12H2M12 6V2M12 22v-4"/></svg>Shoot On Sight</button>
+                  <button class="shout-btn" data-shout="work_box"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Work Into Box</button>
+                  <button class="shout-btn" data-shout="demand_more"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>Demand More</button>
                 </div>
               </div>
 
               <!-- Half-Time Team Talk Banner (Hidden until Half-Time) -->
               <div class="team-talk-card" id="teamTalkCard" style="display:none">
-                <h4>🗣️ HALF-TIME MANAGER TEAM TALK</h4>
+                <h4><svg class="icon icon-btn" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>HALF-TIME MANAGER TEAM TALK</h4>
                 <p>Address your players in the dressing room. Your words directly impact second-half stamina and mentality.</p>
                 <div class="team-talk-options">
-                  <button class="talk-option-btn" data-talk="fire_up">🔥 Fire Up Squad! (Attack &amp; Pace Boost)</button>
-                  <button class="talk-option-btn" data-talk="demand_more">🗣️ Demand More! (+Stamina &amp; High Press)</button>
-                  <button class="talk-option-btn" data-talk="praise">👏 Praise Performance (Pass Accuracy &amp; Confidence)</button>
-                  <button class="talk-option-btn" data-talk="focus">🛡️ Stay Disciplined (Defensive Resilience)</button>
+                  <button class="talk-option-btn" data-talk="fire_up"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>Fire Up Squad! (Attack &amp; Pace Boost)</button>
+                  <button class="talk-option-btn" data-talk="demand_more"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Demand More! (+Stamina &amp; High Press)</button>
+                  <button class="talk-option-btn" data-talk="praise"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>Praise Performance (Pass Accuracy &amp; Confidence)</button>
+                  <button class="talk-option-btn" data-talk="focus"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Stay Disciplined (Defensive Resilience)</button>
                 </div>
               </div>
             </section>
@@ -280,7 +280,7 @@
               <p class="section-sub">Configure your starting eleven, bench swaps, tactical system, and pressing intensity.</p>
             </div>
             <div>
-              <button class="primary-button" id="squadGoToMatchBtn">🏟️ Proceed to Matchday ↗</button>
+              <button class="primary-button" id="squadGoToMatchBtn">Proceed to Matchday ↗</button>
             </div>
           </div>
 
@@ -298,8 +298,8 @@
                 <div class="field">
                   <label for="teamFilterInput">QUICK SEARCH (350+ TEAMS)</label>
                   <div class="team-filter-wrap">
-                    <input type="text" id="teamFilterInput" class="team-filter-input" placeholder="🔍 Filter teams by name or city..." aria-label="Filter clubs and nations">
-                    <button type="button" class="team-filter-clear-btn" id="teamFilterClearBtn" title="Clear filter" style="display:none;">✕</button>
+                    <input type="text" id="teamFilterInput" class="team-filter-input" placeholder="Filter teams by name or city..." aria-label="Filter clubs and nations">
+                    <button type="button" class="team-filter-clear-btn" id="teamFilterClearBtn" title="Clear filter" style="display:none;"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                   </div>
                 </div>
                 <div class="field"><label for="homeSelect">YOUR CLUB / NATION</label><div class="select-wrap"><select id="homeSelect"></select></div></div>
@@ -326,7 +326,7 @@
 
             <!-- Right Column: Lineup & Bench -->
             <div class="control-column">
-              <section class="manager-header" style="background:#e4ede0;">
+              <section class="manager-header">
                 <div class="aside-topline"><span>ROSTER MANAGEMENT</span><span class="panel-number">02 /</span></div>
                 <h2>Starting XI &amp; Substitutes</h2>
                 <p id="squadTeamIndicator" class="squad-team-indicator">Tactical roster for Real Madrid CF · Inspect ratings, monitor stamina, and make substitutions.</p>
@@ -339,7 +339,7 @@
                 <div id="benchList" class="bench-list"></div>
                 <p class="squad-hint" id="squadHint">Select a starter, then choose a substitute to swap. Fresh subs bring stamina boosts.</p>
                 <div style="margin-top:20px;text-align:right;">
-                  <button class="primary-button" id="squadDeployBottomBtn" style="width:100%;justify-content:center;">🏟️ Save Tactics &amp; Go to Matchday ↗</button>
+                  <button class="primary-button" id="squadDeployBottomBtn" style="width:100%;justify-content:center;">Save Tactics &amp; Go to Matchday ↗</button>
                 </div>
               </section>
             </div>
@@ -358,7 +358,7 @@
               <p class="section-sub">Lead your squad through the Quarter-Finals, Semi-Finals, and Final with Extra Time and Penalties to lift the Trophy.</p>
             </div>
             <div>
-              <button class="primary-button" id="startNewTournamentBtn">🏆 Start New Tournament</button>
+              <button class="primary-button" id="startNewTournamentBtn"><svg class="icon icon-btn" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1h10v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34c3.08-.72 5-3.3 5-6.66V4H5v4c0 3.36 1.92 5.94 5 6.66z"/></svg>Start New Tournament</button>
             </div>
           </div>
 
@@ -390,13 +390,13 @@
           <!-- Tournament Leaderboard & Trophy Banner -->
           <div class="tournament-footer-grid" id="tournamentFooterGrid" style="display:none">
             <div class="golden-boot-card">
-              <h3 style="margin:0 0 4px;font-size:15px;">Golden Boot Leaderboard ⚽</h3>
+              <h3 style="margin:0 0 4px;font-size:15px;"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"/></svg>Golden Boot Leaderboard</h3>
               <small style="color:var(--muted)">Top goalscorers in this tournament</small>
               <div class="golden-boot-list" id="goldenBootList"></div>
             </div>
 
             <div class="trophy-showcase" id="trophyShowcase">
-              <div class="trophy-icon">🏆</div>
+              <div class="trophy-icon"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="#D4B77B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1h10v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34c3.08-.72 5-3.3 5-6.66V4H5v4c0 3.36 1.92 5.94 5 6.66z"/></svg></div>
               <h4 class="trophy-title" id="trophyStatusTitle">Tournament Trophy</h4>
               <span class="trophy-sub" id="trophyStatusSub">Battle through the knockout tree to claim the crown.</span>
             </div>
@@ -415,8 +415,8 @@
               <p class="section-sub">Draft any world-class star or all-time legend, configure your formation, playstyle, and test your dream squad against reactive AI.</p>
             </div>
             <div class="dream-actions">
-              <button class="secondary-button" id="randomizeDreamBtn">🎲 Auto-Draft Galácticos</button>
-              <button class="primary-button" id="deployDreamBtn">⚔️ Deploy Dream Team &amp; Play</button>
+              <button class="secondary-button" id="randomizeDreamBtn"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg>Auto-Draft Galácticos</button>
+              <button class="primary-button" id="deployDreamBtn"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>Deploy Dream Team &amp; Play</button>
             </div>
           </div>
 
@@ -600,7 +600,7 @@
           <h3 id="modalSlotTitle">Select Player for Slot</h3>
           <span class="modal-sub">Filter from thousands of international and club players</span>
         </div>
-        <button class="modal-close-btn" id="closePlayerModalBtn">✕</button>
+        <button class="modal-close-btn" id="closePlayerModalBtn"><svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="modal-search-bar">
         <input type="text" id="playerSearchInput" placeholder="Search player name, club, or country..." />
@@ -620,7 +620,7 @@
   <div class="fut-modal-backdrop" id="futCardModal">
     <div class="fut-card-container">
       <div class="fut-card-shield" id="futCardShield">
-        <button class="modal-close-btn" id="closeFutModalBtn" style="position:absolute;top:16px;right:18px;color:#d4af37;font-size:20px;z-index:10;">✕</button>
+        <button class="modal-close-btn" id="closeFutModalBtn" style="position:absolute;top:16px;right:18px;color:#d4af37;font-size:20px;z-index:10;"><svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         <div class="fut-card-head">
           <div class="fut-card-ovr-group">
             <span class="fut-card-big-ovr" id="futBigOvr">99</span>
@@ -656,8 +656,8 @@
   <div class="welcome-modal-backdrop" id="welcomeModal" aria-hidden="true" role="dialog" aria-label="Welcome and How to Play Guide">
     <div class="welcome-modal-sheet">
       <div class="welcome-modal-banner">
-        <div class="welcome-badge"><img src="assets/logo.jpg" alt="Logo" class="welcome-banner-logo" /> THE GAFFER'S MATCHDAY BRIEFING</div>
-        <button class="welcome-close-btn" id="closeWelcomeBtn" aria-label="Close welcome guide">✕</button>
+        <div class="welcome-badge"><img src="assets/logo.svg" alt="Logo" class="welcome-banner-logo" /> THE GAFFER'S MATCHDAY BRIEFING</div>
+        <button class="welcome-close-btn" id="closeWelcomeBtn" aria-label="Close welcome guide"><svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         <h2>Welcome to Touchline XI</h2>
         <p>A deterministic, zero-dependency football manager simulator where your decisions change the match.</p>
       </div>

@@ -92,6 +92,15 @@ Touchline XI features a modern TV broadcast graphics suite (`src/match-effects.j
 - **TV Half-Time & Full-Time Reports**: Comprehensive match summaries complete with team crests, score, and key comparative metrics (Possession, Shots on Target, xG).
 - **Procedural Stadium Audio**: Real-time Web Audio referee whistles, crowd roar surges, board chimes, and trophy fanfares.
 
+### 🎨 Luxury Visual System: Obsidian & Champagne Gold
+
+Touchline XI features an elite athletic interface inspired by premium sports engineering suites:
+- **Obsidian & Carbon Foundation**: Deep dark mode (`#0E1014`, `#171B21`, `#20252D`) engineered for long tactical analysis sessions.
+- **Champagne Gold Accents**: Restrained luxury metallic highlights (`#D4B77B`, `#E4CA97`, `#8A6D3E`) across crests, trophy honors, active tactical badges, and decisive moments.
+- **Self-Hosted Offline Typography**: High-impact athletic display headers in **Barlow Condensed** (weights 600, 700, 800) paired with **Inter** (variable 100–900) for dense statistical tables. 100% offline self-contained via base64-embedded WOFF2 subsets with zero Google Fonts CDN requests.
+- **Tabular Numerals (`font-variant-numeric: tabular-nums`)**: Fixed-width numeral alignment across scoreboards, match clocks, stamina gauges, and player overalls to prevent 60 FPS layout shift.
+- **Outline Vector Iconography**: Pure 24×24 outline SVG iconography (`currentColor`, 2px stroke) eliminating functional emoji clutter.
+
 ---
 
 ## 🧬 Calibrated Football Science
@@ -166,28 +175,38 @@ Visit `http://localhost:4173` in your browser.
 ```
 touchline-xi/
 ├── assets/
+│   ├── fonts/                   # Self-hosted offline WOFF2 font suite (126 KB)
+│   ├── logo.svg                 # Luxury obsidian & champagne gold vector shield
+│   ├── favicon.svg              # Vector browser favicon
 │   ├── touchline-banner.svg     # SVG Hero Banner
 │   └── tactical-pitch.svg       # SVG Tactical Board Diagram
 ├── index.html                   # Standalone browser production entrypoint
 ├── index.template.html          # Clean multi-page development template
-├── styles.css                   # Responsive dark emerald tactical design system
-├── touchline-xi-standalone.html # Single-file offline bundle (1090 KiB)
+├── styles.css                   # Obsidian & Champagne Gold luxury design system
+├── touchline-xi-standalone.html # Single-file offline bundle (10,604 KiB)
 ├── src/
 │   ├── app.js                   # Navigation router, manager UI, audio synthesizer, HUD
-│   ├── engine.js                # Deterministic match engine, xG, penalties, stamina, cards
+│   ├── badges.js                # Vector heraldry badge renderer for 357 teams
+│   ├── engine.js                # Deterministic spatial match engine, xG, penalties, stamina, cards
+│   ├── match-effects.js         # TV broadcast match events, lower-thirds & cards
 │   ├── pitch.js                 # 2D Canvas radar renderer, player ball animations
 │   ├── tournament.js            # Knockout cup brackets, extra time, penalty shootouts
 │   ├── sound.js                 # Web Audio API procedural whistles and crowd noise
-│   └── data.js                  # 350+ clubs & nations, 12,900+ real footballers
+│   └── data.js                  # 357 clubs & nations, 19,900+ real & reserve footballers
 ├── tests/
-│   ├── engine.test.mjs          # Core engine invariants and match rules
-│   ├── statistical_audit.test.mjs # 500-match Monte Carlo simulation validator
-│   ├── interaction_audit.test.mjs # Cross-team substitutions and tournament state
-│   ├── check_dom_ids.mjs        # 122 DOM element sync check
-│   ├── find_missing_css_classes.mjs # CSS stylesheet audit
-│   └── verify_pages.mjs         # Headless Chrome CDP page router verifier
+│   ├── engine.test.mjs          # Core engine invariants and match rules (19 tests)
+│   ├── spatial_engine.test.mjs  # 2D spatial physics and underdog dynamics (6 tests)
+│   ├── match_effects.test.mjs   # TV broadcast event graphics & priority queue (11 tests)
+│   ├── statistical_audit.test.mjs # 500-match Monte Carlo simulation validator (1 test)
+│   ├── interaction_audit.test.mjs # Cross-team substitutions and tournament state (6 tests)
+│   ├── check_dom_ids.mjs        # 152 DOM element sync check
+│   ├── find_missing_css_classes.mjs # 240 CSS class stylesheet audit
+│   ├── check_bundle.mjs         # Standalone bundle parser & syntax check
+│   ├── verify_pages.mjs         # Headless Chrome CDP page router verifier
+│   ├── verify_ux_fixes.mjs      # Headless Chrome CDP UX audit verification test
+│   └── verify_broadcast_graphics.mjs # Headless Chrome CDP broadcast graphics test
 └── tools/
-    ├── build-standalone.mjs     # Standalone packager & dist builder
+    ├── build-standalone.mjs     # Standalone packager & dist builder (inlines fonts & SVGs)
     └── dev-server/server.mjs    # Zero-dependency local Node.js static server
 ```
 

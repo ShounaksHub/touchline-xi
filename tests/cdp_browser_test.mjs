@@ -1,10 +1,37 @@
 import { spawn } from 'node:child_process';
+import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const USER_DATA_DIR = 'C:\\Users\\shoun\\AppData\\Local\\Temp\\chrome_cdp_profile_' + Date.now();
 const PORT = 9222;
+const APP_PORT = 4173;
+
+const mime = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.json': 'application/json; charset=utf-8',
+  '.woff2': 'font/woff2'
+};
+
+const server = http.createServer((req, res) => {
+  let pathname = req.url.split('?')[0];
+  if (pathname === '/') pathname = '/index.html';
+  const filePath = path.resolve('.' + pathname);
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end('Not found');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': mime[path.extname(filePath)] || 'application/octet-stream' });
+    res.end(data);
+  });
+});
 
 async function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
@@ -22,6 +49,9 @@ async function waitForCdp() {
 }
 
 async function run() {
+  await new Promise(r => server.listen(APP_PORT, r));
+  console.log(`✓ Test server running on port ${APP_PORT}`);
+
   console.log('🚀 Spawning headless Chrome on port ' + PORT + '...');
   const chrome = spawn(CHROME_PATH, [
     '--headless=new',
@@ -39,7 +69,7 @@ async function run() {
     console.log('✓ Chrome CDP connected.');
 
     // Create target tab
-    const targetRes = await fetch(`http://127.0.0.1:${PORT}/json/new?http://localhost:4173/`, { method: 'PUT' });
+    const targetRes = await fetch(`http://127.0.0.1:${PORT}/json/new?http://localhost:${APP_PORT}/`, { method: 'PUT' });
     const target = await targetRes.json();
     const ws = new WebSocket(target.webSocketDebuggerUrl);
 
@@ -288,6 +318,7 @@ async function run() {
 
   } finally {
     try { chrome.kill(); } catch {}
+    try { server.close(); } catch {}
     try { fs.rmSync(USER_DATA_DIR, { recursive: true, force: true }); } catch {}
   }
 }

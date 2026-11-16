@@ -252,7 +252,47 @@ Touchline XI features vector crest renderers producing crisp, retina-ready SVG e
 
 ---
 
-## 7. Quality Assurance, Test Automation & CI Gates
+## 7. Luxury Design System & Anti-AI-Slop Architecture
+
+Touchline XI features an elite, bespoke visual identity inspired by high-end football engineering interfaces (e.g., EA Sports FC / Football Manager) while asserting its own distinctive design language:
+
+### A. Color Identity: Obsidian & Champagne Gold
+- **Obsidian Canvas (`--bg-obsidian`: `#0E1014`)**: Atmospheric pitchside dark canvas with zero washed-out grays.
+- **Carbon Container (`--bg-carbon`: `#171B21`)**: Primary container, navigation bar, and stadium sidebar backdrop.
+- **Elevated Slate (`--bg-slate`: `#20252D`)**: Interactive cards, control bays, and modal dialog sheets.
+- **Hover Graphite (`--bg-hover`: `#292F38`)**: High-contrast interactive hover states.
+- **Sunken Well (`--bg-sunken`: `#111419`)**: Pitch radar casing, commentary feeds, and event logs.
+- **Subtle Border (`--border-subtle`: `#343B45`)**: Restrained structural framing avoiding harsh white outlines.
+- **Control Border (`--border-control`: `#626D7B`)**: Distinct interactive borders for dropdowns, inputs, and toggles.
+- **Ivory Typography (`--text-ivory`: `#F4F2EC`)**: Crisp readable headers, primary text, and score figures.
+- **Soft Ivory (`--text-soft`: `#CAC8C1`)**: High-legibility secondary labels, player positions, and metadata.
+- **Cool Gray (`--text-muted`: `#A9ACB5`)**: Clean tertiary hints, inactive tabs, and stadium subtext.
+- **Champagne Gold (`--gold-primary`: `#D4B77B`)**: Luxury metallic accents, trophy badges, and active selections.
+- **Light Champagne (`--gold-light`: `#E4CA97`)**: Metallic gradient highlights and hover transitions.
+- **Antique Gold (`--gold-dark`: `#8A6D3E`)**: Deep metallic borders, foil textures, and card badges.
+- **Functional Semantic Status**:
+  - Success Mint (`#77D9B2`): High stamina, completed passes, confirmed wins.
+  - Warning Gold (`#F4CF67`): Medium stamina, tactical warnings, yellow cards.
+  - Crimson Red (`#F17E85`): Red cards, critical fatigue, conceded goals.
+  - Info Blue (`#92C8F0`): Substitutions, tactical notes, scouting bookmarks.
+
+### B. Typography & Font Suite (100% Offline Self-Contained)
+- **Display Headings**: `Barlow Condensed` (weights 600, 700, 800) for high-impact athletic titles, scoreboard digits, match clocks, tournament brackets, and modal headers.
+- **Interface & Data**: `Inter` (variable 100–900) for dense statistical tables, player cards, scouting filters, and tactical management inputs.
+- **Tabular Numerals**: Strict `font-variant-numeric: tabular-nums;` enforced across score figures (`#homeScore`, `#awayScore`), match clock (`#matchMinute`), stamina percentages, overalls, and ratings. Eliminates width jitter and layout stutter during 60 FPS live simulation ticks.
+- **Zero-Network Font Contract**: 4 latin WOFF2 subsets stored locally in `assets/fonts/` (total 126 KB) and embedded directly as base64 data URIs in `touchline-xi-standalone.html`. The standalone bundle loads zero external fonts from Google Fonts or third-party CDNs.
+
+### C. Vector Heraldry & Outline SVG Iconography
+- **Vector Crest & Emblem**:
+  - `assets/logo.svg`: Precision vector luxury shield in champagne gold and obsidian, incorporating subtle pitch markings, an athletic star, and a chamfered "XI" monogram.
+  - `assets/favicon.svg`: Retina-ready vector favicon optimized for crisp rendering at 16x16, 32x32, and browser tab scales.
+- **Anti-AI-Slop Iconography**:
+  - Complete elimination of emoji clutter in functional UI controls (no random emojis in buttons, dropdowns, or status pills).
+  - 28 bespoke 24x24 outline vector SVGs (`currentColor`, `stroke-width="2"`, `stroke-linecap="round"`, `stroke-linejoin="round"`, `aria-hidden="true"`) for navigation, audio controls, broadcast toggles, manager shouts, team talks, dice auto-drafting, and tactical deployments.
+
+---
+
+## 8. Quality Assurance, Test Automation & CI Gates
 
 The codebase enforces strict, automated verification pipelines with zero tolerance for broken IDs, missing classes, or syntax regressions:
 
@@ -263,7 +303,7 @@ npm test
 # 2. Validate DOM ID Consistency (152 unique IDs queried in JS)
 node tests/check_dom_ids.mjs
 
-# 3. Validate CSS Class Coverage (238 unique HTML classes)
+# 3. Validate CSS Class Coverage (240 unique HTML classes)
 node tests/find_missing_css_classes.mjs
 
 # 4. Verify Multi-Page View Routing & Modal Interactions (Chrome CDP)
@@ -290,20 +330,29 @@ node tests/check_bundle.mjs
 
 ---
 
-## 8. Directory & File Reference
+## 9. Directory & File Reference
 
 ```
 touchline-xi/
 ├── assets/
-│   ├── logo.jpg                     # Official Touchline XI Gold & Onyx Emblem
-│   ├── favicon.ico                  # 32x32 multi-resolution browser icon
+│   ├── fonts/                       # Self-hosted offline WOFF2 font suite (126 KB)
+│   │   ├── barlow-condensed-600.woff2
+│   │   ├── barlow-condensed-700.woff2
+│   │   ├── barlow-condensed-800.woff2
+│   │   └── inter-variable.woff2
+│   ├── logo.svg                     # Luxury obsidian & champagne gold vector shield
+│   ├── favicon.svg                  # Vector browser favicon
+│   ├── logo.jpg                     # Legacy raster logo
+│   ├── favicon.ico                  # Legacy favicon
 │   ├── touchline-banner.svg         # SVG hero banner
 │   └── tactical-pitch.svg           # SVG tactical diagram
 ├── dist/                            # Production static deployment output (Vercel)
+│   ├── assets/                      # Static fonts, icons and vector emblems
 │   ├── index.html                   # Bundled standalone HTML
 │   ├── touchline-xi-standalone.html # Bundled standalone HTML
 │   └── styles.css                   # Stylesheet
 ├── public/                          # Universal static host fallback
+│   ├── assets/                      # Static assets mirror
 │   ├── index.html
 │   └── styles.css
 ├── src/
@@ -322,6 +371,7 @@ touchline-xi/
 │       └── icons_peak.json          # Curated historical peak player cards
 ├── tests/
 │   ├── engine.test.mjs              # Unit tests for match simulation engine
+│   ├── spatial_engine.test.mjs      # Unit tests for 2D spatial simulation
 │   ├── match_effects.test.mjs       # Unit tests for broadcast event graphics & priority queue
 │   ├── statistical_audit.test.mjs   # 500-match Monte Carlo statistical validation
 │   ├── interaction_audit.test.mjs   # E2E interaction and search tests
@@ -338,18 +388,19 @@ touchline-xi/
 │   └── run_expansion.py             # Master database compiler
 ├── index.html                       # Standalone production entrypoint
 ├── index.template.html              # Multi-page development template
-├── styles.css                       # Emerald tactical design system
-├── touchline-xi-standalone.html     # Single-file offline bundle (5,373 KiB)
+├── styles.css                       # Obsidian & Champagne Gold luxury design system
+├── touchline-xi-standalone.html     # Single-file offline bundle (10,604 KiB)
 ├── brain.md                         # Master technical brain & architecture specification
 └── README.md                        # Public documentation and quickstart guide
 ```
 
 ---
 
-## 9. Key Gaffer Commandments for Future Work
+## 10. Key Gaffer Commandments for Future Work
 
 1. **Deterministic Invariance**: Never inject `Math.random()` into match simulation or replay frames. Always derive pseudorandom state from `m.rng` or Mulberry32 seed states.
 2. **Goalkeeper Invariant**: In every team, `starting[0]` must remain the starting Goalkeeper, and `substitutes[0]` must remain the primary backup Goalkeeper.
 3. **Zero Dependencies**: Keep the app 100% free of external npm runtime packages.
 4. **Offline First**: Any new feature must work completely inside `touchline-xi-standalone.html` without external network requests.
 5. **DOM & CSS Sync**: Whenever adding IDs or classes to `index.template.html`, ensure corresponding queries exist in `src/app.js` and matching selectors exist in `styles.css`. Always verify with `node tests/check_dom_ids.mjs` and `node tests/find_missing_css_classes.mjs`.
+6. **Local Commits Only**: Never run `git push` autonomously. Always stage and commit locally so the user can inspect and push from their own terminal.

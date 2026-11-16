@@ -82,15 +82,35 @@ const MatchEffects = (({ getTeam, getPlayer }, { getTeamBadgeSvg }, { sound }) =
 `;
 
 const template = read('index.template.html');
-const css = read('styles.css');
+let css = read('styles.css');
 
-const logoBase64 = fs.readFileSync(path.join(root, 'assets/logo.jpg')).toString('base64');
-const logoDataUri = `data:image/jpeg;base64,${logoBase64}`;
+// Inline self-hosted fonts into CSS for standalone offline execution
+const fontFiles = [
+  { path: 'assets/fonts/barlow-condensed-600.woff2', url: 'assets/fonts/barlow-condensed-600.woff2' },
+  { path: 'assets/fonts/barlow-condensed-700.woff2', url: 'assets/fonts/barlow-condensed-700.woff2' },
+  { path: 'assets/fonts/barlow-condensed-800.woff2', url: 'assets/fonts/barlow-condensed-800.woff2' },
+  { path: 'assets/fonts/inter-variable.woff2', url: 'assets/fonts/inter-variable.woff2' }
+];
+
+for (const font of fontFiles) {
+  const fullPath = path.join(root, font.path);
+  if (fs.existsSync(fullPath)) {
+    const base64Font = fs.readFileSync(fullPath).toString('base64');
+    css = css.replaceAll(font.url, `data:font/woff2;base64,${base64Font}`);
+  }
+}
+
+const logoSvg = read('assets/logo.svg');
+const logoSvgDataUri = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString('base64')}`;
+const faviconSvg = fs.existsSync(path.join(root, 'assets/favicon.svg')) ? read('assets/favicon.svg') : logoSvg;
+const faviconDataUri = `data:image/svg+xml;base64,${Buffer.from(faviconSvg).toString('base64')}`;
 
 const standaloneHtml = template
   .replace('<link rel="stylesheet" href="styles.css" />', `<style>\n${css}\n</style>`)
   .replace('<script type="module" src="src/app.js"></script>', '')
-  .replace('assets/logo.jpg', logoDataUri)
+  .replaceAll('assets/logo.svg', logoSvgDataUri)
+  .replaceAll('assets/logo.jpg', logoSvgDataUri)
+  .replaceAll('assets/favicon.svg', faviconDataUri)
   .replace('</body>', () => `<script type="module">\n${bundledJs}\n</script>\n</body>`);
 
 // Write both standalone and root index.html for zero-config GitHub Pages & Vercel
@@ -120,9 +140,7 @@ const copyAssets = (targetDir) => {
   if (!fs.existsSync(srcAssets)) return;
   const dest = path.join(targetDir, 'assets');
   if (!fs.existsSync(dest)) fs.mkdirSync(dest, { recursive: true });
-  for (const file of fs.readdirSync(srcAssets)) {
-    fs.copyFileSync(path.join(srcAssets, file), path.join(dest, file));
-  }
+  fs.cpSync(srcAssets, dest, { recursive: true });
 };
 
 const copyMusic = (targetDir) => {
