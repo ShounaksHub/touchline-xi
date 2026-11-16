@@ -3570,13 +3570,14 @@ footer {
   grid-template-columns: 36px 1fr auto;
   gap: 10px;
   align-items: center;
-  background: var(--color-surface-elevated);
-  border: 1px solid var(--color-border-subtle);
+  background: #1a1e26;
+  border: 1px solid var(--color-border);
   border-radius: 6px;
   padding: 9px 12px;
   cursor: pointer;
   text-align: left;
-  transition: background .15s, border-color .15s
+  transition: background .15s, border-color .15s;
+  color: var(--color-text-primary);
 }
 
 .modal-player-item:hover {
@@ -3606,22 +3607,23 @@ footer {
 .modal-player-info strong {
   font-size: 13px;
   font-weight: 750;
-  color: var(--color-text-primary);
+  color: #F4F2EC !important;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis
+  text-overflow: ellipsis;
+  letter-spacing: 0.02em;
 }
 
 .modal-player-info span {
   font-size: 11px;
-  color: var(--color-text-muted);
+  color: #B5B9C4 !important;
 }
 
 .modal-player-ovr {
   font-family: var(--font-display);
   font-size: 15px;
   font-weight: 900;
-  color: var(--color-accent);
+  color: var(--color-accent) !important;
 }
 
 @media(max-width:980px) {
@@ -6306,6 +6308,165 @@ h1, h2, h3, h4,
   padding: 2px 8px;
   border-radius: 4px;
 }
+
+/* User vs User Turn-by-Turn Draft & Coin Toss */
+.draft-toss-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: linear-gradient(135deg, rgba(212, 183, 123, 0.12), rgba(27, 31, 39, 0.9));
+  border: 1px solid var(--color-accent);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.draft-toss-visual {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.coin-disc {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-surface-elevated);
+  border: 2px solid var(--color-accent);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  box-shadow: 0 0 16px rgba(212, 183, 123, 0.35);
+  transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.coin-disc.is-flipping {
+  animation: coinFlipAnim 0.75s ease infinite;
+}
+
+@keyframes coinFlipAnim {
+  0% { transform: rotateY(0deg) scale(1); }
+  50% { transform: rotateY(180deg) scale(1.15); }
+  100% { transform: rotateY(360deg) scale(1); }
+}
+
+.draft-toss-text h4 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 850;
+  color: var(--color-text-primary);
+}
+
+.draft-toss-text p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.draft-toss-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.draft-turn-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--color-accent);
+  border-radius: 6px;
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.draft-turn-badge {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 900;
+  color: var(--color-accent);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-subtle);
+  padding: 4px 12px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.draft-turn-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.draft-turn-info strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.draft-turn-info span {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.draft-turn-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.draft-formation-opt-btn {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-family: var(--font-interface);
+  font-size: 12px;
+  font-weight: 750;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.draft-formation-opt-btn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+  background: var(--color-surface-hover);
+}
+
+.duel-team-column.is-active-turn {
+  border: 2px solid var(--color-accent);
+  box-shadow: 0 0 16px rgba(212, 183, 123, 0.25);
+}
+
+.duel-squad-slot.is-active-slot {
+  border-color: var(--color-accent);
+  background: var(--color-surface-hover);
+  box-shadow: 0 0 10px rgba(212, 183, 123, 0.3);
+  animation: activeSlotPulse 1.5s infinite ease-in-out;
+}
+
+@keyframes activeSlotPulse {
+  0%, 100% { border-color: var(--color-accent); }
+  50% { border-color: #ffd700; box-shadow: 0 0 14px rgba(212, 183, 123, 0.5); }
+}
+
+.duel-squad-slot.is-captain {
+  border-color: #ffd700;
+  background: rgba(212, 183, 123, 0.08);
+}
+
+.duel-squad-slot.is-captain .duel-slot-num::after {
+  content: ' ©';
+  font-size: 10px;
+  color: #ffd700;
+}
+
 
 /* =========================================================================
    INTERACTIVE ONBOARDING & GUIDED TUTORIAL SYSTEM

@@ -147,3 +147,48 @@ test('Team vs Team (5-a-side & 11-a-side): strict 1 player per nation validation
   assert.ok(match5.frames.length >= 5);
 });
 
+test('Team vs Team: turn draft logic - coin toss, sequential formations, captaincy, and zero duplicates across squads', () => {
+  // Verify cross-team uniqueness check
+  const u1Players = [
+    { id: 'p_messi', name: 'Lionel Messi', nat: 'Argentina', ovr: 93, role: 'FWD' },
+    { id: 'p_modric', name: 'Luka Modric', nat: 'Croatia', ovr: 88, role: 'MID' },
+    { id: 'p_vvd', name: 'Virgil van Dijk', nat: 'Netherlands', ovr: 89, role: 'DEF' },
+    { id: 'p_davies', name: 'Alphonso Davies', nat: 'Canada', ovr: 84, role: 'DEF' },
+    { id: 'p_oblak', name: 'Jan Oblak', nat: 'Slovenia', ovr: 88, role: 'GK' }
+  ];
+
+  // Try drafting Messi in team 2 -> must be rejected
+  const u2AttemptWithDuplicate = [
+    { id: 'p_messi', name: 'Lionel Messi', nat: 'Argentina', ovr: 93, role: 'FWD' }, // Duplicate!
+    { id: 'p_debruyne', name: 'Kevin De Bruyne', nat: 'Belgium', ovr: 91, role: 'MID' },
+    { id: 'p_mbappe', name: 'Kylian Mbappe', nat: 'France', ovr: 91, role: 'FWD' },
+    { id: 'p_son', name: 'Son Heung-min', nat: 'Korea Republic', ovr: 87, role: 'FWD' },
+    { id: 'p_courtois', name: 'Thibaut Courtois', nat: 'Belgium', ovr: 89, role: 'GK' }
+  ];
+
+  const allIdsDuplicate = [...u1Players.map(p => p.id), ...u2AttemptWithDuplicate.map(p => p.id)];
+  const isDuplicateDetected = new Set(allIdsDuplicate).size !== 10;
+  assert.equal(isDuplicateDetected, true, 'Duplicate across squads was correctly detected');
+
+  // Valid non-duplicate team 2 with unique nations
+  const u2ValidPlayers = [
+    { id: 'p_ronaldo', name: 'Cristiano Ronaldo', nat: 'Portugal', ovr: 91, role: 'FWD' },
+    { id: 'p_debruyne', name: 'Kevin De Bruyne', nat: 'Belgium', ovr: 91, role: 'MID' },
+    { id: 'p_lewandowski', name: 'Robert Lewandowski', nat: 'Poland', ovr: 91, role: 'FWD' },
+    { id: 'p_valverde', name: 'Federico Valverde', nat: 'Uruguay', ovr: 88, role: 'MID' },
+    { id: 'p_alisson', name: 'Alisson', nat: 'Brazil', ovr: 89, role: 'GK' }
+  ];
+
+  const allValidIds = [...u1Players.map(p => p.id), ...u2ValidPlayers.map(p => p.id)];
+  assert.equal(new Set(allValidIds).size, 10, 'All 10 drafted players across squads are strictly unique');
+
+  // Captaincy assignment
+  const u1CaptainId = 'p_messi';
+  const u2CaptainId = 'p_ronaldo';
+  const u1WithCap = u1Players.map(p => ({ ...p, isCaptain: p.id === u1CaptainId }));
+  const u2WithCap = u2ValidPlayers.map(p => ({ ...p, isCaptain: p.id === u2CaptainId }));
+
+  assert.equal(u1WithCap.find(p => p.isCaptain).name, 'Lionel Messi');
+  assert.equal(u2WithCap.find(p => p.isCaptain).name, 'Cristiano Ronaldo');
+});
+

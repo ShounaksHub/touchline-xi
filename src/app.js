@@ -395,10 +395,17 @@ function renderModalPlayers() {
       if (activeModalTarget.role !== 'GK' && p.role === 'GK') return false;
     }
 
-    // In Team vs Team mode, enforce distinct nations
+    // In Team vs Team mode, enforce distinct nations and no duplicate players across BOTH squads
     if (isTeamSlot) {
-      const squad = activeModalTarget.type === 'duelU1' ? user1Squad : user2Squad;
-      const currentNats = squad.map((x, i) => i === activeModalTarget.index ? null : x.nat).filter(Boolean);
+      const mySquad = activeModalTarget.type === 'duelU1' ? user1Squad : user2Squad;
+      const otherSquad = activeModalTarget.type === 'duelU1' ? user2Squad : user1Squad;
+
+      // 1. No repeat player in either team
+      if (otherSquad.some(x => x && x.id === p.id)) return false;
+      if (mySquad.some((x, i) => i !== activeModalTarget.index && x && x.id === p.id)) return false;
+
+      // 2. Strict 1 player per nation in own team
+      const currentNats = mySquad.map((x, i) => i === activeModalTarget.index ? null : x?.nat).filter(Boolean);
       if (currentNats.includes(p.nat)) return false;
     }
 
@@ -455,28 +462,40 @@ function selectPlayerFromModal(playerId) {
   }
 
   if (activeModalTarget.type === 'duelU1') {
-    // Check one player per nation
-    const currentNats = user1Squad.map((p, i) => i === activeModalTarget.index ? null : p.nat).filter(Boolean);
+    // 1. Check duplicate player across both squads
+    if (user2Squad.some(p => p && p.id === chosen.id)) {
+      toast(`${chosen.name} is already drafted in User 2's squad. No duplicate players allowed across teams!`);
+      return;
+    }
+    // 2. Check one player per nation
+    const currentNats = user1Squad.map((p, i) => i === activeModalTarget.index ? null : p?.nat).filter(Boolean);
     if (currentNats.includes(chosen.nat)) {
       toast(`User 1 squad already has a player from ${chosen.nat}. Exactly one player per nation is allowed.`);
       return;
     }
     user1Squad[activeModalTarget.index] = { ...chosen };
     $('#playerPickerModal').classList.remove('is-open');
+    handleDraftSlotFilled('u1', activeModalTarget.index);
     renderDuelMode();
     toast(`${chosen.name} (${chosen.nat}) selected for User 1!`);
     return;
   }
 
   if (activeModalTarget.type === 'duelU2') {
-    // Check one player per nation
-    const currentNats = user2Squad.map((p, i) => i === activeModalTarget.index ? null : p.nat).filter(Boolean);
+    // 1. Check duplicate player across both squads
+    if (user1Squad.some(p => p && p.id === chosen.id)) {
+      toast(`${chosen.name} is already drafted in User 1's squad. No duplicate players allowed across teams!`);
+      return;
+    }
+    // 2. Check one player per nation
+    const currentNats = user2Squad.map((p, i) => i === activeModalTarget.index ? null : p?.nat).filter(Boolean);
     if (currentNats.includes(chosen.nat)) {
       toast(`User 2 squad already has a player from ${chosen.nat}. Exactly one player per nation is allowed.`);
       return;
     }
     user2Squad[activeModalTarget.index] = { ...chosen };
     $('#playerPickerModal').classList.remove('is-open');
+    handleDraftSlotFilled('u2', activeModalTarget.index);
     renderDuelMode();
     toast(`${chosen.name} (${chosen.nat}) selected for User 2!`);
     return;
@@ -965,79 +984,231 @@ let duelRunning = false;
 let duelAccumulator = 0;
 let duelReplay = null;
 
-// Multi-user Team vs Team State (1 Player per Nation)
+// Multi-user Team vs Team State (Turn-by-Turn Draft, Toss, Captains, 1 Player per Nation)
 let user1Squad = [];
 let user2Squad = [];
+let user1Formation = '1-2-1';
+let user2Formation = '1-2-1';
+let user1CaptainId = null;
+let user2CaptainId = null;
 
-function initDefaultUserSquads(mode = '5aside') {
-  const size = mode === '5aside' ? 5 : 11;
-  const usedNations = new Set();
+// Draft State Machine
+let draftState = {
+  active: false,
+  tossWinner: null,      // 'u1' or 'u2'
+  currentTurnUser: null, // 'u1' or 'u2'
+  phase: 'TOSS',         // 'TOSS', 'FORMATION_PICK_1', 'FORMATION_PICK_2', 'PLAYER_DRAFT', 'CAPTAIN_PICK_1', 'CAPTAIN_PICK_2', 'READY'
+  currentPickIndex: 0,   // Slot index being drafted (0..N-1)
+  size: 5
+};
 
-  const pickDistinctNation = (rolePredicate) => {
-    const p = ALL_PLAYERS_POOL.find(x => rolePredicate(x.role) && !usedNations.has(x.nat));
-    if (p) {
-      usedNations.add(p.nat);
-      return { ...p };
-    }
-    // Fallback if nations exhausted
-    const fallback = ALL_PLAYERS_POOL.find(x => rolePredicate(x.role));
-    return fallback ? { ...fallback } : { ...ALL_PLAYERS_POOL[0] };
-  };
-
-  // Draft User 1 Squad
-  usedNations.clear();
-  if (size === 5) {
-    user1Squad = [
-      pickDistinctNation(r => r === 'GK'),
-      pickDistinctNation(r => ['CB','LB','RB'].includes(r)),
-      pickDistinctNation(r => ['CB','LB','RB','CDM'].includes(r)),
-      pickDistinctNation(r => ['CM','CAM','LM','RM'].includes(r)),
-      pickDistinctNation(r => ['ST','LW','RW'].includes(r))
-    ];
-  } else {
-    user1Squad = [
-      pickDistinctNation(r => r === 'GK'),
-      pickDistinctNation(r => ['LB','LWB'].includes(r)),
-      pickDistinctNation(r => r === 'CB'),
-      pickDistinctNation(r => r === 'CB'),
-      pickDistinctNation(r => ['RB','RWB'].includes(r)),
-      pickDistinctNation(r => ['CDM','CM'].includes(r)),
-      pickDistinctNation(r => ['CM','CAM'].includes(r)),
-      pickDistinctNation(r => ['CM','CAM'].includes(r)),
-      pickDistinctNation(r => ['LW','LM'].includes(r)),
-      pickDistinctNation(r => r === 'ST'),
-      pickDistinctNation(r => ['RW','RM'].includes(r))
-    ];
-  }
-
-  // Draft User 2 Squad
-  usedNations.clear();
-  if (size === 5) {
-    user2Squad = [
-      pickDistinctNation(r => r === 'GK'),
-      pickDistinctNation(r => ['CB','LB','RB'].includes(r)),
-      pickDistinctNation(r => ['CB','LB','RB','CDM'].includes(r)),
-      pickDistinctNation(r => ['CM','CAM','LM','RM'].includes(r)),
-      pickDistinctNation(r => ['ST','LW','RW'].includes(r))
-    ];
-  } else {
-    user2Squad = [
-      pickDistinctNation(r => r === 'GK'),
-      pickDistinctNation(r => ['LB','LWB'].includes(r)),
-      pickDistinctNation(r => r === 'CB'),
-      pickDistinctNation(r => r === 'CB'),
-      pickDistinctNation(r => ['RB','RWB'].includes(r)),
-      pickDistinctNation(r => ['CDM','CM'].includes(r)),
-      pickDistinctNation(r => ['CM','CAM'].includes(r)),
-      pickDistinctNation(r => ['CM','CAM'].includes(r)),
-      pickDistinctNation(r => ['LW','LM'].includes(r)),
-      pickDistinctNation(r => r === 'ST'),
-      pickDistinctNation(r => ['RW','RM'].includes(r))
-    ];
-  }
+function getAvailableFormations(size) {
+  return size === 5 ? ['1-2-1', '2-1-1', '1-1-2'] : ['4-3-3', '4-2-3-1', '4-4-2', '3-5-2', '5-3-2', '3-4-3'];
 }
 
-initDefaultUserSquads('5aside');
+function resetTeamVsTeamDraft(mode = '5aside') {
+  const size = mode === '5aside' ? 5 : 11;
+  draftState = {
+    active: true,
+    tossWinner: null,
+    currentTurnUser: null,
+    phase: 'TOSS',
+    currentPickIndex: 0,
+    size
+  };
+  user1Formation = size === 5 ? '1-2-1' : '4-3-3';
+  user2Formation = size === 5 ? '1-2-1' : '4-3-3';
+  user1CaptainId = null;
+  user2CaptainId = null;
+
+  // Initialize placeholder empty squads matching the formation slots
+  const u1Slots = FORMATIONS[user1Formation] || [];
+  const u2Slots = FORMATIONS[user2Formation] || [];
+
+  user1Squad = u1Slots.map(([role]) => ({
+    id: null,
+    name: 'Vacant Slot',
+    role,
+    nat: 'Unselected',
+    ovr: 75,
+    isVacant: true
+  }));
+
+  user2Squad = u2Slots.map(([role]) => ({
+    id: null,
+    name: 'Vacant Slot',
+    role,
+    nat: 'Unselected',
+    ovr: 75,
+    isVacant: true
+  }));
+}
+
+function initDefaultUserSquads(mode = '5aside') {
+  resetTeamVsTeamDraft(mode);
+}
+
+function handleCoinToss() {
+  const disc = $('#coinDisc');
+  if (disc) disc.classList.add('is-flipping');
+  $('#flipCoinBtn').disabled = true;
+
+  setTimeout(() => {
+    if (disc) disc.classList.remove('is-flipping');
+    const winner = Math.random() < 0.5 ? 'u1' : 'u2';
+    draftState.tossWinner = winner;
+    draftState.currentTurnUser = winner;
+    draftState.phase = 'FORMATION_PICK_1';
+
+    $('#draftTossTitle').textContent = `🎉 ${winner === 'u1' ? 'User 1' : 'User 2'} Won the Toss!`;
+    $('#draftTossDesc').textContent = `${winner === 'u1' ? 'User 1' : 'User 2'} will pick formation first, followed by User ${winner === 'u1' ? '2' : '1'}, then pick players position by position.`;
+    $('#draftTossActions').innerHTML = `<span style="font-size:12px;color:var(--color-accent);font-weight:800;">✓ Toss Decided</span>`;
+
+    renderDraftTurnBanner();
+    renderDuelMode();
+    toast(`🪙 ${winner === 'u1' ? 'User 1' : 'User 2'} won the toss and chooses formation first!`);
+  }, 900);
+}
+
+function handleFormationChosen(user, formation) {
+  if (user === 'u1') user1Formation = formation;
+  else user2Formation = formation;
+
+  // Update slots to match chosen formation
+  const slots = FORMATIONS[formation] || [];
+  const targetSquad = user === 'u1' ? user1Squad : user2Squad;
+  for (let i = 0; i < slots.length; i++) {
+    if (targetSquad[i]?.isVacant) {
+      targetSquad[i].role = slots[i][0];
+    }
+  }
+
+  const otherUser = user === 'u1' ? 'u2' : 'u1';
+  if (draftState.phase === 'FORMATION_PICK_1') {
+    draftState.phase = 'FORMATION_PICK_2';
+    draftState.currentTurnUser = otherUser;
+  } else {
+    // Both formations picked! Begin position-by-position player draft starting with toss winner
+    draftState.phase = 'PLAYER_DRAFT';
+    draftState.currentTurnUser = draftState.tossWinner;
+    draftState.currentPickIndex = 0;
+  }
+
+  renderDraftTurnBanner();
+  renderDuelMode();
+  toast(`User ${user === 'u1' ? '1' : '2'} selected formation ${formation}!`);
+}
+
+function handleDraftSlotFilled(user, slotIndex) {
+  // Check if all slots filled across both squads
+  const u1Vacant = user1Squad.some(p => p.isVacant);
+  const u2Vacant = user2Squad.some(p => p.isVacant);
+
+  if (!u1Vacant && !u2Vacant) {
+    // Both teams fully drafted! Proceed to Captain Selection
+    draftState.phase = 'CAPTAIN_PICK_1';
+    draftState.currentTurnUser = draftState.tossWinner;
+    renderDraftTurnBanner();
+    return;
+  }
+
+  // Next turn: alternate user or advance position slot
+  const otherUser = user === 'u1' ? 'u2' : 'u1';
+  draftState.currentTurnUser = otherUser;
+
+  // If next user already drafted this slot index, find first vacant slot
+  const nextSquad = otherUser === 'u1' ? user1Squad : user2Squad;
+  const nextVacantIndex = nextSquad.findIndex(p => p.isVacant);
+  if (nextVacantIndex !== -1) {
+    draftState.currentPickIndex = nextVacantIndex;
+  }
+
+  renderDraftTurnBanner();
+}
+
+function handleCaptainSelected(user, playerId) {
+  if (user === 'u1') {
+    user1CaptainId = playerId;
+    const p = user1Squad.find(x => x.id === playerId);
+    toast(`User 1 appointed ${p?.name} as Captain ©!`);
+  } else {
+    user2CaptainId = playerId;
+    const p = user2Squad.find(x => x.id === playerId);
+    toast(`User 2 appointed ${p?.name} as Captain ©!`);
+  }
+
+  const otherUser = user === 'u1' ? 'u2' : 'u1';
+  if (draftState.phase === 'CAPTAIN_PICK_1') {
+    draftState.phase = 'CAPTAIN_PICK_2';
+    draftState.currentTurnUser = otherUser;
+  } else {
+    draftState.phase = 'READY';
+    draftState.currentTurnUser = null;
+    toast(`🏆 Both squads ready with formations, unique nationalities, and captains!`);
+  }
+
+  renderDraftTurnBanner();
+  renderDuelMode();
+}
+
+function renderDraftTurnBanner() {
+  const banner = $('#draftTurnBanner');
+  if (!banner) return;
+
+  if (!draftState.active || draftState.phase === 'TOSS') {
+    banner.style.display = 'none';
+    return;
+  }
+
+  banner.style.display = 'flex';
+  const uLabel = draftState.currentTurnUser === 'u1' ? 'USER 1' : 'USER 2';
+  $('#draftTurnBadge').textContent = `${uLabel}'S TURN`;
+
+  const actionsContainer = $('#draftTurnActions');
+  actionsContainer.innerHTML = '';
+
+  if (draftState.phase === 'FORMATION_PICK_1' || draftState.phase === 'FORMATION_PICK_2') {
+    $('#draftTurnAction').textContent = `${uLabel}: Select Formation`;
+    $('#draftTurnSub').textContent = `Choose your team's tactical blueprint for the ${draftState.size}-a-side match.`;
+
+    const forms = getAvailableFormations(draftState.size);
+    actionsContainer.innerHTML = forms.map(f => `
+      <button type="button" class="draft-formation-opt-btn" data-form="${f}">${f}</button>
+    `).join('');
+    return;
+  }
+
+  if (draftState.phase === 'PLAYER_DRAFT') {
+    const activeSquad = draftState.currentTurnUser === 'u1' ? user1Squad : user2Squad;
+    const targetSlot = activeSquad[draftState.currentPickIndex];
+    const role = targetSlot ? targetSlot.role : 'Any';
+    $('#draftTurnAction').textContent = `${uLabel}: Draft ${role} (Slot ${draftState.currentPickIndex + 1}/${draftState.size})`;
+    $('#draftTurnSub').textContent = `Select your player. Must be a unique nation and not chosen by the other user.`;
+    actionsContainer.innerHTML = `
+      <button type="button" class="primary-button" id="draftOpenPickerBtn" style="padding:6px 14px;font-size:12px;">Open Player Scout 🔍</button>
+    `;
+    return;
+  }
+
+  if (draftState.phase === 'CAPTAIN_PICK_1' || draftState.phase === 'CAPTAIN_PICK_2') {
+    $('#draftTurnAction').textContent = `${uLabel}: Select Team Captain ©`;
+    $('#draftTurnSub').textContent = `Choose your on-field leader from your drafted squad.`;
+    const squad = draftState.currentTurnUser === 'u1' ? user1Squad : user2Squad;
+    actionsContainer.innerHTML = squad.map(p => `
+      <button type="button" class="draft-formation-opt-btn" data-captain-id="${p.id}">© ${p.name.split(' ').pop()} (${p.ovr})</button>
+    `).join('');
+    return;
+  }
+
+  if (draftState.phase === 'READY') {
+    $('#draftTurnBadge').textContent = 'DRAFT COMPLETE';
+    $('#draftTurnAction').textContent = 'All Squads & Captains Ready!';
+    $('#draftTurnSub').textContent = 'Press Kick Off below to launch the match in Match Centre.';
+    actionsContainer.innerHTML = `
+      <span style="font-size:12px;color:var(--color-accent);font-weight:800;">✓ Ready for Kick Off</span>
+    `;
+  }
+}
 
 function renderDuelMode() {
   const modeVal = $('#duelTypeSelect')?.value || 'attack_defence';
@@ -1061,38 +1232,78 @@ function renderDuelMode() {
 
     const count = modeVal === 'team_5aside' ? 5 : 11;
     if (user1Squad.length !== count) {
-      initDefaultUserSquads(modeVal === 'team_5aside' ? '5aside' : '11aside');
+      resetTeamVsTeamDraft(modeVal === 'team_5aside' ? '5aside' : '11aside');
     }
 
-    $('#duelTeamModeBadge').textContent = `${count}-A-SIDE · 1 PLAYER PER NATION`;
+    $('#duelTeamModeBadge').textContent = `${count}-A-SIDE · TURN DRAFT · 1 PLAYER PER NATION`;
+    $('#duelU1FormationBadge').textContent = `Formation: ${user1Formation}`;
+    $('#duelU2FormationBadge').textContent = `Formation: ${user2Formation}`;
+
+    // Render Captain indicators
+    if (user1CaptainId) {
+      const cap = user1Squad.find(p => p.id === user1CaptainId);
+      $('#duelU1CaptainTag').style.display = 'block';
+      $('#duelU1CaptainTag').textContent = `© Captain: ${cap ? cap.name : 'Selected'}`;
+    } else {
+      $('#duelU1CaptainTag').style.display = 'none';
+    }
+
+    if (user2CaptainId) {
+      const cap = user2Squad.find(p => p.id === user2CaptainId);
+      $('#duelU2CaptainTag').style.display = 'block';
+      $('#duelU2CaptainTag').textContent = `© Captain: ${cap ? cap.name : 'Selected'}`;
+    } else {
+      $('#duelU2CaptainTag').style.display = 'none';
+    }
+
+    // Active column turn highlight
+    $('#duelU1Column')?.classList.toggle('is-active-turn', draftState.currentTurnUser === 'u1');
+    $('#duelU2Column')?.classList.toggle('is-active-turn', draftState.currentTurnUser === 'u2');
 
     const renderSquadSlots = (squad, gridId, userPrefix) => {
       const container = $(gridId);
       if (!container) return;
-      container.innerHTML = squad.map((p, idx) => `
-        <div class="duel-squad-slot" data-user="${userPrefix}" data-slot-index="${idx}">
-          <span class="duel-slot-num">${idx === 0 ? 'GK' : idx + 1}</span>
-          <div class="duel-slot-info">
-            <strong>${escapeHtml(p.name)}</strong>
-            <span>${escapeHtml(p.role)} · 🌍 ${escapeHtml(p.nat)}</span>
+      const isMyTurn = draftState.currentTurnUser === userPrefix && draftState.phase === 'PLAYER_DRAFT';
+
+      container.innerHTML = squad.map((p, idx) => {
+        const isCurrentActiveSlot = isMyTurn && idx === draftState.currentPickIndex;
+        const isCaptain = (userPrefix === 'u1' && user1CaptainId === p.id) || (userPrefix === 'u2' && user2CaptainId === p.id);
+        const ovrVal = p.isVacant ? '--' : p.ovr;
+        const nameVal = p.isVacant ? `Vacant Slot (${escapeHtml(p.role)})` : escapeHtml(p.name);
+        const metaVal = p.isVacant ? 'Tap to draft' : `${escapeHtml(p.role)} · 🌍 ${escapeHtml(p.nat)}`;
+
+        return `
+          <div class="duel-squad-slot ${isCurrentActiveSlot ? 'is-active-slot' : ''} ${isCaptain ? 'is-captain' : ''}" data-user="${userPrefix}" data-slot-index="${idx}">
+            <span class="duel-slot-num">${idx === 0 ? 'GK' : idx + 1}</span>
+            <div class="duel-slot-info">
+              <strong>${nameVal}</strong>
+              <span>${metaVal}</span>
+            </div>
+            <span class="duel-slot-ovr">${ovrVal}</span>
           </div>
-          <span class="duel-slot-ovr">${p.ovr}</span>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     };
 
     renderSquadSlots(user1Squad, '#duelU1SlotsGrid', 'u1');
     renderSquadSlots(user2Squad, '#duelU2SlotsGrid', 'u2');
 
-    const u1Avg = Math.round(user1Squad.reduce((a, b) => a + b.ovr, 0) / user1Squad.length);
-    const u2Avg = Math.round(user2Squad.reduce((a, b) => a + b.ovr, 0) / user2Squad.length);
-    const u1Nats = new Set(user1Squad.map(p => p.nat)).size;
-    const u2Nats = new Set(user2Squad.map(p => p.nat)).size;
+    const u1Filled = user1Squad.filter(p => !p.isVacant);
+    const u2Filled = user2Squad.filter(p => !p.isVacant);
 
-    $('#duelU1Summary').textContent = `OVR: ${u1Avg} · ${u1Nats}/${count} Nations`;
-    $('#duelU2Summary').textContent = `OVR: ${u2Avg} · ${u2Nats}/${count} Nations`;
+    const u1Avg = u1Filled.length ? Math.round(u1Filled.reduce((a, b) => a + b.ovr, 0) / u1Filled.length) : 0;
+    const u2Avg = u2Filled.length ? Math.round(u2Filled.reduce((a, b) => a + b.ovr, 0) / u2Filled.length) : 0;
+    const u1Nats = new Set(u1Filled.map(p => p.nat)).size;
+    const u2Nats = new Set(u2Filled.map(p => p.nat)).size;
 
-    $('#startDuelBtn').textContent = `▶ Kick Off ${count}v${count} Match`;
+    $('#duelU1Summary').textContent = `OVR: ${u1Avg || '--'} · ${u1Nats}/${count} Nations`;
+    $('#duelU2Summary').textContent = `OVR: ${u2Avg || '--'} · ${u2Nats}/${count} Nations`;
+
+    renderDraftTurnBanner();
+
+    const isAllReady = draftState.phase === 'READY' || (!user1Squad.some(p => p.isVacant) && !user2Squad.some(p => p.isVacant));
+    $('#startDuelBtn').textContent = isAllReady ? `▶ Kick Off ${count}v${count} Match` : `⏳ Draft in Progress (${u1Filled.length + u2Filled.length}/${count * 2})`;
+    $('#startDuelBtn').disabled = !isAllReady;
     return;
   }
 
@@ -1181,7 +1392,8 @@ function startDuelMatch() {
 function deployUserTeamMatch(duelType) {
   stop();
   const count = duelType === 'team_5aside' ? 5 : 11;
-  const formation = count === 5 ? '1-2-1' : '4-3-3';
+  const formation1 = user1Formation || (count === 5 ? '1-2-1' : '4-3-3');
+  const formation2 = user2Formation || (count === 5 ? '1-2-1' : '4-3-3');
 
   // Strict validation: one player per nation
   const u1Nats = user1Squad.map(p => p.nat);
@@ -1196,6 +1408,17 @@ function deployUserTeamMatch(duelType) {
     return;
   }
 
+  // Cross-team uniqueness validation
+  const allIds = [...user1Squad.map(p => p.id), ...user2Squad.map(p => p.id)];
+  if (new Set(allIds).size !== count * 2) {
+    toast(`No duplicate players allowed across teams! A player can only be selected in one squad.`);
+    return;
+  }
+
+  // Captains default if not chosen
+  const u1Cap = user1CaptainId || user1Squad[0].id;
+  const u2Cap = user2CaptainId || user2Squad[0].id;
+
   const user1Team = {
     id: 'user1_xi',
     name: 'User 1 FC',
@@ -1204,8 +1427,16 @@ function deployUserTeamMatch(duelType) {
     primary: '#d8ff69',
     secondary: '#17241e',
     crest: '1',
+    captainId: u1Cap,
     isCustom: true,
-    players: user1Squad.map((p, idx) => ({ ...p, number: idx + 1, overall: p.ovr, ovr: p.ovr, keeping: p.role === 'GK' ? p.ovr : 5 })),
+    players: user1Squad.map((p, idx) => ({
+      ...p,
+      number: idx + 1,
+      overall: p.ovr,
+      ovr: p.ovr,
+      isCaptain: p.id === u1Cap,
+      keeping: p.role === 'GK' ? p.ovr : 5
+    })),
     starting: user1Squad.map(p => p.id),
     substitutes: []
   };
@@ -1218,8 +1449,16 @@ function deployUserTeamMatch(duelType) {
     primary: '#92C8F0',
     secondary: '#171B21',
     crest: '2',
+    captainId: u2Cap,
     isCustom: true,
-    players: user2Squad.map((p, idx) => ({ ...p, number: idx + 1, overall: p.ovr, ovr: p.ovr, keeping: p.role === 'GK' ? p.ovr : 5 })),
+    players: user2Squad.map((p, idx) => ({
+      ...p,
+      number: idx + 1,
+      overall: p.ovr,
+      ovr: p.ovr,
+      isCaptain: p.id === u2Cap,
+      keeping: p.role === 'GK' ? p.ovr : 5
+    })),
     starting: user2Squad.map(p => p.id),
     substitutes: []
   };
@@ -1233,9 +1472,10 @@ function deployUserTeamMatch(duelType) {
     awayId: user2Team.id,
     customAwayTeam: user2Team,
     seed: `TEAM-VS-${count}-${Math.floor(Math.random() * 90000)}`,
-    formation,
-    awayFormation: formation,
-    homeLineup: user1Team.starting
+    formation: formation1,
+    awayFormation: formation2,
+    homeLineup: user1Team.starting,
+    awayLineup: user2Team.starting
   });
 
   renderSelects();
@@ -1248,7 +1488,7 @@ function deployUserTeamMatch(duelType) {
   accumulator = 0;
   updatePlayButton();
   sound.playWhistle(0.25);
-  toast(`⚔️ User 1 FC vs User 2 FC (${count}-a-side) kicked off! Exactly 1 player per nation.`);
+  toast(`⚔️ User 1 FC vs User 2 FC (${count}-a-side) kicked off! Formations: ${formation1} vs ${formation2}.`);
 }
 
 function updateDuelDisplay() {
@@ -2356,6 +2596,49 @@ function bind(){
     toast('✨ Auto-drafted squads with 1 unique player per nation!');
   });
 
+  $('#flipCoinBtn')?.addEventListener('click', handleCoinToss);
+
+  $('#duelResetDraftBtn')?.addEventListener('click', () => {
+    const val = $('#duelTypeSelect')?.value || 'team_5aside';
+    resetTeamVsTeamDraft(val === 'team_5aside' ? '5aside' : '11aside');
+    renderDuelMode();
+    toast('↺ Draft reset. Pre-match coin toss ready!');
+  });
+
+  $('#draftTurnActions')?.addEventListener('click', (e) => {
+    const formBtn = e.target.closest('[data-form]');
+    if (formBtn && draftState.currentTurnUser) {
+      handleFormationChosen(draftState.currentTurnUser, formBtn.dataset.form);
+      return;
+    }
+    const capBtn = e.target.closest('[data-captain-id]');
+    if (capBtn && draftState.currentTurnUser) {
+      handleCaptainSelected(draftState.currentTurnUser, capBtn.dataset.captainId);
+      return;
+    }
+    const openScoutBtn = e.target.closest('#draftOpenPickerBtn');
+    if (openScoutBtn && draftState.currentTurnUser) {
+      const u = draftState.currentTurnUser;
+      const targetSquad = u === 'u1' ? user1Squad : user2Squad;
+      const index = draftState.currentPickIndex;
+      const slot = targetSquad[index];
+      const role = slot ? slot.role : (index === 0 ? 'GK' : 'FWD');
+
+      activeModalTarget = {
+        type: u === 'u1' ? 'duelU1' : 'duelU2',
+        index,
+        role: index === 0 ? 'GK' : role
+      };
+
+      $('#modalSlotTitle').textContent = `Draft ${role} for ${u === 'u1' ? 'User 1' : 'User 2'} (Slot ${index + 1})`;
+      $('#playerPickerModal').classList.add('is-open');
+      $('#playerSearchInput').value = '';
+      $('#modalRoleFilter').value = index === 0 ? 'GK' : 'ALL';
+      renderModalPlayers();
+      return;
+    }
+  });
+
   const handleSlotClick = (e) => {
     const slot = e.target.closest('.duel-squad-slot');
     if (!slot) return;
@@ -2364,6 +2647,18 @@ function bind(){
     const targetSquad = user === 'u1' ? user1Squad : user2Squad;
     const current = targetSquad[index];
     if (!current) return;
+
+    // During active turn draft, encourage user to draft active turn slot
+    if (draftState.active && draftState.phase === 'PLAYER_DRAFT') {
+      if (user !== draftState.currentTurnUser) {
+        toast(`It's currently ${draftState.currentTurnUser === 'u1' ? 'User 1' : 'User 2'}'s turn to pick!`);
+        return;
+      }
+      if (index !== draftState.currentPickIndex) {
+        toast(`Please pick slot ${draftState.currentPickIndex + 1} (${targetSquad[draftState.currentPickIndex]?.role || 'current position'}) first!`);
+        return;
+      }
+    }
 
     activeModalTarget = {
       type: user === 'u1' ? 'duelU1' : 'duelU2',

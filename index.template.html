@@ -637,32 +637,71 @@
 
           <!-- Team vs Team Squad Roster Builder (Visible in 5-aside or 11-aside modes) -->
           <div class="duel-team-builder-card" id="duelTeamBuilderCard" style="display:none;">
+            <!-- Coin Toss Banner & Draft Stage Banner -->
+            <div class="draft-toss-card" id="draftTossCard">
+              <div class="draft-toss-visual">
+                <div class="coin-disc" id="coinDisc">🪙</div>
+                <div class="draft-toss-text">
+                  <h4 id="draftTossTitle">Pre-Match Coin Toss</h4>
+                  <p id="draftTossDesc">Flip the referee's coin to determine which user picks first!</p>
+                </div>
+              </div>
+              <div class="draft-toss-actions" id="draftTossActions">
+                <button type="button" class="primary-button" id="flipCoinBtn">🪙 Flip Coin</button>
+              </div>
+            </div>
+
+            <!-- Turn Banner & Step Info -->
+            <div class="draft-turn-banner" id="draftTurnBanner" style="display:none;">
+              <div class="draft-turn-badge" id="draftTurnBadge">USER 1's TURN</div>
+              <div class="draft-turn-info">
+                <strong id="draftTurnAction">Select Formation</strong>
+                <span id="draftTurnSub">Choose your team's tactical shape</span>
+              </div>
+              <div class="draft-turn-actions" id="draftTurnActions">
+                <!-- Dynamically filled with formation buttons or actions -->
+              </div>
+            </div>
+
             <div class="duel-team-builder-header">
               <div>
                 <span class="step-badge" id="duelTeamModeBadge">5-A-SIDE · 1 PLAYER PER NATION</span>
-                <h3>Draft User 1 &amp; User 2 Squads</h3>
-                <p class="section-sub">Each squad must feature exactly one player per nation. Tap any slot to swap in any star from the 16,396 global player database.</p>
+                <h3>Turn-by-Turn User Draft &amp; Captain Selection</h3>
+                <p class="section-sub">1 player per nation. Each player can only be drafted to one team (no duplicates). Click your active slot to pick from the global database.</p>
               </div>
               <div class="duel-team-builder-actions">
+                <button class="secondary-button" id="duelResetDraftBtn" type="button">↺ New Draft &amp; Toss</button>
                 <button class="secondary-button" id="duelAutoDraftTeamsBtn" type="button">🎲 Auto-Draft Balanced Nations</button>
               </div>
             </div>
 
             <div class="duel-teams-grid">
               <!-- User 1 Squad -->
-              <div class="duel-team-column">
+              <div class="duel-team-column" id="duelU1Column">
                 <div class="duel-team-column-header">
-                  <h4>USER 1 SQUAD</h4>
-                  <span id="duelU1Summary">OVR: 91 · 5 Nations</span>
+                  <div>
+                    <h4>USER 1 SQUAD</h4>
+                    <small id="duelU1FormationBadge">Formation: 1-2-1</small>
+                  </div>
+                  <div style="text-align:right;">
+                    <span id="duelU1Summary">OVR: 91 · 5 Nations</span>
+                    <div id="duelU1CaptainTag" style="font-size:11px;color:var(--color-accent);font-weight:800;display:none;">© Captain: None</div>
+                  </div>
                 </div>
                 <div class="duel-team-slots" id="duelU1SlotsGrid"></div>
               </div>
 
               <!-- User 2 Squad -->
-              <div class="duel-team-column">
+              <div class="duel-team-column" id="duelU2Column">
                 <div class="duel-team-column-header">
-                  <h4>USER 2 SQUAD</h4>
-                  <span id="duelU2Summary">OVR: 91 · 5 Nations</span>
+                  <div>
+                    <h4>USER 2 SQUAD</h4>
+                    <small id="duelU2FormationBadge">Formation: 1-2-1</small>
+                  </div>
+                  <div style="text-align:right;">
+                    <span id="duelU2Summary">OVR: 91 · 5 Nations</span>
+                    <div id="duelU2CaptainTag" style="font-size:11px;color:var(--color-accent);font-weight:800;display:none;">© Captain: None</div>
+                  </div>
                 </div>
                 <div class="duel-team-slots" id="duelU2SlotsGrid"></div>
               </div>
