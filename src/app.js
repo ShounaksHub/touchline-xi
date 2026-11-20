@@ -1615,6 +1615,8 @@ function updatePlayButton(){
   $('#stepBtn').disabled=isLast;
   $('#fullTimeBtn').disabled=isLast;
   $('#playText').textContent=isLast?'Full-time':running?'Pause':replay?'Play replay':match.minute?'Resume':'Kick off';
+  $('#fixturePlayBtn').textContent = $('#playText').textContent;
+  $('#fixturePlayBtn').disabled = isLast;
   $('#playGlyph').setAttribute('d',running?'M6 5h4v14H6zm8 0h4v14h-4z':'M8 5v14l11-7z');
 }
 
@@ -1673,6 +1675,7 @@ function startMatch(){
 
 function renderScoreboard(){
   const home=getTeam(match.homeId),away=getTeam(match.awayId);
+  $('#fixtureTitle').textContent = home.name + ' vs ' + away.name;
   $('#homeCrest').innerHTML=getTeamBadgeSvg(home, 66, 71);
   $('#awayCrest').innerHTML=getTeamBadgeSvg(away, 66, 71);
   $('#homeCrest').style.background='transparent';
@@ -2069,6 +2072,7 @@ function exportReplay(item){
 }
 
 function bind(){
+  $('#fixturePlayBtn').addEventListener('click', () => $('#playBtn').click());
   const playerModal=$('#playerPickerModal');
   if(playerModal){
     const syncModalState=()=>playerModal.setAttribute('aria-hidden',playerModal.classList.contains('is-open')?'false':'true');

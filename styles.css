@@ -6796,3 +6796,56 @@ h1, h2, h3, h4,
 }
 
 
+.site-shell > .topbar,
+#matchday,
+.page--matchday .workspace {
+  width: 100%;
+  max-width: 84rem;
+  margin-inline: auto;
+}
+
+.site-shell > .topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  height: auto;
+  gap: 12px 24px;
+  padding-block: 18px 0;
+}
+
+.topbar .brand { justify-self: start; }
+.topbar .brand-name { font-size: clamp(22px, 2vw, 30px); }
+.topbar .topbar-right { display: flex; flex-wrap: wrap; align-items: center; }
+.topbar .main-nav {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+  overflow-x: auto;
+  background: transparent;
+  border: 0;
+  padding: 4px 0 8px;
+  gap: 4px;
+}
+.main-nav .nav-link {
+  flex: 0 0 auto;
+  height: 46px;
+  font-size: 16px;
+  padding-inline: clamp(12px, 1.3vw, 22px);
+}
+#fixtureTitle {
+  font-size: clamp(2.25rem, 4.4vw, 4.5rem);
+  line-height: 1.04;
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+#matchday { display: grid; justify-items: start; gap: 20px; padding-block: clamp(28px, 4vw, 60px); }
+#matchday .intro-actions { display: flex; flex-flow: row wrap; justify-content: flex-start; margin: 0; }
+#matchday .intro-actions button { min-height: 44px; font-size: 15px; }
+@media (max-width: 680px) {
+  .site-shell > .topbar { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .topbar .topbar-right { grid-row: 2; justify-self: start; margin: 0; }
+  .topbar .main-nav { grid-row: 3; }
+}
