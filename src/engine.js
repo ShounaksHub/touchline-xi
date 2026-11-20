@@ -298,7 +298,7 @@ export function createMatch(options = {}) {
   return m;
 }
 
-function updateCurrentFrame(m) {
+export function updateCurrentFrame(m) {
   if (m.frames.length) m.frames[m.frames.length - 1] = frameFromMatch(m);
 }
 
@@ -326,6 +326,7 @@ export function resetStartingXI(m) {
   m.lineups.home = [...team.starting];
   m.substitutionsUsed = 0;
   m.playerStates.home = getInitialPlayerStates(team, m.lineups.home, 'home', m.formations.home, m.tactics.home);
+  for (const player of m.playerStates.home) player.stamina = m.stamina[player.id] ?? 100;
   updateCurrentFrame(m);
   return true;
 }
@@ -365,7 +366,7 @@ export function swapPlayer(m, starterId, benchId) {
 
   if (m.minute > 0) {
     m.substitutionsUsed = (m.substitutionsUsed ?? 0) + 1;
-    addEvent(m, 'sub', 'home', `${incoming.name} replaces ${starter.name}.`);
+    addEvent(m, 'sub', 'home', `${incoming.name} replaces ${starter.name}.`, { playerId: incoming.id, outgoingId: starter.id });
   }
   updateCurrentFrame(m);
   return true;
@@ -513,7 +514,8 @@ function simulateMinutePhases(m) {
     const pressure = nearbyOpponents.slice(0, 3).reduce((acc, curr) => acc + Math.max(0, 1 - curr.distM / 10), 0);
 
     // 1. TACKLE / CHALLENGE TEST (if opponent is within 3.4 meters)
-    if (closestOpponent && closestOpponent.distM < 3.4) {
+    const effort = opponent === 'home' && m.minute <= (m.effortUntil ?? -1);
+    if (closestOpponent && closestOpponent.distM < (effort ? 4.6 : 3.4)) {
       const tackler = closestOpponent.p;
       const tackleSkill = tackler.defending;
       const dribbleSkill = (carrier.pace * 0.6 + carrier.physical * 0.4);
@@ -567,6 +569,7 @@ function simulateMinutePhases(m) {
       const angleRad = Math.atan2(Math.abs(PITCH.goalYMax - PITCH.goalYMin) * 0.68, goalDist);
       shootUtil = (34 - goalDist) * 1.6 + (carrier.shooting - 65) * 0.85 - (pressure * 6) + (m.tactics[side].mentality === 'Attacking' ? 8 : -6);
       if (carrier.role === 'ST' || carrier.role === 'CF') shootUtil += 12;
+      if (side === 'home' && m.minute <= (m.shootUntil ?? -1)) shootUtil += 24;
     }
 
     // Check through-ball opportunity (exploiting opponent high defensive line)
@@ -702,7 +705,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
         m.stats[side].corners += 1;
         addEvent(m, 'corner', side, `Tipped behind by ${gk.name} for a corner kick.`);
       }
-      addEvent(m, 'save', side, `🧤 WHAT A SAVE! ${gk.name} denies ${shooter.name}'s goal-bound strike!`, { playerId: shooter.id, xg, location: shotLocation });
+      addEvent(m, 'save', side, `🧤 WHAT A SAVE! ${gk.name} denies ${shooter.name}'s goal-bound strike!`, { playerId: shooter.id, keeperId: gk.id, xg, location: shotLocation });
       m.ballState.x = gk.x;
       m.ballState.y = gk.y;
       m.ballState.carrierId = isCorner ? null : gk.id;
@@ -877,6 +880,7 @@ function resolvePenaltyKick(m, side, opponent, fouledPlayer) {
     m.ballState.y = 50;
     addEvent(m, 'goal', side, `⚽ PENALTY GOAL! ${taker.name} coolly sends keeper the wrong way from the spot!`, {
       playerId: taker.id,
+      keeperId: gk.id,
       xg: penXg,
       location: shotLocation,
       isPenalty: true
@@ -944,7 +948,8 @@ export function advanceMinute(m) {
     const drainHome = 0.44 + (m.tactics.home.pressing > 70 ? 0.24 : 0) + (m.tactics.home.tempo > 70 ? 0.18 : 0);
     const drainAway = 0.44 + (m.tactics.away.pressing > 70 ? 0.24 : 0) + (m.tactics.away.tempo > 70 ? 0.18 : 0);
     for (const id of m.lineups.home) {
-      m.stamina[id] = clamp(round2((m.stamina[id] ?? 100) - drainHome), 25, 100);
+      const effortCost = m.minute <= (m.effortUntil ?? -1) ? 0.35 : 0;
+      m.stamina[id] = clamp(round2((m.stamina[id] ?? 100) - drainHome - effortCost), 25, 100);
       const ps = m.playerStates?.home?.find(p => p.id === id);
       if (ps) ps.stamina = m.stamina[id];
     }
@@ -1095,12 +1100,14 @@ export function applyShout(m, shout) {
     m.tactics.home.width = clamp(m.tactics.home.width - 15, 25, 45);
     addEvent(m, 'tactic', 'home', 'Manager shout: PARK THE BUS! Compact deep defensive fortress.');
   } else if (shout === 'shoot_sight') {
-    addEvent(m, 'tactic', 'home', 'Manager shout: SHOOT ON SIGHT! Test their keeper every chance you get.');
+    m.shootUntil = m.minute + 10;
+    addEvent(m, 'tactic', 'home', 'Shoot on sight: take earlier shots for the next ten minutes.');
   } else if (shout === 'work_box') {
     m.tactics.home.tempo = clamp(m.tactics.home.tempo - 15, 30, 50);
     addEvent(m, 'tactic', 'home', 'Manager shout: WORK BALL INTO BOX! Patient build-up, wait for the clear chance.');
   } else if (shout === 'demand_more') {
-    addEvent(m, 'tactic', 'home', 'Manager shout: DEMAND MORE! Increase your work rate and intensity.');
+    m.effortUntil = m.minute + 10;
+    addEvent(m, 'tactic', 'home', 'Demand more: close down harder for ten minutes at extra stamina cost.');
   }
   updateCurrentFrame(m);
   return true;

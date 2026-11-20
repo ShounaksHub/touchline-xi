@@ -12,6 +12,7 @@ export const TUTORIAL_MODES = {
   TOURNAMENT: 'tournament',
   DREAMTEAM: 'dreamteam',
   SCOUTING: 'scouting',
+  CHALLENGES: 'challenges',
   VAULT: 'vault',
   DUEL: 'duel'
 };
@@ -41,7 +42,7 @@ export const TUTORIAL_STEPS = [
     mode: TUTORIAL_MODES.MATCHDAY,
     section: 'matchday',
     title: 'Simulation Pace & Speed',
-    description: 'Switch between 1×, 2×, or 5× playback speeds, toggle broadcast animation graphics, or jump instantly to full-time.',
+    description: 'Choose a speed or skip to full time. Then select Try a different tactic above the scoreboard to replay the same opening and compare score, shots and expected goals.',
     target: '#speedControls',
     placement: 'top'
   },
@@ -59,7 +60,7 @@ export const TUTORIAL_STEPS = [
     mode: TUTORIAL_MODES.MATCHDAY,
     section: 'matchday',
     title: 'Live Touchline Tactical Shouts',
-    description: 'Influence the match in real time! Issue tactical orders like High Press, Park the Bus, Shoot on Sight, or Demand More to boost stamina and mentality.',
+    description: 'Shoot On Sight encourages earlier shots for ten minutes. Demand More helps players challenge the ball carrier sooner for ten minutes and costs extra stamina. Watch your bench before calling it.',
     target: '#managerShoutsPanel',
     placement: 'top'
   },
@@ -236,7 +237,32 @@ export const TUTORIAL_STEPS = [
     placement: 'bottom'
   },
 
-  // 7. Replay Vault Steps
+  {
+    id:'rescue-takeover', mode:TUTORIAL_MODES.CHALLENGES, section:'challenges',
+    title:'Take over a match', target:'#rescueCard', placement:'bottom',
+    description:'Choose a scoreline to chase or defend. Take charge opens Match Centre at the takeover minute. Check your tired winger and remaining substitutions, change tactics, then press Resume.'
+  },
+  {
+    id:'rescue-daily', mode:TUTORIAL_MODES.CHALLENGES, section:'challenges',
+    title:'Play today’s rescue', target:'#dailyCard', placement:'bottom',
+    description:'Every manager gets the same opening until midnight UTC. Starting uses your first attempt on this browser. Finish it to unlock Copy scorecard. Later starts are practice.'
+  },
+  {
+    id:'budget-draft', mode:TUTORIAL_MODES.CHALLENGES, section:'challenges',
+    title:'Spend your 100 credits', target:'#budgetCard', placement:'top',
+    description:'Choose a starter or bench slot, search for a player in that position, and press Select player. Keep all sixteen players within budget, choose your opponent, then play.'
+  },
+  {
+    id:'penalty-order', mode:TUTORIAL_MODES.CHALLENGES, section:'challenges',
+    title:'Take penalties', target:'#penaltyCard', placement:'top',
+    description:'Pick five different takers for each club. Choose where to shoot or dive. In two-player mode the shooter picks first, then hands the device to the keeper. A tie after five each goes to sudden death.'
+  },
+  {
+    id:'survival-table', mode:TUTORIAL_MODES.CHALLENGES, section:'challenges',
+    title:'Keep Brighton up', target:'#survivalCard', placement:'top',
+    description:'Start one point behind Everton with five games left. Finish each fixture to update both clubs’ points. Fatigue carries over after partial recovery, and a red card rules a player out for the next game.'
+  },
+  // Replay Vault Steps
   {
     id: 'vault-list',
     mode: TUTORIAL_MODES.VAULT,

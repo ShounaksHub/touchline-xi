@@ -25,6 +25,7 @@
         <button class="nav-link" data-section="dreamteam" data-page="page-dreamteam">Dream Team</button>
         <button class="nav-link" data-section="scouting" data-page="page-scouting">Scouting</button>
         <button class="nav-link" data-section="duel" data-page="page-duel">1v1 &amp; Team Duel</button>
+        <button class="nav-link" data-section="challenges" data-page="page-challenges">Challenges</button>
         <button class="nav-link" data-section="vault" data-page="page-vault">Replay Vault</button>
       </nav>
       <div class="topbar-right">
@@ -61,6 +62,12 @@
           </div>
         </section>
 
+        <section id="challengeFixture" class="challenge-note" hidden>
+          <strong id="challengeObjective"></strong>
+          <p id="challengeResult" aria-live="polite"></p>
+          <button class="secondary-button" id="retryFixture" hidden>Try a different tactic</button>
+          <button class="secondary-button" id="returnChallenges" hidden>Back to challenges</button>
+        </section>
         <!-- Matchday Studio Layout (Authentic Workspace Grid) -->
         <div class="workspace">
           <div class="main-column">
@@ -147,7 +154,7 @@
                 <div class="broadcast-graphics-overlay" id="broadcastGraphicsOverlay" aria-live="assertive" aria-atomic="true"></div>
                 <div class="quick-sub-alert" id="quickSubAlert" role="status" aria-live="polite">
                   <div><strong>QUICK SUB RECOMMENDED</strong><span id="quickSubText">A tired player is losing energy.</span></div>
-                  <button type="button" id="quickSubBtn">Open squad</button>
+                  <button type="button" id="quickSubBtn">Choose substitute</button>
                 </div>
                 </div>
                 <aside class="lineup-board lineup-board-away" id="awayLineupBoard" aria-label="Away starting eleven and substitutes"></aside>
@@ -187,7 +194,7 @@
               <div class="manager-shouts-panel" id="managerShoutsPanel">
                 <div class="shouts-header">
                   <span>TOUCHLINE SHOUTS (LIVE TACTICAL COMMANDS)</span>
-                  <small style="color:var(--muted)">Affects live play immediately</small>
+                  <small id="shoutDuration" style="color:var(--muted)">Choose a touchline instruction</small>
                 </div>
                 <div class="shouts-grid">
                   <button class="shout-btn" data-shout="high_press"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>High Press</button>
@@ -238,6 +245,18 @@
                 </div>
               </section>
             </div>
+
+            <section class="player-ratings-panel" id="playerRatings" aria-label="Individual player ratings">
+              <div class="panel-heading small-panel-heading">
+                <div><span class="section-num">01.4</span><h2>Player ratings</h2></div>
+                <span class="panel-tag" id="ratingsState">LIVE PERFORMANCE</span>
+              </div>
+              <p class="ratings-intro">Every player’s match contribution, from goals and assists to defensive work and energy.</p>
+              <div class="ratings-grid">
+                <section class="ratings-team" aria-label="Home player ratings"><div class="ratings-team-head"><strong id="ratingsHomeName">Home</strong><span id="ratingsHomeAverage">6.0 average</span></div><div id="ratingsHomeList" class="ratings-list"></div></section>
+                <section class="ratings-team" aria-label="Away player ratings"><div class="ratings-team-head"><strong id="ratingsAwayName">Away</strong><span id="ratingsAwayAverage">6.0 average</span></div><div id="ratingsAwayList" class="ratings-list"></div></section>
+              </div>
+            </section>
 
             <!-- Cumulative xG Flow Plot -->
             <section class="flow-panel" aria-label="Chance creation over time">
@@ -754,7 +773,40 @@
       </div><!-- end page--duel -->
 
 
-      <!-- PAGE 7: Replay Vault -->
+      <!-- Challenges -->
+      <div class="page" id="page-challenges">
+        <section id="challenges">
+          <header class="page-heading"><div><h1>Challenges</h1><p>Take over a late match, draft on a budget, or play a shootout.</p></div></header>
+          <div class="challenge-grid">
+            <section id="rescueCard"><h2>Touchline Rescue</h2>
+              <label>Takeover <select id="rescuePick"></select></label>
+              <p id="rescueBrief"></p><button class="primary-button" id="rescueStart">Take charge</button>
+            </section>
+            <section id="dailyCard"><h2>Daily Rescue</h2><p id="dailyBrief"></p>
+              <button class="primary-button" id="dailyStart">Play today's rescue</button>
+              <p id="dailyRecord" aria-live="polite"></p><button id="dailyShare" class="secondary-button" hidden>Copy scorecard</button>
+            </section>
+            <section id="budgetCard"><h2>Budget XI</h2><p>Spend up to 100 credits on eleven starters and five substitutes. Select a slot to change its player.</p>
+              <label>Squad slot <select id="budgetSlot"></select></label>
+              <label>Search players <input id="budgetSearch" type="search" placeholder="Player or club"></label>
+              <label>Available in position <select id="budgetPlayer"></select></label>
+              <button class="secondary-button" id="budgetSign">Select player</button>
+              <p id="budgetBalance" aria-live="polite"></p>
+              <label>Opponent <select id="budgetOpponent"></select></label>
+              <button class="primary-button" id="budgetStart">Play fixture</button>
+            </section>
+            <section id="penaltyCard"><h2>Penalty Night</h2><p>Choose five takers in order. Aim when shooting and pick a side when keeping.</p>
+              <label>Players <select id="penaltyMode"><option value="solo">Solo vs computer</option><option value="local">Two players on this device</option></select></label>
+              <details><summary>Edit kicking orders</summary><div id="penaltyOrders"></div></details>
+              <button class="primary-button" id="penaltyStart">Start shootout</button>
+              <p id="penaltyStatus" aria-live="polite"></p><div id="penaltyChoices" hidden></div>
+            </section>
+            <section id="survivalCard"><h2>Survival Run-In</h2><p>Keep Brighton above Everton over five matches. Level points go to goal difference. An exact tie favours Everton, who start ahead.</p>
+              <p id="runTable"></p><p id="runHistory"></p><button class="primary-button" id="runStart">Start run-in</button>
+            </section>
+          </div>
+        </section>
+      </div>
       <div class="page page--vault" id="page-vault">
         <section class="vault" id="vault">
           <div class="page-heading">
@@ -785,7 +837,7 @@
       </div>
       <div class="footer-links" aria-label="Footer navigation">
         <div><span class="footer-label">EXPLORE</span><a href="#matchday">Match Centre</a><a href="#squad">Squad Lab</a><a href="#dreamteam">Dream Team</a></div>
-        <div><span class="footer-label">PROJECT</span><a href="#tournament">Tournament</a><a href="#scouting">Scouting</a><a href="#vault">Replay Vault</a></div>
+        <div><span class="footer-label">PROJECT</span><a href="#tournament">Tournament</a><a href="#challenges">Challenges</a><a href="#scouting">Scouting</a><a href="#vault">Replay Vault</a></div>
       </div>
       <div class="footer-action"><span>OPEN SOURCE · LOCAL FIRST</span><a class="footer-github" href="https://github.com/ShounaksHub/touchline-xi" target="_blank" rel="noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 0 0-3 18.52c.48.09.65-.2.65-.46v-1.7c-2.65.58-3.21-1.13-3.21-1.13-.44-1.1-1.08-1.4-1.08-1.4-.87-.6.07-.59.07-.59.96.07 1.47.99 1.47.99.86 1.47 2.25 1.05 2.8.8.09-.62.34-1.05.61-1.29-2.12-.24-4.35-1.06-4.35-4.72 0-1.04.37-1.89.99-2.55-.1-.24-.43-1.21.1-2.52 0 0 .8-.26 2.62.97a9.1 9.1 0 0 1 4.77 0c1.82-1.23 2.62-.97 2.62-.97.53 1.31.2 2.28.1 2.52.62.66.99 1.51.99 2.55 0 3.67-2.23 4.48-4.36 4.72.35.3.65.87.65 1.76v2.56c0 .26.17.56.66.46A9.5 9.5 0 0 0 12 2.5Z"/></svg><span>Shounak on GitHub</span><b>↗</b></a></div>
       <div class="footer-base"><span>© 2026 Touchline XI</span><span>Designed &amp; engineered by <a href="https://github.com/ShounaksHub" target="_blank" rel="noreferrer">Shounak</a></span><span>v2.0 · DETERMINISTIC MATCH ENGINE</span></div>
@@ -887,12 +939,14 @@
             <button type="button" class="mode-tour-chip" data-replay-mode="dreamteam">Dream Team</button>
             <button type="button" class="mode-tour-chip" data-replay-mode="scouting">Scouting</button>
             <button type="button" class="mode-tour-chip" data-replay-mode="duel">1v1 &amp; Team Duel</button>
+            <button type="button" class="mode-tour-chip" data-replay-mode="challenges">Challenges</button>
             <button type="button" class="mode-tour-chip" data-replay-mode="vault">Replay Vault</button>
           </div>
         </div>
 
         <!-- 4 Feature Highlights Cards -->
         <div class="welcome-cards-grid">
+          <div class="welcome-card"><h3>Play a challenge</h3><p>Rescue a late fixture, build a 100-credit XI, take penalties, or keep Brighton up. Daily Rescue records your first attempt. At full time, try another tactic and compare shots, goals and xG.</p></div>
           <div class="welcome-card">
             <div class="welcome-card-icon">01</div>
             <h4>1. Set the System in Squad Lab</h4>

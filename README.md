@@ -35,7 +35,7 @@ Zero npm installs. Zero build tools required to play. Just double-click the HTML
 
 ---
 
-## 🏟️ The 7 Stadium Zones
+## Stadium zones
 
 Touchline XI features a **true multi-page stadium architecture** with instant tab transitions, URL hash routing, and zero scroll bleed:
 
@@ -51,9 +51,20 @@ Touchline XI features a **true multi-page stadium architecture** with instant ta
 | **✨ Dream Team Studio** | `#dreamteam` | **Fantasy Galácticos.** Draft any world legend or active superstar into your custom fantasy squad, deploy in 1 click, and play immediately against adaptive AI managers. |
 | **🔍 Global Scouting** | `#scouting` | **Transfer Database.** Search and inspect 16,396 unique footballers across 357 clubs and nations with metallic FUT-style player cards, attribute radars, and bio inspections. |
 | **⚔️ 1v1 Player Duel** | `#duel` | **Head-to-Head Showdown.** Select any two footballers sequentially, compare attributes across key skill matrices, and battle across Attack vs Defence, Dribbling, or Skill Challenges on a dedicated spatial pitch. |
+| **Challenges** | `#challenges` | Play a late takeover, daily fixture, budget draft, shootout or relegation run-in. The Guide includes a five-step Challenges tour. |
 | **📼 Replay Vault** | `#vault` | **The Archive.** Frame-by-frame scrubbable match and duel tape recorder. Export or import full match or duel JSON replays to prove your screamer happened. |
 
 ---
+
+## Playing challenges
+
+- **Touchline Rescue** puts you in charge of Mohun Bagan at 76′, 80′ or 105′. Chase an equaliser, defend a one-goal lead or win an extra-time tie.
+- **Daily Rescue** gives everyone the same opening and simulation seed for the UTC date. Finish your first attempt on this browser to copy its scorecard. Further starts count as practice.
+- **Budget XI** gives you 100 credits for eleven starters and five substitutes. Pick a squad slot, search by player or club, then select an opponent.
+- **Penalty Night** lets you set five takers per club and choose a direction as shooter and keeper. Play solo or pass the device between two players. Level scores after five kicks each go to sudden death.
+- **Survival Run-In** gives Brighton five fixtures to overtake Everton. Results, partially recovered stamina and next-match suspensions carry into the next round on this browser.
+
+At full time, select **Try a different tactic** to return to kickoff or the original takeover. Compare the score, shots and xG with your previous attempt. Practice matches preserve the official daily result and run-in standings.
 
 ## 🧠 Tactical Depth & Pitch Mechanics
 
@@ -79,9 +90,9 @@ You aren't just a spectator. In Touchline XI, clicking a tactical shout delivers
 | :--- | :--- | :--- |
 | ⚡ **High Press** | *"DON'T LET THEM BREATHE!"* | Pressing intensity spikes to 88. Increases turnover recovery in final third by +35%, but drains player stamina fast. |
 | 🧱 **Park The Bus** | *"EVERYONE BEHIND THE BALL!"* | Drops block depth to 15. Compacts defensive box coordinates, cuts opponent shot quality (xG) by -40%. |
-| 🎯 **Shoot On Sight** | *"JUST SHOOT FROM THERE!"* | Increases long-range shot trigger probability by +65%. |
+| 🎯 **Shoot On Sight** | *"JUST SHOOT FROM THERE!"* | For ten match minutes, attackers favour a shot earlier when in range. |
 | 🔄 **Work Into Box** | *"WAIT FOR THE RUN, STOP HOOFING IT!"* | Demands patient passing in zone 14; yields fewer shots but higher individual chance xG (~0.45+). |
-| 🔥 **Demand More** | *"WAKE UP, WE ARE LOSING AT HOME!"* | Manager speech boost: immediately lifts team tempo and grants a mid-match stamina second wind. |
+| 🔥 **Demand More** | *"WAKE UP, WE ARE LOSING AT HOME!"* | For ten match minutes, defenders challenge the ball carrier from further away. Home players on the pitch spend extra stamina. |
 
 ### 📺 Cinematic Match Events & Broadcast Graphics
 

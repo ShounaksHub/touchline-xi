@@ -8,6 +8,8 @@ import {MatchEffectsController} from './match-effects.js';
 import {createPlayerDuel, advanceDuelTick, playFullDuel, renderDuelPitch, DUEL_TYPES} from './duel.js';
 import {TutorialController, TUTORIAL_MODES} from './tutorial.js';
 import {readStore, writeStore, removeStore} from './storage.js';
+import {setupChallenges} from './challenge-view.js';
+import {rescues, replayChallengeTeam} from './challenges.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
@@ -67,6 +69,9 @@ let match=createMatch({
 
 let running=false,replay=null,speed=1,accumulator=0,lastRenderAt=0,selectedStarter=null,feedFilter='all',toastTimeout=null,goalTimeout=null;
 let scoutPage = 1;
+let challengeControls;
+const fixtureOpenings = new WeakMap();
+const comparisonResults = new WeakMap();
 const SCOUT_PAGE_SIZE = 72;
 
 const matchEffects = new MatchEffectsController({
@@ -1585,13 +1590,14 @@ function saveDuelToVault() {
 let vault=loadVault();
 
 function loadVault(){const v=readStore(STORAGE,[]);return Array.isArray(v)?v.filter(item=>item?.match?.frames && item?.id).slice(0,12):[]}
-function persistPrefs(){if(replay)return;writeStore(PREFS,{homeId:match.homeId,awayId:match.awayId,seed:match.seed,formation:match.formations.home,tactics:match.tactics.home})}
+function persistPrefs(){if(replay || match.challenge)return;writeStore(PREFS,{homeId:match.homeId,awayId:match.awayId,seed:match.seed,formation:match.formations.home,tactics:match.tactics.home})}
 function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('visible');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>el.classList.remove('visible'),2500)}
 function showPage(pageId){
   const norm=pageId.startsWith('page-')?pageId:`page-${pageId}`;
   const targetPage=$('#'+norm)||$('#page-matchday');
   $$('.page').forEach(p=>p.classList.toggle('is-active',p===targetPage));
   const activeSection=norm.replace('page-','');
+  if (activeSection === 'challenges') challengeControls?.refreshDaily();
   $$('.nav-link').forEach(btn=>{
     btn.classList.toggle('is-active',btn.dataset.section===activeSection);
   });
@@ -1651,6 +1657,7 @@ function renderSelects(){
 
 function startMatch(){
   stop();replay=null;selectedStarter=null;
+  activeTournamentMatchId=null;
   hidePauseBanner();
   matchEffects.clear();
   matchEffects.resetSeen();
@@ -1687,7 +1694,7 @@ function renderScoreboard(){
   $('#homeScore').textContent=match.score.home;
   $('#awayScore').textContent=match.score.away;
 
-  $('#fixtureLabel').textContent=`${match.knockout ? 'KNOCKOUT CUP' : 'EXHIBITION'} / ${(home.short || 'HOM')} VS ${(away.short || 'AWY')}`;
+  $('#fixtureLabel').textContent=`${match.challenge ? challengeName(match.challenge) : match.knockout ? 'KNOCKOUT CUP' : 'EXHIBITION'} / ${(home.short || 'HOM')} VS ${(away.short || 'AWY')}`;
   
   // Render Goalscorers under respective teams
   const goalEvents = (match.events || []).filter(e => e.type === 'goal');
@@ -1800,6 +1807,46 @@ function renderStats(){
     const left=Math.round(a/denom*100),right=100-left;
     return `<div class="stat-row"><div class="stat-row-head"><b>${formatStat(key,a)}</b><span>${labels[key]}</span><b>${formatStat(key,b)}</b></div><div class="stat-bars"><div class="stat-left-bar"><span style="width:${left}%"></span></div><div class="stat-right-bar"><span style="width:${right}%"></span></div></div></div>`;
   }).join('');
+}
+
+function playerRatingSummary(side) {
+  const team = getTeam(side === 'home' ? match.homeId : match.awayId);
+  const ids = [...new Set([...(team.starting || []), ...(team.substitutes || []), ...(match.lineups?.[side] || []), ...(match.events || []).filter(e => e.side === side && e.playerId).map(e => e.playerId)])];
+  const events = match.events || [];
+  return ids.map(id => {
+    const player = getPlayer(team, id) || getPlayer(null, id);
+    if (!player) return null;
+    const own = events.filter(e => e.side === side && (e.playerId === id || e.assistId === id || e.keeperId === id));
+    const goals = own.filter(e => e.type === 'goal' && e.playerId === id).length;
+    const assists = own.filter(e => e.type === 'goal' && e.assistId === id).length;
+    const shots = own.filter(e => ['shot','save','goal'].includes(e.type) && e.playerId === id).length;
+    const onTarget = own.filter(e => ['save','goal'].includes(e.type) && e.playerId === id).length;
+    const saves = own.filter(e => e.type === 'save' && e.keeperId === id).length;
+    const xg = own.filter(e => Number.isFinite(e.xg) && e.playerId === id).reduce((sum,e)=>sum+e.xg,0);
+    const cards = own.filter(e => e.type === 'card').length;
+    const subIn = own.find(e => e.type === 'sub' && e.playerId === id);
+    const subOut = own.find(e => e.type === 'sub' && e.outgoingId === id);
+    const minutes = subIn ? Math.max(0, match.minute - subIn.minute) : subOut ? subOut.minute : (team.starting || []).includes(id) ? match.minute : 0;
+    const energy = Math.round(match.stamina?.[id] ?? (minutes ? 100 : 0));
+    let rating = 6 + goals * 1.2 + assists * .7 + onTarget * .12 + saves * .25 - cards * .25;
+    if (minutes > 0) rating += Math.min(.35, minutes / 300);
+    rating = Math.max(5.2, Math.min(10, rating));
+    const contribution = [goals && `${goals}G`, assists && `${assists}A`, saves && `${saves} saves`, shots && `${shots} shots`, xg && `${xg.toFixed(2)} xG`, cards && `${cards} card`].filter(Boolean).join(' · ') || (minutes ? 'Worked through open play' : 'Unused substitute');
+    return {player,rating,minutes,energy,contribution,goals,assists,shots,onTarget,xg,cards,saves};
+  }).filter(Boolean).sort((a,b)=>b.rating-a.rating || b.minutes-a.minutes);
+}
+
+function renderPlayerRatings(){
+  const home = playerRatingSummary('home'), away = playerRatingSummary('away');
+  const draw = (rows) => rows.map(({player,rating,minutes,energy,contribution}) => `<div class="rating-row"><span class="rating-number">${rating.toFixed(1)}</span><div class="rating-player"><strong>${escapeHtml(player.name)}</strong><span>${escapeHtml(player.role || '')} · ${minutes}′ · ${energy}% energy</span></div><span class="rating-contribution">${escapeHtml(contribution)}</span></div>`).join('') || '<div class="ratings-empty">No player data yet</div>';
+  const average = rows => rows.length ? (rows.reduce((sum,row)=>sum+row.rating,0)/rows.length).toFixed(1) : '—';
+  $('#ratingsHomeName').textContent = getTeam(match.homeId).name;
+  $('#ratingsAwayName').textContent = getTeam(match.awayId).name;
+  $('#ratingsHomeAverage').textContent = average(home)+' average';
+  $('#ratingsAwayAverage').textContent = average(away)+' average';
+  $('#ratingsHomeList').innerHTML = draw(home);
+  $('#ratingsAwayList').innerHTML = draw(away);
+  $('#ratingsState').textContent = match.phase === 'FULL_TIME' ? 'FULL MATCH REPORT' : 'LIVE PERFORMANCE';
 }
 
 function renderFeed(){
@@ -1939,12 +1986,17 @@ function renderLineupBoards(){
   const board=(side)=>{
     const team=getTeam(side==='home'?match.homeId:match.awayId);
     const lineup=match.lineups?.[side] || team.starting || [];
+    const isInteractive = side === 'home' && !replay && match.phase !== 'FULL_TIME' && match.minute > 0;
     const starterRows=lineup.map((id,i)=>{
       const p=getPlayer(team,id); if(!p)return '';
       const stamina=Math.round(match.stamina?.[id] ?? 100);
-      return `<div class="lineup-row"><span class="lineup-number">${p.number || i+1}</span><span class="lineup-player" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="lineup-role">${escapeHtml(p.role || '')} · ${stamina}%</span></div>`;
+      const action = isInteractive ? `<button type="button" class="lineup-action" data-quick-out="${escapeHtml(id)}" aria-label="Choose a substitute for ${escapeHtml(p.name)}">Sub</button>` : '';
+      return `<div class="lineup-row${stamina <= 42 ? ' is-tired' : ''}${selectedStarter === id ? ' is-selected' : ''}"><span class="lineup-number">${p.number || i+1}</span><span class="lineup-player" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="lineup-role">${escapeHtml(p.role || '')} · ${stamina}%</span>${action}</div>`;
     }).join('');
-    const bench=(team.players||[]).filter(p=>!lineup.includes(p.id)).slice(0,5).map((p,i)=>`<div class="lineup-row is-bench"><span class="lineup-number">${p.number || i+12}</span><span class="lineup-player" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="lineup-role">${escapeHtml(p.role || '')}</span></div>`).join('');
+    const bench=(team.players||[]).filter(p=>!lineup.includes(p.id)).slice(0,5).map((p,i)=>{
+      const action = isInteractive ? `<button type="button" class="lineup-action lineup-action--in" data-quick-in="${escapeHtml(p.id)}" aria-label="Use ${escapeHtml(p.name)} as a substitute">Use</button>` : '';
+      return `<div class="lineup-row is-bench"><span class="lineup-number">${p.number || i+12}</span><span class="lineup-player" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="lineup-role">${escapeHtml(p.role || '')}</span>${action}</div>`;
+    }).join('');
     return `<div class="lineup-board-head"><div><div class="lineup-board-kicker">${side==='home'?'USER XI':'OPPOSITION XI'}</div><h3>${escapeHtml(team.name)}</h3></div><span class="lineup-board-meta">${match.formations?.[side] || 'XI'}</span></div><div class="lineup-list">${starterRows}</div><div class="lineup-divider">SUBSTITUTES · ${Math.max(0,5-(match.substitutionsUsed||0))} CHANGES LEFT</div><div class="lineup-list">${bench}</div>`;
   };
   const homeBoard=$('#homeLineupBoard'),awayBoard=$('#awayLineupBoard');
@@ -1960,9 +2012,74 @@ function renderLineupBoards(){
   }
 }
 
+function challengeName(c) {
+  if (c.kind === 'rescue') return c.day ? 'Daily Rescue' : 'Touchline Rescue';
+  return c.kind === 'budget' ? 'Budget XI' : 'Survival Run-In';
+}
+
+function rescueResult(m) {
+  const success = [m.score.home >= m.score.away, m.score.home > m.score.away, m.winner === 'home'][m.challenge.index];
+  return success ? 'Objective met' : 'Objective missed';
+}
+
+function finalStats(m) {
+  const {home,away} = m.stats;
+  const pens = m.penalties ? ' ('+m.penalties.home+'–'+m.penalties.away+' pens)' : '';
+  return m.score.home+'–'+m.score.away+pens+' · shots '+home.shots+'–'+away.shots+' · xG '+home.xg.toFixed(2)+'–'+away.xg.toFixed(2);
+}
+
+function launchFixture(next) {
+  stop();
+  hidePauseBanner();
+  matchEffects.clear();
+  matchEffects.resetSeen();
+  replay=null;
+  selectedStarter=null;
+  duelRunning=false;
+  activeTournamentMatchId=null;
+  match=next;
+  fixtureOpenings.set(match,structuredClone(match));
+  renderSelects();
+  showPage('matchday');
+  render();
+}
+
+function renderChallengeFixture() {
+  const shouts = [];
+  if (match.shootUntil > match.minute) shouts.push('Shoot On Sight · '+(match.shootUntil-match.minute)+' min');
+  if (match.effortUntil > match.minute) shouts.push('Demand More · '+(match.effortUntil-match.minute)+' min');
+  $('#shoutDuration').textContent = shouts.join(' / ') || 'Choose a touchline instruction';
+  const c = match.challenge;
+  const finished = match.phase === 'FULL_TIME';
+  const previous = comparisonResults.get(match);
+  $('#challengeFixture').hidden = !!replay || !(c || finished || previous);
+  if ($('#challengeFixture').hidden) return;
+  let title = 'Full-time comparison';
+  if (c?.kind === 'rescue') title = challengeName(c)+' · '+rescues[c.index].goal;
+  if (c?.kind === 'budget') title = 'Budget XI · 100-credit fixture';
+  if (c?.kind === 'survival') title = 'Survival Run-In · Match '+(c.week+1)+' of 5';
+  $('#challengeObjective').textContent = title+(c?.practice || previous ? ' · Practice' : '');
+  const lines = [];
+  if (finished) {
+    if (c?.kind === 'rescue') lines.push(rescueResult(match));
+    lines.push('This attempt · '+finalStats(match));
+  }
+  if (previous) lines.push('Previous attempt · '+previous);
+  $('#challengeResult').textContent = lines.join('\n');
+  $('#retryFixture').hidden = !finished || !fixtureOpenings.has(match);
+  $('#returnChallenges').hidden = !c;
+}
+
+function recordChallenge() {
+  if (match.challenge) challengeControls.finish(match,match.challenge.kind === 'rescue' ? rescueResult(match) : '');
+}
+
 function render(){
+  if (!replay && !match.minute && !fixtureOpenings.has(match)) fixtureOpenings.set(match,structuredClone(match));
+  renderChallengeFixture();
   renderScoreboard();
   renderStats();
+  renderPlayerRatings();
   renderFeed();
   renderFlow();
   renderFormation();
@@ -2021,6 +2138,7 @@ function newTick(){
 
   if(match.phase==='FULL_TIME'){
     stop();
+    recordChallenge();
     saveVault(true);
 
     if (activeTournamentMatchId && currentTournament) {
@@ -2045,6 +2163,13 @@ function flashGoal(e){
 }
 
 function startReplay(item){
+  try {
+    const team = replayChallengeTeam(item.match,ALL_PLAYERS_POOL);
+    if (team) registerCustomTeam(team);
+  } catch {
+    toast('This replay has an incomplete challenge squad.');
+    return;
+  }
   stop();
   hidePauseBanner();
   matchEffects.clear();
@@ -2072,6 +2197,15 @@ function exportReplay(item){
 }
 
 function bind(){
+  challengeControls=setupChallenges(ALL_PLAYERS_POOL,launchFixture,toast);
+  $('#returnChallenges').addEventListener('click',()=>showPage('challenges'));
+  $('#retryFixture').addEventListener('click',()=>{
+    if (replay || match.phase!=='FULL_TIME' || !fixtureOpenings.has(match)) return;
+    const next=structuredClone(fixtureOpenings.get(match));
+    if (next.challenge) next.challenge.practice=true;
+    comparisonResults.set(next,finalStats(match));
+    launchFixture(next);
+  });
   $('#fixturePlayBtn').addEventListener('click', () => $('#playBtn').click());
   const playerModal=$('#playerPickerModal');
   if(playerModal){
@@ -2104,9 +2238,33 @@ function bind(){
   });
 
   $('#quickSubBtn')?.addEventListener('click',()=>{
-    showPage('squad-lab');
-    scrollToSection('#squad-lab');
-    toast('Squad Lab opened — select a tired starter, then choose a substitute.');
+    const firstTired = [...document.querySelectorAll('#homeLineupBoard [data-quick-out]')].find(button => button.closest('.lineup-row')?.classList.contains('is-tired'));
+    if (firstTired) firstTired.focus();
+    toast('Choose Sub beside a tired player, then Use beside a compatible substitute.');
+  });
+
+  $('#homeLineupBoard')?.addEventListener('click', e => {
+    const out = e.target.closest('[data-quick-out]');
+    const incoming = e.target.closest('[data-quick-in]');
+    if (!out && !incoming) return;
+    if (replay || match.phase === 'FULL_TIME' || match.minute === 0) return;
+    if (out) {
+      selectedStarter = selectedStarter === out.dataset.quickOut ? null : out.dataset.quickOut;
+      renderLineupBoards();
+      toast(selectedStarter ? 'Now choose Use beside a compatible substitute.' : 'Substitution cancelled.');
+      return;
+    }
+    if (!selectedStarter) {
+      toast('Choose Sub beside a starter first.');
+      return;
+    }
+    if (swapPlayer(match, selectedStarter, incoming.dataset.quickIn)) {
+      selectedStarter = null;
+      render();
+      toast('Substitution made from Match Centre.');
+    } else {
+      toast('Choose a substitute with the same position.');
+    }
   });
 
   $('#fullTimeBtn').addEventListener('click',()=>{
@@ -2122,6 +2280,7 @@ function bind(){
     stop();
     playFullMatch(match);
     sound.playWhistle(0.45);
+    recordChallenge();
     saveVault(true);
 
     if (activeTournamentMatchId && currentTournament) {
@@ -2437,6 +2596,7 @@ function bind(){
     const b = e.target.closest('[data-shout]');
     if (!b || replay || match.phase === 'FULL_TIME') return;
     applyShout(match, b.dataset.shout);
+    renderChallengeFixture();
     renderTactics();
     renderFeed();
     toast(`📢 Shout delivered to pitch!`);
@@ -2869,6 +3029,7 @@ function bind(){
       }
       if (closed) return;
     }
+    if ($('#page-challenges').classList.contains('is-active')) return;
     if (e.target instanceof HTMLInputElement || e.target instanceof HTMLButtonElement || e.target instanceof HTMLSelectElement) return;
     if (e.code === 'Space') {
       e.preventDefault();

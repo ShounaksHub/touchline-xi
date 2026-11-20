@@ -48,7 +48,7 @@ const Sound = (() => {
 const Engine = (({ getTeam, getPlayer, DEFAULT_TACTICS, FORMATIONS, TEAMS, registerCustomTeam }) => {
   ${engineModule}
   return {
-    createMatch, advanceMinute, playFullMatch, matchFromFrame,
+    createMatch, advanceMinute, playFullMatch, matchFromFrame, seedToState, updateCurrentFrame,
     applyTactic, changeFormation, swapPlayer, resetStartingXI,
     resultLabel, applyShout, applyTeamTalk, simulatePenaltyShootout
   };
@@ -84,7 +84,7 @@ const Tutorial = (() => {
 
 ((
   { TEAMS, FORMATIONS, DEFAULT_TACTICS, PLAY_STYLES, getTeam, getPlayer, CLUBS, registerCustomTeam },
-  { createMatch, advanceMinute, playFullMatch, matchFromFrame, applyTactic, changeFormation, swapPlayer, resetStartingXI, resultLabel, applyShout, applyTeamTalk, simulatePenaltyShootout },
+  { createMatch, advanceMinute, playFullMatch, matchFromFrame, applyTactic, changeFormation, swapPlayer, resetStartingXI, resultLabel, applyShout, applyTeamTalk, simulatePenaltyShootout, seedToState, updateCurrentFrame },
   { renderPitch },
   { sound },
   { createTournament, loadTournament, saveTournament, clearTournament, simulateAIMatch, recordTournamentResult, getLeaderboard, TOURNAMENT_PRESETS },
@@ -93,6 +93,8 @@ const Tutorial = (() => {
   { createPlayerDuel, advanceDuelTick, playFullDuel, renderDuelPitch, DUEL_TYPES },
   { TutorialController, TUTORIAL_MODES, TUTORIAL_STEPS }
 ) => {
+  ${strip(read('src/challenges.js'))}
+  ${strip(read('src/challenge-view.js'))}
   ${appModule}
 })(Data, Engine, Pitch, Sound, Tournament, Badges, MatchEffects, Duel, Tutorial);
 `;
