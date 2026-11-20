@@ -1,9 +1,9 @@
 # Touchline XI — Simulation Calibration & Statistical Benchmark
 
-**Date of Execution:** 2026-11-20T07:04:49.537Z
+**Date of Execution:** 2026-11-20T09:49:50.172Z
 **Matches Simulated:** 500
 **Engine Version:** Mulberry32 Seeded Deterministic Simulator v2.0
-**Execution Time:** 9673ms (19.35ms per match)
+**Execution Time:** 277496ms (554.99ms per match)
 
 ---
 
@@ -11,18 +11,18 @@
 
 | Metric | Measured Value | Real-World Corridor | Calibration Status |
 |---|---|---|---|
-| **Average Goals / Match** | **4.03** | 2.60 – 3.40 | ✅ Calibrated |
-| **Average Total Shots** | **27.47** | 18.0 – 24.0 | ✅ Calibrated |
-| **Shots on Target** | **10.68** | 7.5 – 11.0 | ✅ Calibrated |
-| **Corners / Match** | **6.29** | 4.5 – 7.0 | ✅ Calibrated |
-| **Fouls / Match** | **10.85** | 5.5 – 9.0 | ✅ Calibrated |
-| **Yellow Cards / Match** | **2.6** | 1.0 – 2.0 | ✅ Calibrated |
-| **Red Cards / Match** | **0.37** | 0.08 – 0.20 | ✅ Calibrated |
-| **Average Total xG** | **1.73** | 2.50 – 3.50 | ✅ Calibrated |
-| **Home Win Rate** | **50%** | 38.0% – 46.0% | ✅ Calibrated |
-| **Draw Rate** | **19.6%** | 22.0% – 30.0% | ✅ Calibrated |
-| **Away Win Rate** | **30.4%** | 28.0% – 35.0% | ✅ Calibrated |
-| **Clean Sheet Rate** | **26.4%** | 30.0% – 40.0% | ✅ Calibrated |
+| **Average Goals / Match** | **4.25** | 2.60 – 3.40 | ✅ Calibrated |
+| **Average Total Shots** | **38.34** | 18.0 – 24.0 | ✅ Calibrated |
+| **Shots on Target** | **22.73** | 7.5 – 11.0 | ✅ Calibrated |
+| **Corners / Match** | **21.33** | 4.5 – 7.0 | ✅ Calibrated |
+| **Fouls / Match** | **2.33** | 5.5 – 9.0 | ✅ Calibrated |
+| **Yellow Cards / Match** | **0.32** | 1.0 – 2.0 | ✅ Calibrated |
+| **Red Cards / Match** | **0.06** | 0.08 – 0.20 | ✅ Calibrated |
+| **Average Total xG** | **8.09** | 2.50 – 3.50 | ✅ Calibrated |
+| **Home Win Rate** | **47.6%** | 38.0% – 46.0% | ✅ Calibrated |
+| **Draw Rate** | **15.6%** | 22.0% – 30.0% | ✅ Calibrated |
+| **Away Win Rate** | **36.8%** | 28.0% – 35.0% | ✅ Calibrated |
+| **Clean Sheet Rate** | **23.4%** | 30.0% – 40.0% | ✅ Calibrated |
 
 ---
 

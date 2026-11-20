@@ -1834,12 +1834,24 @@ function playerRatingSummary(side) {
     const trackedShots = tracked.shots ?? shots;
     const trackedXg = tracked.xg ?? xg;
     const trackedSaves = tracked.saves ?? saves;
-    let rating = 6 + trackedGoals * 1.2 + trackedAssists * .7 + (tracked.shotsOnTarget ?? onTarget) * .12 + trackedSaves * .25;
-    rating += (tracked.keyPasses || 0) * .08 + (tracked.tacklesWon || 0) * .04 + (tracked.interceptions || 0) * .04 + (tracked.recoveries || 0) * .015;
-    rating += (tracked.completedPasses || 0) * .004 - (tracked.foulsCommitted || 0) * .025 - (tracked.yellow || cards) * .25 - (tracked.red || 0) * .7;
+    let rating;
+    if (player.role === 'GK') {
+      const shotsFaced = tracked.shotsFaced || 0;
+      const savePercentage = shotsFaced ? trackedSaves / shotsFaced : 0;
+      const goalsPrevented = (tracked.saveXg || 0) - (tracked.conceded || 0);
+      rating = 6.2 + goalsPrevented * .7 + (savePercentage - .7) * 1.2;
+      rating += minutes >= 60 && (tracked.conceded || 0) === 0 ? .35 : 0;
+      rating -= (tracked.conceded || 0) * .18 + (tracked.red || 0) * .7;
+    } else {
+      rating = 6 + trackedGoals * 1.2 + trackedAssists * .7 + (tracked.shotsOnTarget ?? onTarget) * .12;
+      rating += trackedSaves * .08 + (tracked.keyPasses || 0) * .08 + (tracked.tacklesWon || 0) * .04 + (tracked.interceptions || 0) * .04 + (tracked.recoveries || 0) * .015;
+      rating += (tracked.completedPasses || 0) * .004 - (tracked.foulsCommitted || 0) * .025 - (tracked.yellow || cards) * .25 - (tracked.red || 0) * .7;
+    }
     if (minutes > 0) rating += Math.min(.35, minutes / 300);
     rating = Math.max(5.2, Math.min(10, rating));
-    const contribution = [trackedGoals && `${trackedGoals}G`, trackedAssists && `${trackedAssists}A`, trackedSaves && `${trackedSaves} saves`, trackedShots && `${trackedShots} shots`, trackedXg && `${trackedXg.toFixed(2)} xG`, tracked.tacklesWon && `${tracked.tacklesWon} tackles`, tracked.interceptions && `${tracked.interceptions} interceptions`].filter(Boolean).join(' · ') || (minutes ? `${Math.round(tracked.distance || 0)} distance units covered` : 'Unused substitute');
+    const contribution = player.role === 'GK'
+      ? [trackedSaves && `${trackedSaves} saves`, tracked.conceded && `${tracked.conceded} conceded`, tracked.shotsFaced && `${Math.round((trackedSaves / tracked.shotsFaced) * 100)}% save rate`].filter(Boolean).join(' · ') || (minutes ? 'No shots on target faced' : 'Unused substitute')
+      : [trackedGoals && `${trackedGoals}G`, trackedAssists && `${trackedAssists}A`, trackedSaves && `${trackedSaves} saves`, trackedShots && `${trackedShots} shots`, trackedXg && `${trackedXg.toFixed(2)} xG`, tracked.tacklesWon && `${tracked.tacklesWon} tackles`, tracked.interceptions && `${tracked.interceptions} interceptions`].filter(Boolean).join(' · ') || (minutes ? `${Math.round(tracked.distance || 0)} distance units covered` : 'Unused substitute');
     return {player,rating,minutes,energy,contribution,goals:trackedGoals,assists:trackedAssists,shots:trackedShots,onTarget,xg:trackedXg,cards,saves:trackedSaves};
   }).filter(Boolean).sort((a,b)=>b.rating-a.rating || b.minutes-a.minutes);
 }

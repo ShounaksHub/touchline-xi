@@ -247508,7 +247508,7 @@ const emptyPlayerStats = () => ({
   minutes: 0, distance: 0, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, xg: 0,
   passes: 0, completedPasses: 0, keyPasses: 0, tackles: 0, tacklesWon: 0,
   interceptions: 0, recoveries: 0, foulsCommitted: 0, foulsWon: 0,
-  yellow: 0, red: 0, saves: 0, conceded: 0, substituted: false, sentOff: false
+  yellow: 0, red: 0, saves: 0, shotsFaced: 0, saveXg: 0, conceded: 0, substituted: false, sentOff: false
 });
 
 function createPlayerStats(team) {
@@ -247523,6 +247523,12 @@ function playerStat(m, side, id) {
 
 function activePlayers(m, side) {
   return m.playerStates[side].filter(player => !player.sentOff);
+}
+
+function restartCarrier(m, side, excludeId = null) {
+  const candidates = activePlayers(m, side).filter(player => player.role !== 'GK' && player.id !== excludeId);
+  const pool = candidates.length ? candidates : activePlayers(m, side).filter(player => player.role !== 'GK');
+  return pool[Math.floor(rand(m) * pool.length)] || activePlayers(m, side)[0] || null;
 }
 
 function validateLineup(teamId, ids) {
@@ -247593,6 +247599,8 @@ function frameFromMatch(m) {
     injuryTime: copy(m.injuryTime || { firstHalf: 2, secondHalf: 4 }),
     bookings: copy(m.bookings || { home: {}, away: {} })
     ,playerStats: copy(m.playerStats || { home: {}, away: {} })
+    ,lastShotId: m.lastShotId || null
+    ,shotStreak: m.shotStreak || 0
   });
 }
 
@@ -247718,6 +247726,8 @@ function createMatch(options = {}) {
     possession: 'home',
     ball,
     ballState,
+    lastShotId: null,
+    shotStreak: 0,
     playerStates,
     score: { home: 0, away: 0 },
     stats: { home: emptyStats(), away: emptyStats() },
@@ -247937,7 +247947,8 @@ function simulateMinutePhases(m) {
           }
         }
       }
-      carrier = closestPlayer || activePlayers(m, side)[9] || activePlayers(m, side)[0];
+      const fallbackCarrier = restartCarrier(m, side);
+      carrier = closestPlayer || fallbackCarrier || activePlayers(m, side)[0];
       m.ballState.carrierId = carrier.id;
       m.ballState.carrierSide = carrier.side;
       m.possession = carrier.side;
@@ -248019,6 +248030,10 @@ function simulateMinutePhases(m) {
       shootUtil = (34 - goalDist) * 1.6 + (carrier.shooting - 65) * 0.85 - (pressure * 6) + (m.tactics[side].mentality === 'Attacking' ? 8 : -6);
       if (carrier.role === 'ST' || carrier.role === 'CF') shootUtil += 12;
       if (side === 'home' && m.minute <= (m.shootUntil ?? -1)) shootUtil += 24;
+      if (m.lastShotId === carrier.id) {
+        shootUtil -= 16 + Math.min(12, m.shotStreak * 4);
+        passUtil += 10;
+      }
     }
 
     // Check through-ball opportunity (exploiting opponent high defensive line)
@@ -248041,6 +248056,13 @@ function simulateMinutePhases(m) {
     }
 
     passUtil = 15 + (carrier.passing - 65) * 0.4;
+
+    // Keep match shot volume in a believable range. Without this soft cap,
+    // repeated attacking possessions could turn a 90-minute match into a
+    // goal-fest and swamp individual player stats.
+    const teamShots = m.stats[side].shots;
+    if (teamShots >= 18) shootUtil -= 24 + Math.min(18, (teamShots - 18) * 3);
+    if (teamShots >= 20) throughUtil -= 18;
 
     // Pick action
     if (shootUtil > throughUtil && shootUtil > passUtil && shootUtil > 10) {
@@ -248077,11 +248099,16 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
   const distFactor = clamp(1.0 - (goalDist / 38), 0.05, 0.95);
   const angleFactor = clamp(openAngle / 0.45, 0.20, 1.0);
   const baseCalibratedXg = clamp(
-    (distFactor * distFactor * 0.40 + angleFactor * 0.12) * (0.65 + (shooter.shooting / 100) * 0.45),
+    // Calibrated against the match shot volume: the previous coefficients
+    // made a normal 30-shot match report 7+ xG, which inflated both goals and
+    // player ratings.
+    ((distFactor * distFactor * 0.40 + angleFactor * 0.12) * (0.65 + (shooter.shooting / 100) * 0.45)) * 0.23,
     0.02,
     0.78
   );
   const xg = round2(baseCalibratedXg);
+  m.shotStreak = m.lastShotId === shooter.id ? (m.shotStreak || 0) + 1 : 1;
+  m.lastShotId = shooter.id;
 
   m.stats[side].shots += 1;
   m.stats[side].xg = round2(m.stats[side].xg + xg);
@@ -248134,22 +248161,35 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
 
     // Anchor finishing to the xG shown in the match report. Player quality,
     // keeper quality, placement, and fatigue can move the result around it.
-    let goalProb = xg;
+    // Keep realized goals anchored to the chance quality reported as xG.
+    // Attribute modifiers are deliberately narrow so elite players improve
+    // finishing without turning every high-quality chance into a goal.
+    let goalProb = xg * 0.82;
     goalProb *= clamp(0.86 + (shooter.shooting - 70) * 0.0035, 0.72, 1.16);
     goalProb *= clamp(1 + (shooter.ovr - 78) * 0.03, 0.60, 1.55);
-    goalProb *= clamp(1 + (shooter.ovr - (gk.ovr || gkKeeping)) * 0.01, 0.72, 1.28);
+    goalProb *= clamp(1 + (shooter.ovr - (gk.ovr || gkKeeping)) * 0.04, 0.62, 2.05);
     goalProb *= clamp(1 - (gkKeeping - 75) * 0.0025, 0.78, 1.18);
+    // Avoid arcade-style hat-trick loops: once a player has scored twice,
+    // defenses adapt and subsequent chances become materially harder.
+    if (shooterStats.goals >= 2) {
+      goalProb *= clamp(1 - (shooterStats.goals - 1) * 0.18, 0.48, 1);
+    }
     if (m.tactics[side].mentality === 'Defensive' && m.tactics[opponent].mentality === 'Attacking') goalProb *= 0.88;
     if (shotInCorner) goalProb *= 1.12;
     if (distFromKeeper < 1.6) goalProb *= 0.78;
     const gkStam = clamp((gk?.stamina || 100) / 100, 0.4, 1.0);
     goalProb *= 0.92 + gkStam * 0.08;
-    const saveProb = clamp(1 - goalProb, 0.12, 0.98);
+    const saveProb = clamp(1 - goalProb, 0.18, 0.98);
 
     if (chance(m, saveProb)) {
       // GOALKEEPER SAVE!
       m.stats[opponent].saves += 1;
-      if (gk.id) playerStat(m, opponent, gk.id).saves += 1;
+      if (gk.id) {
+        const keeperStats = playerStat(m, opponent, gk.id);
+        keeperStats.saves += 1;
+        keeperStats.shotsFaced += 1;
+        keeperStats.saveXg = round2(keeperStats.saveXg + xg);
+      }
       shooterStats.shotsOnTarget += 1;
       const isCorner = chance(m, 0.58);
       if (isCorner) {
@@ -248167,6 +248207,11 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
       m.score[side] += 1;
       shooterStats.shotsOnTarget += 1;
       shooterStats.goals += 1;
+      if (gk.id) {
+        const keeperStats = playerStat(m, opponent, gk.id);
+        keeperStats.shotsFaced += 1;
+        keeperStats.conceded += 1;
+      }
       m.ballState.x = side === 'home' ? 99 : 1;
       m.ballState.y = 50;
       m.ballState.carrierId = null;
@@ -248187,7 +248232,8 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
       m.possession = opponent;
       m.ballState.x = 50;
       m.ballState.y = 50;
-      m.ballState.carrierId = activePlayers(m, opponent)[9]?.id || activePlayers(m, opponent)[0]?.id || null;
+      const restart = restartCarrier(m, opponent, shooter.id);
+      m.ballState.carrierId = restart?.id || null;
       m.ballState.carrierSide = opponent;
     }
   } else if (Math.abs(shotY - PITCH.goalYMin) < 0.8 || Math.abs(shotY - PITCH.goalYMax) < 0.8) {
@@ -248211,7 +248257,8 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
 
 // Through-ball exploiting high defensive line (Authentic Underdog / Counter-Attack Engine)
 function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepestOppX) {
-  const runner = forwardTeammates.sort((a, b) => b.pace - a.pace)[0];
+  const runners = [...forwardTeammates].sort((a, b) => b.pace - a.pace).slice(0, Math.min(3, forwardTeammates.length));
+  const runner = runners[Math.floor(rand(m) * runners.length)] || runners[0];
   m.stats[side].passes += 1;
   const carrierStats = playerStat(m, side, carrier.id);
   carrierStats.passes += 1;
@@ -248344,6 +248391,11 @@ function resolvePenaltyKick(m, side, opponent, fouledPlayer) {
 
   if (scored) {
     m.score[side] += 1;
+    if (gk.id) {
+      const keeperStats = playerStat(m, opponent, gk.id);
+      keeperStats.shotsFaced += 1;
+      keeperStats.conceded += 1;
+    }
     takerStats.goals += 1;
     m.ballState.x = side === 'home' ? 99 : 1;
     m.ballState.y = 50;
@@ -248358,11 +248410,16 @@ function resolvePenaltyKick(m, side, opponent, fouledPlayer) {
     m.possession = opponent;
     m.ballState.x = 50;
     m.ballState.y = 50;
-    m.ballState.carrierId = activePlayers(m, opponent)[9]?.id || activePlayers(m, opponent)[0]?.id || null;
+    m.ballState.carrierId = restartCarrier(m, opponent, taker.id)?.id || activePlayers(m, opponent)[0]?.id || null;
     m.ballState.carrierSide = opponent;
   } else {
     m.stats[opponent].saves += 1;
-    if (gk.id) playerStat(m, opponent, gk.id).saves += 1;
+    if (gk.id) {
+      const keeperStats = playerStat(m, opponent, gk.id);
+      keeperStats.saves += 1;
+      keeperStats.shotsFaced += 1;
+      keeperStats.saveXg = round2(keeperStats.saveXg + penXg);
+    }
     addEvent(m, 'save', side, `🧤 PENALTY SAVED! ${gk.name} dives full length to deny ${taker.name} from the spot!`, {
       playerId: taker.id,
       xg: penXg,
@@ -248539,19 +248596,41 @@ function simulatePenaltyShootout(m) {
   const shootout = { home: 0, away: 0, kicks: [] };
   const homeKickers = m.lineups.home.slice(1, 6);
   const awayKickers = m.lineups.away.slice(1, 6);
+  const recordKick = (side, player, scored, round) => {
+    const keeperSide = side === 'home' ? 'away' : 'home';
+    const keeper = activePlayers(m, keeperSide).find(p => p.role === 'GK');
+    const kickerStats = playerStat(m, side, player.id);
+    kickerStats.shots += 1;
+    kickerStats.xg = round2((kickerStats.xg || 0) + 0.76);
+    if (scored) {
+      kickerStats.shotsOnTarget += 1;
+      kickerStats.goals += 1;
+      if (keeper?.id) {
+        const keeperStats = playerStat(m, keeperSide, keeper.id);
+        keeperStats.shotsFaced += 1;
+        keeperStats.conceded += 1;
+      }
+    } else if (keeper?.id) {
+      const keeperStats = playerStat(m, keeperSide, keeper.id);
+      keeperStats.saves += 1;
+      keeperStats.shotsFaced += 1;
+      keeperStats.saveXg = round2((keeperStats.saveXg || 0) + 0.76);
+    }
+    addEvent(m, 'shootout', side, `${scored ? '⚽' : '❌'} Shootout [Round ${round}]: ${player.name} ${scored ? 'SCORES!' : 'denied by keeper!'} (${shootout.home}-${shootout.away})`, { playerId: player.id, scored, round, isShootout: true });
+  };
 
   for (let r = 0; r < 5; r++) {
     const hk = getPlayer(homeTeam, homeKickers[r]) || { id: `hk_${r}`, name: `Home #${r+1}`, shooting: 80 };
     const hScore = chance(m, clamp(0.74 + (hk.shooting - 75) * 0.003, 0.60, 0.90));
     if (hScore) shootout.home++;
     shootout.kicks.push({ side: 'home', round: r + 1, scored: hScore, player: hk.name });
-    addEvent(m, 'shootout', 'home', `${hScore ? '⚽' : '❌'} Shootout [Round ${r+1}]: ${hk.name} ${hScore ? 'SCORES!' : 'denied by keeper!'} (${shootout.home}-${shootout.away})`, { playerId: hk.id, scored: hScore, round: r+1 });
+    recordKick('home', hk, hScore, r + 1);
 
     const ak = getPlayer(awayTeam, awayKickers[r]) || { id: `ak_${r}`, name: `Away #${r+1}`, shooting: 80 };
     const aScore = chance(m, clamp(0.74 + (ak.shooting - 75) * 0.003, 0.60, 0.90));
     if (aScore) shootout.away++;
     shootout.kicks.push({ side: 'away', round: r + 1, scored: aScore, player: ak.name });
-    addEvent(m, 'shootout', 'away', `${aScore ? '⚽' : '❌'} Shootout [Round ${r+1}]: ${ak.name} ${aScore ? 'SCORES!' : 'denied by keeper!'} (${shootout.home}-${shootout.away})`, { playerId: ak.id, scored: aScore, round: r+1 });
+    recordKick('away', ak, aScore, r + 1);
   }
 
   let round = 6;
@@ -248563,9 +248642,9 @@ function simulatePenaltyShootout(m) {
     if (hScore) shootout.home++;
     if (aScore) shootout.away++;
     shootout.kicks.push({ side: 'home', round, scored: hScore, player: hk.name });
-    addEvent(m, 'shootout', 'home', `${hScore ? '⚽' : '❌'} Sudden Death [Round ${round}]: ${hk.name} ${hScore ? 'SCORES!' : 'misses!'} (${shootout.home}-${shootout.away})`, { playerId: hk.id, scored: hScore, round });
+    recordKick('home', hk, hScore, round);
     shootout.kicks.push({ side: 'away', round, scored: aScore, player: ak.name });
-    addEvent(m, 'shootout', 'away', `${aScore ? '⚽' : '❌'} Sudden Death [Round ${round}]: ${ak.name} ${aScore ? 'SCORES!' : 'misses!'} (${shootout.home}-${shootout.away})`, { playerId: ak.id, scored: aScore, round });
+    recordKick('away', ak, aScore, round);
     round++;
   }
   if (shootout.home === shootout.away) {
@@ -253405,12 +253484,24 @@ function playerRatingSummary(side) {
     const trackedShots = tracked.shots ?? shots;
     const trackedXg = tracked.xg ?? xg;
     const trackedSaves = tracked.saves ?? saves;
-    let rating = 6 + trackedGoals * 1.2 + trackedAssists * .7 + (tracked.shotsOnTarget ?? onTarget) * .12 + trackedSaves * .25;
-    rating += (tracked.keyPasses || 0) * .08 + (tracked.tacklesWon || 0) * .04 + (tracked.interceptions || 0) * .04 + (tracked.recoveries || 0) * .015;
-    rating += (tracked.completedPasses || 0) * .004 - (tracked.foulsCommitted || 0) * .025 - (tracked.yellow || cards) * .25 - (tracked.red || 0) * .7;
+    let rating;
+    if (player.role === 'GK') {
+      const shotsFaced = tracked.shotsFaced || 0;
+      const savePercentage = shotsFaced ? trackedSaves / shotsFaced : 0;
+      const goalsPrevented = (tracked.saveXg || 0) - (tracked.conceded || 0);
+      rating = 6.2 + goalsPrevented * .7 + (savePercentage - .7) * 1.2;
+      rating += minutes >= 60 && (tracked.conceded || 0) === 0 ? .35 : 0;
+      rating -= (tracked.conceded || 0) * .18 + (tracked.red || 0) * .7;
+    } else {
+      rating = 6 + trackedGoals * 1.2 + trackedAssists * .7 + (tracked.shotsOnTarget ?? onTarget) * .12;
+      rating += trackedSaves * .08 + (tracked.keyPasses || 0) * .08 + (tracked.tacklesWon || 0) * .04 + (tracked.interceptions || 0) * .04 + (tracked.recoveries || 0) * .015;
+      rating += (tracked.completedPasses || 0) * .004 - (tracked.foulsCommitted || 0) * .025 - (tracked.yellow || cards) * .25 - (tracked.red || 0) * .7;
+    }
     if (minutes > 0) rating += Math.min(.35, minutes / 300);
     rating = Math.max(5.2, Math.min(10, rating));
-    const contribution = [trackedGoals && `${trackedGoals}G`, trackedAssists && `${trackedAssists}A`, trackedSaves && `${trackedSaves} saves`, trackedShots && `${trackedShots} shots`, trackedXg && `${trackedXg.toFixed(2)} xG`, tracked.tacklesWon && `${tracked.tacklesWon} tackles`, tracked.interceptions && `${tracked.interceptions} interceptions`].filter(Boolean).join(' · ') || (minutes ? `${Math.round(tracked.distance || 0)} distance units covered` : 'Unused substitute');
+    const contribution = player.role === 'GK'
+      ? [trackedSaves && `${trackedSaves} saves`, tracked.conceded && `${tracked.conceded} conceded`, tracked.shotsFaced && `${Math.round((trackedSaves / tracked.shotsFaced) * 100)}% save rate`].filter(Boolean).join(' · ') || (minutes ? 'No shots on target faced' : 'Unused substitute')
+      : [trackedGoals && `${trackedGoals}G`, trackedAssists && `${trackedAssists}A`, trackedSaves && `${trackedSaves} saves`, trackedShots && `${trackedShots} shots`, trackedXg && `${trackedXg.toFixed(2)} xG`, tracked.tacklesWon && `${tracked.tacklesWon} tackles`, tracked.interceptions && `${tracked.interceptions} interceptions`].filter(Boolean).join(' · ') || (minutes ? `${Math.round(tracked.distance || 0)} distance units covered` : 'Unused substitute');
     return {player,rating,minutes,energy,contribution,goals:trackedGoals,assists:trackedAssists,shots:trackedShots,onTarget,xg:trackedXg,cards,saves:trackedSaves};
   }).filter(Boolean).sort((a,b)=>b.rating-a.rating || b.minutes-a.minutes);
 }
