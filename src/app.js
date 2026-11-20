@@ -1826,13 +1826,21 @@ function playerRatingSummary(side) {
     const cards = own.filter(e => e.type === 'card').length;
     const subIn = own.find(e => e.type === 'sub' && e.playerId === id);
     const subOut = own.find(e => e.type === 'sub' && e.outgoingId === id);
-    const minutes = subIn ? Math.max(0, match.minute - subIn.minute) : subOut ? subOut.minute : (team.starting || []).includes(id) ? match.minute : 0;
+    const tracked = match.playerStats?.[side]?.[id] || {};
+    const minutes = tracked.minutes ?? (subIn ? Math.max(0, match.minute - subIn.minute) : subOut ? subOut.minute : (team.starting || []).includes(id) ? match.minute : 0);
     const energy = Math.round(match.stamina?.[id] ?? (minutes ? 100 : 0));
-    let rating = 6 + goals * 1.2 + assists * .7 + onTarget * .12 + saves * .25 - cards * .25;
+    const trackedGoals = tracked.goals ?? goals;
+    const trackedAssists = tracked.assists ?? assists;
+    const trackedShots = tracked.shots ?? shots;
+    const trackedXg = tracked.xg ?? xg;
+    const trackedSaves = tracked.saves ?? saves;
+    let rating = 6 + trackedGoals * 1.2 + trackedAssists * .7 + (tracked.shotsOnTarget ?? onTarget) * .12 + trackedSaves * .25;
+    rating += (tracked.keyPasses || 0) * .08 + (tracked.tacklesWon || 0) * .04 + (tracked.interceptions || 0) * .04 + (tracked.recoveries || 0) * .015;
+    rating += (tracked.completedPasses || 0) * .004 - (tracked.foulsCommitted || 0) * .025 - (tracked.yellow || cards) * .25 - (tracked.red || 0) * .7;
     if (minutes > 0) rating += Math.min(.35, minutes / 300);
     rating = Math.max(5.2, Math.min(10, rating));
-    const contribution = [goals && `${goals}G`, assists && `${assists}A`, saves && `${saves} saves`, shots && `${shots} shots`, xg && `${xg.toFixed(2)} xG`, cards && `${cards} card`].filter(Boolean).join(' · ') || (minutes ? 'Worked through open play' : 'Unused substitute');
-    return {player,rating,minutes,energy,contribution,goals,assists,shots,onTarget,xg,cards,saves};
+    const contribution = [trackedGoals && `${trackedGoals}G`, trackedAssists && `${trackedAssists}A`, trackedSaves && `${trackedSaves} saves`, trackedShots && `${trackedShots} shots`, trackedXg && `${trackedXg.toFixed(2)} xG`, tracked.tacklesWon && `${tracked.tacklesWon} tackles`, tracked.interceptions && `${tracked.interceptions} interceptions`].filter(Boolean).join(' · ') || (minutes ? `${Math.round(tracked.distance || 0)} distance units covered` : 'Unused substitute');
+    return {player,rating,minutes,energy,contribution,goals:trackedGoals,assists:trackedAssists,shots:trackedShots,onTarget,xg:trackedXg,cards,saves:trackedSaves};
   }).filter(Boolean).sort((a,b)=>b.rating-a.rating || b.minutes-a.minutes);
 }
 
@@ -1850,16 +1858,29 @@ function renderPlayerRatings(){
 }
 
 function renderFeed(){
-  const events=[...match.events].reverse().filter(e=>feedFilter==='all'||keyEvents.has(e.type)).slice(0,36);
+  const sourceEvents = [...match.events].reverse();
+  const filteredEvents = sourceEvents.filter(e=>feedFilter==='all'||keyEvents.has(e.type));
+  const events=filteredEvents.slice(0,36);
+  const summary = $('#feedSummary');
+  if (summary) summary.textContent = `${filteredEvents.length} ${filteredEvents.length === 1 ? 'event' : 'events'} · ${match.minute}′${match.phase === 'FULL_TIME' ? ' · Full time' : ''}`;
+  const typeLabels = {
+    goal: e => e.isPenalty ? 'Penalty goal' : 'Goal', shootout: () => 'Penalty shootout',
+    save: e => e.isPenalty ? 'Penalty saved' : 'Save', shot: () => 'Shot',
+    card: e => e.card === 'red' || e.card === 'second_yellow' ? 'Red card' : 'Yellow card',
+    foul: () => 'Foul', offside: () => 'Offside', corner: () => 'Corner', half: () => 'Interval',
+    full: () => 'Final whistle', sub: () => 'Substitution', tactic: () => 'Touchline instruction',
+    talk: () => 'Team talk', kickoff: () => 'Kick-off'
+  };
+  const cleanText = text => String(text || '').replace(/^[^\p{L}\p{N}]+/u, '').replace(/[⚽🧤🎯🔴🟨⏱️📢🔥]/gu, '').replace(/\s{2,}/g, ' ').trim();
   $('#eventFeed').innerHTML=events.map(e=>`
     <div class="feed-item ${escapeHtml(e.type)}">
       <div class="feed-time">${String(e.minute).padStart(2,'0')}′</div>
       <div class="feed-copy">
-        <b>${e.type==='goal'?(e.isPenalty?'PENALTY GOAL ⚽':'GOAL ⚽'):e.type==='shootout'?'PENALTY SHOOTOUT 🎯':e.type==='save'?(e.isPenalty?'PENALTY SAVED 🧤':'SHOT ON TARGET 🧤'):e.type==='shot'?'SHOT':e.type==='card'?(e.card==='red'||e.card==='second_yellow'?'RED CARD 🔴':'BOOKING 🟨'):e.type==='foul'?'FREE KICK':e.type==='offside'?'OFFSIDE':e.type==='corner'?'CORNER':e.type==='half'?'INTERVAL':e.type==='full'?'FINAL WHISTLE':e.type==='sub'?'SUBSTITUTION':e.type==='tactic'?'TOUCHLINE SHOUT':e.type==='talk'?'DRESSING ROOM TALK':e.type==='kickoff'?'MATCHDAY':'OPEN PLAY'}${e.side?' / '+getTeam(e.side==='home'?match.homeId:match.awayId).short:''}</b>
-        ${escapeHtml(e.text)}
+        <b>${escapeHtml((typeLabels[e.type] || (() => 'Open play'))(e))}${e.side?' · '+escapeHtml(getTeam(e.side==='home'?match.homeId:match.awayId).short):''}</b>
+        <span>${escapeHtml(cleanText(e.text))}</span>
       </div>
     </div>
-  `).join('')||'<div class="feed-placeholder">No key moments yet.</div>';
+  `).join('')||`<div class="feed-placeholder">${feedFilter === 'key' ? 'No key moments yet. Open play is still being tracked.' : 'The match is ready for its first event.'}</div>`;
 
   $$('.feed-filter').forEach(b=>b.classList.toggle('is-active',b.dataset.filter===feedFilter));
 }

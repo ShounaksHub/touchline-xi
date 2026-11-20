@@ -2725,7 +2725,16 @@ body {
 
 .analysis-grid {
   gap: 16px;
+  align-items: start;
 }
+
+.analysis-grid > .analysis-card { align-self: start; }
+.analysis-grid > .analysis-card[aria-label="Match events"] { min-height: 0; }
+.feed-summary { padding: 8px 20px 0; color: var(--color-text-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.feed { min-height: 0; max-height: 360px; padding-top: 4px; }
+.feed-item { grid-template-columns: 42px minmax(0, 1fr); gap: 12px; padding: 12px 0; }
+.feed-copy span { display: block; }
+.feed-item.goal, .feed-item.save, .feed-item.card { border-left: 2px solid var(--color-accent); padding-left: 10px; }
 
 .page--tournament,
 .page--dreamteam,

@@ -88,7 +88,7 @@ const emptyStats = () => ({
 });
 
 const emptyPlayerStats = () => ({
-  minutes: 0, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, xg: 0,
+  minutes: 0, distance: 0, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, xg: 0,
   passes: 0, completedPasses: 0, keyPasses: 0, tackles: 0, tacklesWon: 0,
   interceptions: 0, recoveries: 0, foulsCommitted: 0, foulsWon: 0,
   yellow: 0, red: 0, saves: 0, conceded: 0, substituted: false, sentOff: false
@@ -159,8 +159,8 @@ function frameFromMatch(m) {
       carrierSide: m.ballState.carrierSide
     } : null,
     playerStates: m.playerStates ? {
-      home: m.playerStates.home.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff })),
-      away: m.playerStates.away.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff }))
+      home: m.playerStates.home.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff, distanceRun: round2(p.distanceRun || 0) })),
+      away: m.playerStates.away.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff, distanceRun: round2(p.distanceRun || 0) }))
     } : null,
     possession: m.possession,
     rng: m.rng,
@@ -224,7 +224,8 @@ function getInitialPlayerStates(team, lineup, side, formationKey, tactics) {
       physical: p.physical || 75,
       keeping: p.role === 'GK' || idx === 0 ? (p.keeping || p.overall || p.ovr || 82) : 5,
       ovr: p.overall || p.ovr || 75,
-      sentOff: false
+      sentOff: false,
+      distanceRun: 0
     };
   });
 }
@@ -480,6 +481,7 @@ function stepPlayerMovement(m) {
         p.vy = (dy / dist) * moveDist;
         p.x = clamp(p.x + p.vx, 1, 99);
         p.y = clamp(p.y + p.vy, 1, 99);
+        p.distanceRun = (p.distanceRun || 0) + moveDist;
       } else {
         p.vx = 0;
         p.vy = 0;
@@ -717,7 +719,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
     // keeper quality, placement, and fatigue can move the result around it.
     let goalProb = xg;
     goalProb *= clamp(0.86 + (shooter.shooting - 70) * 0.0035, 0.72, 1.16);
-    goalProb *= clamp(1 + (shooter.ovr - 78) * 0.014, 0.70, 1.34);
+    goalProb *= clamp(1 + (shooter.ovr - 78) * 0.03, 0.60, 1.55);
     goalProb *= clamp(1 + (shooter.ovr - (gk.ovr || gkKeeping)) * 0.01, 0.72, 1.28);
     goalProb *= clamp(1 - (gkKeeping - 75) * 0.0025, 0.78, 1.18);
     if (m.tactics[side].mentality === 'Defensive' && m.tactics[opponent].mentality === 'Attacking') goalProb *= 0.88;
@@ -1010,25 +1012,31 @@ export function advanceMinute(m) {
     for (const player of activePlayers(m, side)) playerStat(m, side, player.id).minutes += 1;
   }
 
-  // Dynamic stamina fatigue
-  if (m.stamina) {
-    const drainHome = 0.44 + (m.tactics.home.pressing > 70 ? 0.24 : 0) + (m.tactics.home.tempo > 70 ? 0.18 : 0);
-    const drainAway = 0.44 + (m.tactics.away.pressing > 70 ? 0.24 : 0) + (m.tactics.away.tempo > 70 ? 0.18 : 0);
-    for (const id of m.lineups.home) {
-      const effortCost = m.minute <= (m.effortUntil ?? -1) ? 0.35 : 0;
-      m.stamina[id] = clamp(round2((m.stamina[id] ?? 100) - drainHome - effortCost), 25, 100);
-      const ps = m.playerStates?.home?.find(p => p.id === id);
-      if (ps) ps.stamina = m.stamina[id];
-    }
-    for (const id of m.lineups.away) {
-      m.stamina[id] = clamp(round2((m.stamina[id] ?? 100) - drainAway), 25, 100);
-      const ps = m.playerStates?.away?.find(p => p.id === id);
-      if (ps) ps.stamina = m.stamina[id];
-    }
-  }
-
   // Continuous Spatial Simulation of this minute
   simulateMinutePhases(m);
+
+  // Fatigue follows actual work completed in this minute. Movement, tactical
+  // intensity, role, pace, physicality, and live instructions all matter.
+  if (m.stamina) {
+    for (const side of ['home', 'away']) {
+      const tactics = m.tactics[side];
+      for (const player of activePlayers(m, side)) {
+        const distance = player.distanceRun || 0;
+        const roleCost = player.role === 'GK' ? 0.08 : ['CM','CDM','CAM'].includes(player.role) ? 0.16 : 0.12;
+        const intensity = tactics.pressing * 0.0018 + tactics.tempo * 0.0012;
+        const physicalBuffer = Math.max(0, player.physical - 70) * 0.0015;
+        const paceCost = Math.max(0, player.pace - 70) * 0.001;
+        const touchCost = player.id === m.ballState.carrierId ? 0.05 : 0;
+        const shoutCost = side === 'home' && m.minute <= (m.effortUntil ?? -1) ? 0.35 : 0;
+        const drain = clamp(roleCost + distance * 0.014 + intensity + paceCost + touchCost - physicalBuffer + shoutCost, 0.08, 1.25);
+        m.stamina[player.id] = clamp(round2((m.stamina[player.id] ?? 100) - drain), 18, 100);
+        player.stamina = m.stamina[player.id];
+        const performance = playerStat(m, side, player.id);
+        performance.distance = round2((performance.distance || 0) + distance * 0.68);
+        player.distanceRun = 0;
+      }
+    }
+  }
 
   // Keep wide attacks and defensive clearances represented in the long-run
   // match model even when no shot reaches the final third this minute.

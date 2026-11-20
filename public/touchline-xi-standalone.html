@@ -2736,7 +2736,16 @@ body {
 
 .analysis-grid {
   gap: 16px;
+  align-items: start;
 }
+
+.analysis-grid > .analysis-card { align-self: start; }
+.analysis-grid > .analysis-card[aria-label="Match events"] { min-height: 0; }
+.feed-summary { padding: 8px 20px 0; color: var(--color-text-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.feed { min-height: 0; max-height: 360px; padding-top: 4px; }
+.feed-item { grid-template-columns: 42px minmax(0, 1fr); gap: 12px; padding: 12px 0; }
+.feed-copy span { display: block; }
+.feed-item.goal, .feed-item.save, .feed-item.card { border-left: 2px solid var(--color-accent); padding-left: 10px; }
 
 .page--tournament,
 .page--dreamteam,
@@ -7167,14 +7176,15 @@ h1, h2, h3, h4,
 
               <section class="analysis-card" aria-label="Match events">
                 <div class="panel-heading small-panel-heading">
-                  <div><span class="section-num">01.3</span><h2>On the wire</h2></div>
+                  <div><span class="section-num">01.3</span><h2>Match timeline</h2></div>
                   <div class="feed-filters">
                     <button class="feed-filter is-active" data-filter="all">All</button>
                     <button class="feed-filter" data-filter="key">Key</button>
                   </div>
                 </div>
+                <div class="feed-summary" id="feedSummary" aria-live="polite"></div>
                 <div class="feed" id="eventFeed" role="log" aria-live="polite">
-                  <div class="feed-placeholder">The referee checks the watch. We're nearly there.</div>
+                  <div class="feed-placeholder">The referee checks the watch. Kick-off is close.</div>
                 </div>
               </section>
             </div>
@@ -247495,7 +247505,7 @@ const emptyStats = () => ({
 });
 
 const emptyPlayerStats = () => ({
-  minutes: 0, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, xg: 0,
+  minutes: 0, distance: 0, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, xg: 0,
   passes: 0, completedPasses: 0, keyPasses: 0, tackles: 0, tacklesWon: 0,
   interceptions: 0, recoveries: 0, foulsCommitted: 0, foulsWon: 0,
   yellow: 0, red: 0, saves: 0, conceded: 0, substituted: false, sentOff: false
@@ -247566,8 +247576,8 @@ function frameFromMatch(m) {
       carrierSide: m.ballState.carrierSide
     } : null,
     playerStates: m.playerStates ? {
-      home: m.playerStates.home.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff })),
-      away: m.playerStates.away.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff }))
+      home: m.playerStates.home.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff, distanceRun: round2(p.distanceRun || 0) })),
+      away: m.playerStates.away.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff, distanceRun: round2(p.distanceRun || 0) }))
     } : null,
     possession: m.possession,
     rng: m.rng,
@@ -247631,7 +247641,8 @@ function getInitialPlayerStates(team, lineup, side, formationKey, tactics) {
       physical: p.physical || 75,
       keeping: p.role === 'GK' || idx === 0 ? (p.keeping || p.overall || p.ovr || 82) : 5,
       ovr: p.overall || p.ovr || 75,
-      sentOff: false
+      sentOff: false,
+      distanceRun: 0
     };
   });
 }
@@ -247887,6 +247898,7 @@ function stepPlayerMovement(m) {
         p.vy = (dy / dist) * moveDist;
         p.x = clamp(p.x + p.vx, 1, 99);
         p.y = clamp(p.y + p.vy, 1, 99);
+        p.distanceRun = (p.distanceRun || 0) + moveDist;
       } else {
         p.vx = 0;
         p.vy = 0;
@@ -248124,7 +248136,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
     // keeper quality, placement, and fatigue can move the result around it.
     let goalProb = xg;
     goalProb *= clamp(0.86 + (shooter.shooting - 70) * 0.0035, 0.72, 1.16);
-    goalProb *= clamp(1 + (shooter.ovr - 78) * 0.014, 0.70, 1.34);
+    goalProb *= clamp(1 + (shooter.ovr - 78) * 0.03, 0.60, 1.55);
     goalProb *= clamp(1 + (shooter.ovr - (gk.ovr || gkKeeping)) * 0.01, 0.72, 1.28);
     goalProb *= clamp(1 - (gkKeeping - 75) * 0.0025, 0.78, 1.18);
     if (m.tactics[side].mentality === 'Defensive' && m.tactics[opponent].mentality === 'Attacking') goalProb *= 0.88;
@@ -248417,25 +248429,31 @@ function advanceMinute(m) {
     for (const player of activePlayers(m, side)) playerStat(m, side, player.id).minutes += 1;
   }
 
-  // Dynamic stamina fatigue
-  if (m.stamina) {
-    const drainHome = 0.44 + (m.tactics.home.pressing > 70 ? 0.24 : 0) + (m.tactics.home.tempo > 70 ? 0.18 : 0);
-    const drainAway = 0.44 + (m.tactics.away.pressing > 70 ? 0.24 : 0) + (m.tactics.away.tempo > 70 ? 0.18 : 0);
-    for (const id of m.lineups.home) {
-      const effortCost = m.minute <= (m.effortUntil ?? -1) ? 0.35 : 0;
-      m.stamina[id] = clamp(round2((m.stamina[id] ?? 100) - drainHome - effortCost), 25, 100);
-      const ps = m.playerStates?.home?.find(p => p.id === id);
-      if (ps) ps.stamina = m.stamina[id];
-    }
-    for (const id of m.lineups.away) {
-      m.stamina[id] = clamp(round2((m.stamina[id] ?? 100) - drainAway), 25, 100);
-      const ps = m.playerStates?.away?.find(p => p.id === id);
-      if (ps) ps.stamina = m.stamina[id];
-    }
-  }
-
   // Continuous Spatial Simulation of this minute
   simulateMinutePhases(m);
+
+  // Fatigue follows actual work completed in this minute. Movement, tactical
+  // intensity, role, pace, physicality, and live instructions all matter.
+  if (m.stamina) {
+    for (const side of ['home', 'away']) {
+      const tactics = m.tactics[side];
+      for (const player of activePlayers(m, side)) {
+        const distance = player.distanceRun || 0;
+        const roleCost = player.role === 'GK' ? 0.08 : ['CM','CDM','CAM'].includes(player.role) ? 0.16 : 0.12;
+        const intensity = tactics.pressing * 0.0018 + tactics.tempo * 0.0012;
+        const physicalBuffer = Math.max(0, player.physical - 70) * 0.0015;
+        const paceCost = Math.max(0, player.pace - 70) * 0.001;
+        const touchCost = player.id === m.ballState.carrierId ? 0.05 : 0;
+        const shoutCost = side === 'home' && m.minute <= (m.effortUntil ?? -1) ? 0.35 : 0;
+        const drain = clamp(roleCost + distance * 0.014 + intensity + paceCost + touchCost - physicalBuffer + shoutCost, 0.08, 1.25);
+        m.stamina[player.id] = clamp(round2((m.stamina[player.id] ?? 100) - drain), 18, 100);
+        player.stamina = m.stamina[player.id];
+        const performance = playerStat(m, side, player.id);
+        performance.distance = round2((performance.distance || 0) + distance * 0.68);
+        player.distanceRun = 0;
+      }
+    }
+  }
 
   // Keep wide attacks and defensive clearances represented in the long-run
   // match model even when no shot reaches the final third this minute.
@@ -253379,13 +253397,21 @@ function playerRatingSummary(side) {
     const cards = own.filter(e => e.type === 'card').length;
     const subIn = own.find(e => e.type === 'sub' && e.playerId === id);
     const subOut = own.find(e => e.type === 'sub' && e.outgoingId === id);
-    const minutes = subIn ? Math.max(0, match.minute - subIn.minute) : subOut ? subOut.minute : (team.starting || []).includes(id) ? match.minute : 0;
+    const tracked = match.playerStats?.[side]?.[id] || {};
+    const minutes = tracked.minutes ?? (subIn ? Math.max(0, match.minute - subIn.minute) : subOut ? subOut.minute : (team.starting || []).includes(id) ? match.minute : 0);
     const energy = Math.round(match.stamina?.[id] ?? (minutes ? 100 : 0));
-    let rating = 6 + goals * 1.2 + assists * .7 + onTarget * .12 + saves * .25 - cards * .25;
+    const trackedGoals = tracked.goals ?? goals;
+    const trackedAssists = tracked.assists ?? assists;
+    const trackedShots = tracked.shots ?? shots;
+    const trackedXg = tracked.xg ?? xg;
+    const trackedSaves = tracked.saves ?? saves;
+    let rating = 6 + trackedGoals * 1.2 + trackedAssists * .7 + (tracked.shotsOnTarget ?? onTarget) * .12 + trackedSaves * .25;
+    rating += (tracked.keyPasses || 0) * .08 + (tracked.tacklesWon || 0) * .04 + (tracked.interceptions || 0) * .04 + (tracked.recoveries || 0) * .015;
+    rating += (tracked.completedPasses || 0) * .004 - (tracked.foulsCommitted || 0) * .025 - (tracked.yellow || cards) * .25 - (tracked.red || 0) * .7;
     if (minutes > 0) rating += Math.min(.35, minutes / 300);
     rating = Math.max(5.2, Math.min(10, rating));
-    const contribution = [goals && `${goals}G`, assists && `${assists}A`, saves && `${saves} saves`, shots && `${shots} shots`, xg && `${xg.toFixed(2)} xG`, cards && `${cards} card`].filter(Boolean).join(' · ') || (minutes ? 'Worked through open play' : 'Unused substitute');
-    return {player,rating,minutes,energy,contribution,goals,assists,shots,onTarget,xg,cards,saves};
+    const contribution = [trackedGoals && `${trackedGoals}G`, trackedAssists && `${trackedAssists}A`, trackedSaves && `${trackedSaves} saves`, trackedShots && `${trackedShots} shots`, trackedXg && `${trackedXg.toFixed(2)} xG`, tracked.tacklesWon && `${tracked.tacklesWon} tackles`, tracked.interceptions && `${tracked.interceptions} interceptions`].filter(Boolean).join(' · ') || (minutes ? `${Math.round(tracked.distance || 0)} distance units covered` : 'Unused substitute');
+    return {player,rating,minutes,energy,contribution,goals:trackedGoals,assists:trackedAssists,shots:trackedShots,onTarget,xg:trackedXg,cards,saves:trackedSaves};
   }).filter(Boolean).sort((a,b)=>b.rating-a.rating || b.minutes-a.minutes);
 }
 
@@ -253403,16 +253429,29 @@ function renderPlayerRatings(){
 }
 
 function renderFeed(){
-  const events=[...match.events].reverse().filter(e=>feedFilter==='all'||keyEvents.has(e.type)).slice(0,36);
+  const sourceEvents = [...match.events].reverse();
+  const filteredEvents = sourceEvents.filter(e=>feedFilter==='all'||keyEvents.has(e.type));
+  const events=filteredEvents.slice(0,36);
+  const summary = $('#feedSummary');
+  if (summary) summary.textContent = `${filteredEvents.length} ${filteredEvents.length === 1 ? 'event' : 'events'} · ${match.minute}′${match.phase === 'FULL_TIME' ? ' · Full time' : ''}`;
+  const typeLabels = {
+    goal: e => e.isPenalty ? 'Penalty goal' : 'Goal', shootout: () => 'Penalty shootout',
+    save: e => e.isPenalty ? 'Penalty saved' : 'Save', shot: () => 'Shot',
+    card: e => e.card === 'red' || e.card === 'second_yellow' ? 'Red card' : 'Yellow card',
+    foul: () => 'Foul', offside: () => 'Offside', corner: () => 'Corner', half: () => 'Interval',
+    full: () => 'Final whistle', sub: () => 'Substitution', tactic: () => 'Touchline instruction',
+    talk: () => 'Team talk', kickoff: () => 'Kick-off'
+  };
+  const cleanText = text => String(text || '').replace(/^[^\p{L}\p{N}]+/u, '').replace(/[⚽🧤🎯🔴🟨⏱️📢🔥]/gu, '').replace(/\s{2,}/g, ' ').trim();
   $('#eventFeed').innerHTML=events.map(e=>`
     <div class="feed-item ${escapeHtml(e.type)}">
       <div class="feed-time">${String(e.minute).padStart(2,'0')}′</div>
       <div class="feed-copy">
-        <b>${e.type==='goal'?(e.isPenalty?'PENALTY GOAL ⚽':'GOAL ⚽'):e.type==='shootout'?'PENALTY SHOOTOUT 🎯':e.type==='save'?(e.isPenalty?'PENALTY SAVED 🧤':'SHOT ON TARGET 🧤'):e.type==='shot'?'SHOT':e.type==='card'?(e.card==='red'||e.card==='second_yellow'?'RED CARD 🔴':'BOOKING 🟨'):e.type==='foul'?'FREE KICK':e.type==='offside'?'OFFSIDE':e.type==='corner'?'CORNER':e.type==='half'?'INTERVAL':e.type==='full'?'FINAL WHISTLE':e.type==='sub'?'SUBSTITUTION':e.type==='tactic'?'TOUCHLINE SHOUT':e.type==='talk'?'DRESSING ROOM TALK':e.type==='kickoff'?'MATCHDAY':'OPEN PLAY'}${e.side?' / '+getTeam(e.side==='home'?match.homeId:match.awayId).short:''}</b>
-        ${escapeHtml(e.text)}
+        <b>${escapeHtml((typeLabels[e.type] || (() => 'Open play'))(e))}${e.side?' · '+escapeHtml(getTeam(e.side==='home'?match.homeId:match.awayId).short):''}</b>
+        <span>${escapeHtml(cleanText(e.text))}</span>
       </div>
     </div>
-  `).join('')||'<div class="feed-placeholder">No key moments yet.</div>';
+  `).join('')||`<div class="feed-placeholder">${feedFilter === 'key' ? 'No key moments yet. Open play is still being tracked.' : 'The match is ready for its first event.'}</div>`;
 
   $$('.feed-filter').forEach(b=>b.classList.toggle('is-active',b.dataset.filter===feedFilter));
 }
