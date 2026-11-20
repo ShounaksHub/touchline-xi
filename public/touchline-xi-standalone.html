@@ -6860,8 +6860,8 @@ h1, h2, h3, h4,
   .topbar .topbar-right { grid-row: 2; justify-self: start; margin: 0; }
   .topbar .main-nav { grid-row: 3; }
 }
-#page-squad { padding-top: 24px; }
-.squad-page-heading {
+.page:has(.page-heading) { padding-top: 24px; }
+.page-heading {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -6869,16 +6869,20 @@ h1, h2, h3, h4,
   gap: 16px 24px;
   margin-bottom: 24px;
 }
-.squad-page-heading h1 {
+.page-heading h1 {
   margin: 0;
   font-size: clamp(2rem, 3vw, 3rem);
   line-height: 1.1;
   font-weight: 600;
 }
-.squad-page-heading p {
+.page-heading p {
   margin: 8px 0 0;
   color: var(--color-text-muted);
   line-height: 1.5;
+}
+.page-heading :is(.dream-actions, .duel-top-actions, .vault-actions) {
+  flex-wrap: wrap;
+  max-width: 100%;
 }
 
 </style>
@@ -7147,7 +7151,7 @@ h1, h2, h3, h4,
       <!-- PAGE 2: Squad Lab (Dedicated Full Tactical Studio) -->
       <div class="page page--squad-lab" id="page-squad">
         <section class="squad-lab-section" id="squad" aria-label="Squad Lab and Tactics">
-          <header class="squad-page-heading">
+          <header class="page-heading">
             <div>
               <h1>Squad Lab</h1>
               <p>Pick your starting XI, set your tactics, and manage substitutions.</p>
@@ -7222,11 +7226,10 @@ h1, h2, h3, h4,
       <!-- PAGE 3: Tournament Cup -->
       <div class="page page--tournament" id="page-tournament">
         <section class="tournament-section" id="tournament" aria-label="Tournament Mode">
-          <div class="panel-heading">
+          <div class="page-heading">
             <div>
-              <span class="section-num">03 / TOURNAMENT CUP</span>
-              <h2>Knockout Cup Championship</h2>
-              <p class="section-sub">Lead your squad through the Quarter-Finals, Semi-Finals, and Final with Extra Time and Penalties to lift the Trophy.</p>
+              <h1>Tournament</h1>
+              <p>Choose a cup and play through three knockout rounds.</p>
             </div>
             <div>
               <button class="primary-button" id="startNewTournamentBtn"><svg class="icon icon-btn" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1h10v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34c3.08-.72 5-3.3 5-6.66V4H5v4c0 3.36 1.92 5.94 5 6.66z"/></svg>Start New Tournament</button>
@@ -7279,11 +7282,10 @@ h1, h2, h3, h4,
       <!-- PAGE 4: Dream Team Studio -->
       <div class="page page--dreamteam" id="page-dreamteam">
         <section class="dream-team-section" id="dreamteam" aria-label="Dream Team Studio">
-          <div class="panel-heading">
+          <div class="page-heading">
             <div>
-              <span class="section-num">04 / DREAM TEAM STUDIO</span>
-              <h2>Build Your Ultimate XI</h2>
-              <p class="section-sub">Draft any world-class star or all-time legend, configure your formation, playstyle, and test your dream squad against reactive AI.</p>
+              <h1>Dream Team</h1>
+              <p>Draft your XI and choose your opponent.</p>
             </div>
             <div class="dream-actions">
               <button class="secondary-button" id="randomizeDreamBtn"><svg class="icon icon-btn" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="8.5" cy="8.5" r="1.5"/><circle cx="15.5" cy="8.5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="8.5" cy="15.5" r="1.5"/><circle cx="15.5" cy="15.5" r="1.5"/></svg>Auto-Draft Galácticos</button>
@@ -7376,11 +7378,10 @@ h1, h2, h3, h4,
       <!-- PAGE 5: Scouting & Database -->
       <div class="page page--scouting" id="page-scouting">
         <section class="scouting-section" id="scouting" aria-label="Scouting and All Players Database">
-          <div class="panel-heading">
+          <div class="page-heading">
             <div>
-              <span class="section-num">05 / SCOUTING &amp; ALL PLAYERS DATABASE</span>
-              <h2>Global Football Scout Hub</h2>
-              <p class="section-sub">Browse, inspect, and analyze over 12,900+ real footballers and legends with authentic FIFA &amp; FM-style cards, ratings, and stats.</p>
+              <h1>Scouting</h1>
+              <p>Search players by name, club, or nationality.</p>
             </div>
           </div>
 
@@ -7434,11 +7435,10 @@ h1, h2, h3, h4,
       <!-- PAGE 6: 1v1 Player Duel & Team vs Team Match -->
       <div class="page page--duel" id="page-duel">
         <section class="duel-section" id="duel">
-          <div class="duel-header">
+          <div class="page-heading">
             <div>
-              <div class="eyebrow"><span class="eyebrow-index">06 /</span> HEAD-TO-HEAD SHOWDOWN</div>
-              <h2>1v1 Duel &amp; Team vs Team (5v5 / 11v11)<span class="brand-period">.</span></h2>
-              <p class="section-sub">Compete in 1v1 Individual Duels or build 2-user 5-a-side &amp; 11-a-side squads with exactly 1 player per nation allowed.</p>
+              <h1>1v1 &amp; Team Duel</h1>
+              <p>Pick two players for a duel, or draft teams for a 5-a-side or 11-a-side match.</p>
             </div>
             <div class="duel-top-actions">
               <button class="secondary-button" id="duelSwapPlayersBtn" type="button">⇄ Swap Sides</button>
@@ -7634,11 +7634,10 @@ h1, h2, h3, h4,
       <!-- PAGE 7: Replay Vault -->
       <div class="page page--vault" id="page-vault">
         <section class="vault" id="vault">
-          <div class="vault-heading">
+          <div class="page-heading">
             <div>
-              <div class="eyebrow"><span class="eyebrow-index">06 /</span> THE ARCHIVE</div>
-              <h2>Replay vault<span class="vault-period">.</span></h2>
-              <p>Keep the moments worth revisiting. Scrub matches frame by frame or export and share match JSON files.</p>
+              <h1>Replay Vault</h1>
+              <p>Watch saved matches or import a replay file.</p>
             </div>
             <div class="vault-actions">
               <button class="secondary-button" id="saveBtn">＋ Save this match</button>
