@@ -1,7 +1,8 @@
 import { TEAMS, getTeam, getPlayer } from './data.js';
 import { createMatch, playFullMatch } from './engine.js';
+import { readStore, writeStore, removeStore } from './storage.js';
 
-const STORAGE_KEY = 'touchline_tournament_v2';
+const STORAGE_KEY = 'tournament';
 
 export const TOURNAMENT_PRESETS = [
   {
@@ -36,7 +37,7 @@ export const TOURNAMENT_PRESETS = [
   }
 ];
 
-export function createTournament(presetId, userTeamId) {
+export function createTournament(presetId, userTeamId, seed = `TOURNAMENT-${presetId}-${userTeamId || 'default'}`) {
   const preset = TOURNAMENT_PRESETS.find(p => p.id === presetId) || TOURNAMENT_PRESETS[0];
   let participants = [...preset.teams];
 
@@ -68,6 +69,7 @@ export function createTournament(presetId, userTeamId) {
     presetId,
     title: preset.name,
     userTeamId,
+    seed,
     stage: 'QF',
     champion: null,
     bracket,
@@ -79,27 +81,18 @@ export function createTournament(presetId, userTeamId) {
 }
 
 export function saveTournament(tournament) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tournament));
-  } catch {}
+  writeStore(STORAGE_KEY, tournament);
 }
 
 export function loadTournament() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return readStore(STORAGE_KEY, null);
 }
 
 export function clearTournament() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {}
+  removeStore(STORAGE_KEY);
 }
 
-export function simulateAIMatch(matchObj, seed = `AI-KNOCKOUT-${Date.now()}`) {
+export function simulateAIMatch(matchObj, seed = `AI-KNOCKOUT-${matchObj.id}-${matchObj.homeId}-${matchObj.awayId}`) {
   if (matchObj.played) return matchObj;
   const m = createMatch({
     homeId: matchObj.homeId,
@@ -191,7 +184,7 @@ export function recordTournamentResult(tournament, matchId, match) {
     const userMatch = tournament.bracket.qf.find(m => m.homeId === tournament.userTeamId || m.awayId === tournament.userTeamId);
     if (userMatch?.played) {
       for (const qf of tournament.bracket.qf) {
-        if (!qf.played) simulateAIMatch(qf, `QF-AI-${qf.id}-${Date.now()}`);
+        if (!qf.played) simulateAIMatch(qf, `${tournament.seed || 'TOURNAMENT'}-${qf.id}`);
       }
     }
     if (tournament.bracket.qf.every(m => m.played)) {
@@ -205,7 +198,7 @@ export function recordTournamentResult(tournament, matchId, match) {
     const userMatch = tournament.bracket.sf.find(m => m.homeId === tournament.userTeamId || m.awayId === tournament.userTeamId);
     if (userMatch?.played) {
       for (const sf of tournament.bracket.sf) {
-        if (!sf.played) simulateAIMatch(sf, `SF-AI-${sf.id}-${Date.now()}`);
+        if (!sf.played) simulateAIMatch(sf, `${tournament.seed || 'TOURNAMENT'}-${sf.id}`);
       }
     }
     if (tournament.bracket.sf.every(m => m.played)) {

@@ -2971,7 +2971,7 @@ function bind(){
   if (welcomeModal) {
     let hideWelcome = false;
     try {
-      hideWelcome = localStorage.getItem('touchline_hide_welcome') === 'true' ||
+      hideWelcome = readStore('hide_welcome', false) === true ||
                     (tutorial.storage.status === 'completed' || tutorial.storage.status === 'skipped');
     } catch {}
 
@@ -2984,7 +2984,7 @@ function bind(){
       welcomeModal.classList.remove('is-open');
       welcomeModal.setAttribute('aria-hidden', 'true');
       if ($('#dontShowWelcomeAgain')?.checked) {
-        try { localStorage.setItem('touchline_hide_welcome', 'true'); } catch {}
+        writeStore('hide_welcome', true);
       }
     };
 

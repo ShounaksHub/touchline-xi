@@ -20,6 +20,7 @@
 import { getTeam, getPlayer } from './data.js';
 import { getTeamBadgeSvg } from './badges.js';
 import { sound } from './sound.js';
+import { readStore, writeStore } from './storage.js';
 
 const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -40,7 +41,7 @@ export class MatchEffectsController {
     this.soundEnabled = true;
 
     try {
-      const savedMode = localStorage.getItem('touchline_presentation_mode');
+      const savedMode = readStore('presentation_mode', null);
       if (savedMode === 'continuous' || savedMode === 'broadcast') {
         this.mode = savedMode;
       }
@@ -58,7 +59,7 @@ export class MatchEffectsController {
     if (mode === 'broadcast' || mode === 'continuous') {
       this.mode = mode;
       try {
-        localStorage.setItem('touchline_presentation_mode', mode);
+        writeStore('presentation_mode', mode);
       } catch {}
     }
   }

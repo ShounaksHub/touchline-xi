@@ -247125,7 +247125,7 @@ class SoundFX {
     this.ctx = null;
     this.enabled = false;
     try {
-      this.enabled = localStorage.getItem('touchline_sound_enabled') === 'true';
+      this.enabled = readStore('sound_enabled', false) === true;
     } catch {}
   }
 
@@ -247144,7 +247144,7 @@ class SoundFX {
   toggle() {
     this.enabled = !this.enabled;
     try {
-      localStorage.setItem('touchline_sound_enabled', String(this.enabled));
+      writeStore('sound_enabled', this.enabled);
     } catch {}
     if (this.enabled) {
       this.init();
@@ -247506,7 +247506,7 @@ const emptyStats = () => ({
 
 const emptyPlayerStats = () => ({
   minutes: 0, distance: 0, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, xg: 0,
-  passes: 0, completedPasses: 0, keyPasses: 0, tackles: 0, tacklesWon: 0,
+  passes: 0, completedPasses: 0, keyPasses: 0, tackles: 0, tacklesWon: 0, offsides: 0,
   interceptions: 0, recoveries: 0, foulsCommitted: 0, foulsWon: 0,
   yellow: 0, red: 0, saves: 0, shotsFaced: 0, saveXg: 0, conceded: 0, substituted: false, sentOff: false
 });
@@ -248259,6 +248259,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
 function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepestOppX) {
   const runners = [...forwardTeammates].sort((a, b) => b.pace - a.pace).slice(0, Math.min(3, forwardTeammates.length));
   const runner = runners[Math.floor(rand(m) * runners.length)] || runners[0];
+
   m.stats[side].passes += 1;
   const carrierStats = playerStat(m, side, carrier.id);
   carrierStats.passes += 1;
@@ -248270,6 +248271,7 @@ function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepes
 
   if (isOffside) {
     m.stats[side].offsides += 1;
+    playerStat(m, side, runner.id).offsides += 1;
     addEvent(m, 'offside', side, `Flag raised! ${runner.name} is caught offside on the through-ball.`);
     const oppGK = activePlayers(m, opponent).find(player => player.role === 'GK');
     m.ballState.x = oppGK.x;
@@ -248450,6 +248452,7 @@ function resolveDiscipline(m, opponent, offender) {
     if (dismissed) dismissed.sentOff = true;
     m.bookings[opponent][offender.id] = (m.bookings[opponent][offender.id] || 0) + 2;
     addEvent(m, 'card', opponent, `🔴 DIRECT RED CARD! Dangerous foul by ${offender.name} — straight dismissal!`, { playerId: offender.id, card: 'red' });
+      applyRedCardTactics(m, opponent);
   } else if (booking) {
     const prior = m.bookings[opponent][offender.id] || 0;
     if (prior >= 1) {
@@ -248462,6 +248465,7 @@ function resolveDiscipline(m, opponent, offender) {
       if (dismissed) dismissed.sentOff = true;
       m.bookings[opponent][offender.id] = prior + 1;
       addEvent(m, 'card', opponent, `🔴 SECOND YELLOW CARD! ${offender.name} receives his marching orders and is sent off!`, { playerId: offender.id, card: 'second_yellow' });
+      applyRedCardTactics(m, opponent);
     } else {
       m.stats[opponent].yellow += 1;
       offenderStats.yellow += 1;
@@ -248471,6 +248475,18 @@ function resolveDiscipline(m, opponent, offender) {
   } else {
     addEvent(m, 'foul', opponent, `${offender.name} concedes a tactical free kick.`, { playerId: offender.id });
   }
+}
+
+function applyRedCardTactics(m, side) {
+  const tactics = m.tactics[side];
+  tactics.mentality = 'Defensive';
+  tactics.pressing = clamp(tactics.pressing - 22, 15, 55);
+  tactics.tempo = clamp(tactics.tempo - 16, 25, 60);
+  tactics.width = clamp(tactics.width - 12, 25, 55);
+  const opponent = side === 'home' ? 'away' : 'home';
+  m.tactics[opponent].mentality = 'Attacking';
+  m.tactics[opponent].pressing = clamp(m.tactics[opponent].pressing + 10, 40, 98);
+  addEvent(m, 'tactic', side, `${side === 'home' ? getTeam(m.homeId).short : getTeam(m.awayId).short} drops into a compact defensive shape after the dismissal.`);
 }
 
 // =========================================================================
@@ -248739,7 +248755,7 @@ function resultLabel(m) {
 })(Data);
 
 const Tournament = (({ TEAMS, getTeam, getPlayer }, { createMatch, playFullMatch }) => {
-  const STORAGE_KEY = 'touchline_tournament_v2';
+  const STORAGE_KEY = 'tournament';
 
 const TOURNAMENT_PRESETS = [
   {
@@ -248774,7 +248790,7 @@ const TOURNAMENT_PRESETS = [
   }
 ];
 
-function createTournament(presetId, userTeamId) {
+function createTournament(presetId, userTeamId, seed = `TOURNAMENT-${presetId}-${userTeamId || 'default'}`) {
   const preset = TOURNAMENT_PRESETS.find(p => p.id === presetId) || TOURNAMENT_PRESETS[0];
   let participants = [...preset.teams];
 
@@ -248806,6 +248822,7 @@ function createTournament(presetId, userTeamId) {
     presetId,
     title: preset.name,
     userTeamId,
+    seed,
     stage: 'QF',
     champion: null,
     bracket,
@@ -248817,27 +248834,18 @@ function createTournament(presetId, userTeamId) {
 }
 
 function saveTournament(tournament) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tournament));
-  } catch {}
+  writeStore(STORAGE_KEY, tournament);
 }
 
 function loadTournament() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
+  return readStore(STORAGE_KEY, null);
 }
 
 function clearTournament() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {}
+  removeStore(STORAGE_KEY);
 }
 
-function simulateAIMatch(matchObj, seed = `AI-KNOCKOUT-${Date.now()}`) {
+function simulateAIMatch(matchObj, seed = `AI-KNOCKOUT-${matchObj.id}-${matchObj.homeId}-${matchObj.awayId}`) {
   if (matchObj.played) return matchObj;
   const m = createMatch({
     homeId: matchObj.homeId,
@@ -248929,7 +248937,7 @@ function recordTournamentResult(tournament, matchId, match) {
     const userMatch = tournament.bracket.qf.find(m => m.homeId === tournament.userTeamId || m.awayId === tournament.userTeamId);
     if (userMatch?.played) {
       for (const qf of tournament.bracket.qf) {
-        if (!qf.played) simulateAIMatch(qf, `QF-AI-${qf.id}-${Date.now()}`);
+        if (!qf.played) simulateAIMatch(qf, `${tournament.seed || 'TOURNAMENT'}-${qf.id}`);
       }
     }
     if (tournament.bracket.qf.every(m => m.played)) {
@@ -248943,7 +248951,7 @@ function recordTournamentResult(tournament, matchId, match) {
     const userMatch = tournament.bracket.sf.find(m => m.homeId === tournament.userTeamId || m.awayId === tournament.userTeamId);
     if (userMatch?.played) {
       for (const sf of tournament.bracket.sf) {
-        if (!sf.played) simulateAIMatch(sf, `SF-AI-${sf.id}-${Date.now()}`);
+        if (!sf.played) simulateAIMatch(sf, `${tournament.seed || 'TOURNAMENT'}-${sf.id}`);
       }
     }
     if (tournament.bracket.sf.every(m => m.played)) {
@@ -249272,7 +249280,7 @@ class MatchEffectsController {
     this.soundEnabled = true;
 
     try {
-      const savedMode = localStorage.getItem('touchline_presentation_mode');
+      const savedMode = readStore('presentation_mode', null);
       if (savedMode === 'continuous' || savedMode === 'broadcast') {
         this.mode = savedMode;
       }
@@ -249290,7 +249298,7 @@ class MatchEffectsController {
     if (mode === 'broadcast' || mode === 'continuous') {
       this.mode = mode;
       try {
-        localStorage.setItem('touchline_presentation_mode', mode);
+        writeStore('presentation_mode', mode);
       } catch {}
     }
   }
@@ -250785,7 +250793,7 @@ const Tutorial = (() => {
  * Deterministic, offline-first, zero external runtime dependencies.
  */
 
-const STORAGE_KEY = 'touchline_xi_onboarding_v1';
+const STORAGE_KEY = 'onboarding';
 
 const TUTORIAL_MODES = {
   MATCHDAY: 'matchday',
@@ -251082,13 +251090,8 @@ class TutorialController {
   }
 
   loadStorage() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') return parsed;
-      }
-    } catch {}
+    const stored = readStore(STORAGE_KEY, null);
+    if (stored && typeof stored === 'object') return stored;
     return {
       version: 1,
       status: 'pending',
@@ -251098,9 +251101,7 @@ class TutorialController {
   }
 
   saveStorage() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.storage));
-    } catch {}
+    writeStore(STORAGE_KEY, this.storage);
   }
 
   isFirstLaunch() {
@@ -254621,7 +254622,7 @@ function bind(){
   if (welcomeModal) {
     let hideWelcome = false;
     try {
-      hideWelcome = localStorage.getItem('touchline_hide_welcome') === 'true' ||
+      hideWelcome = readStore('hide_welcome', false) === true ||
                     (tutorial.storage.status === 'completed' || tutorial.storage.status === 'skipped');
     } catch {}
 
@@ -254634,7 +254635,7 @@ function bind(){
       welcomeModal.classList.remove('is-open');
       welcomeModal.setAttribute('aria-hidden', 'true');
       if ($('#dontShowWelcomeAgain')?.checked) {
-        try { localStorage.setItem('touchline_hide_welcome', 'true'); } catch {}
+        writeStore('hide_welcome', true);
       }
     };
 

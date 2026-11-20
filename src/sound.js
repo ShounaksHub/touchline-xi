@@ -3,12 +3,14 @@
  * Zero external audio files required. Generates realistic stadium audio in real time.
  */
 
+import { readStore, writeStore } from './storage.js';
+
 class SoundFX {
   constructor() {
     this.ctx = null;
     this.enabled = false;
     try {
-      this.enabled = localStorage.getItem('touchline_sound_enabled') === 'true';
+      this.enabled = readStore('sound_enabled', false) === true;
     } catch {}
   }
 
@@ -27,7 +29,7 @@ class SoundFX {
   toggle() {
     this.enabled = !this.enabled;
     try {
-      localStorage.setItem('touchline_sound_enabled', String(this.enabled));
+      writeStore('sound_enabled', this.enabled);
     } catch {}
     if (this.enabled) {
       this.init();

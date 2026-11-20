@@ -4,7 +4,9 @@
  * Deterministic, offline-first, zero external runtime dependencies.
  */
 
-const STORAGE_KEY = 'touchline_xi_onboarding_v1';
+import { readStore, writeStore } from './storage.js';
+
+const STORAGE_KEY = 'onboarding';
 
 export const TUTORIAL_MODES = {
   MATCHDAY: 'matchday',
@@ -301,13 +303,8 @@ export class TutorialController {
   }
 
   loadStorage() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') return parsed;
-      }
-    } catch {}
+    const stored = readStore(STORAGE_KEY, null);
+    if (stored && typeof stored === 'object') return stored;
     return {
       version: 1,
       status: 'pending',
@@ -317,9 +314,7 @@ export class TutorialController {
   }
 
   saveStorage() {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.storage));
-    } catch {}
+    writeStore(STORAGE_KEY, this.storage);
   }
 
   isFirstLaunch() {

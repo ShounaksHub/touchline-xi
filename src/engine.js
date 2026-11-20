@@ -89,7 +89,7 @@ const emptyStats = () => ({
 
 const emptyPlayerStats = () => ({
   minutes: 0, distance: 0, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, xg: 0,
-  passes: 0, completedPasses: 0, keyPasses: 0, tackles: 0, tacklesWon: 0,
+  passes: 0, completedPasses: 0, keyPasses: 0, tackles: 0, tacklesWon: 0, offsides: 0,
   interceptions: 0, recoveries: 0, foulsCommitted: 0, foulsWon: 0,
   yellow: 0, red: 0, saves: 0, shotsFaced: 0, saveXg: 0, conceded: 0, substituted: false, sentOff: false
 });
@@ -842,6 +842,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
 function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepestOppX) {
   const runners = [...forwardTeammates].sort((a, b) => b.pace - a.pace).slice(0, Math.min(3, forwardTeammates.length));
   const runner = runners[Math.floor(rand(m) * runners.length)] || runners[0];
+
   m.stats[side].passes += 1;
   const carrierStats = playerStat(m, side, carrier.id);
   carrierStats.passes += 1;
@@ -853,6 +854,7 @@ function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepes
 
   if (isOffside) {
     m.stats[side].offsides += 1;
+    playerStat(m, side, runner.id).offsides += 1;
     addEvent(m, 'offside', side, `Flag raised! ${runner.name} is caught offside on the through-ball.`);
     const oppGK = activePlayers(m, opponent).find(player => player.role === 'GK');
     m.ballState.x = oppGK.x;
@@ -1033,6 +1035,7 @@ function resolveDiscipline(m, opponent, offender) {
     if (dismissed) dismissed.sentOff = true;
     m.bookings[opponent][offender.id] = (m.bookings[opponent][offender.id] || 0) + 2;
     addEvent(m, 'card', opponent, `🔴 DIRECT RED CARD! Dangerous foul by ${offender.name} — straight dismissal!`, { playerId: offender.id, card: 'red' });
+      applyRedCardTactics(m, opponent);
   } else if (booking) {
     const prior = m.bookings[opponent][offender.id] || 0;
     if (prior >= 1) {
@@ -1045,6 +1048,7 @@ function resolveDiscipline(m, opponent, offender) {
       if (dismissed) dismissed.sentOff = true;
       m.bookings[opponent][offender.id] = prior + 1;
       addEvent(m, 'card', opponent, `🔴 SECOND YELLOW CARD! ${offender.name} receives his marching orders and is sent off!`, { playerId: offender.id, card: 'second_yellow' });
+      applyRedCardTactics(m, opponent);
     } else {
       m.stats[opponent].yellow += 1;
       offenderStats.yellow += 1;
@@ -1054,6 +1058,18 @@ function resolveDiscipline(m, opponent, offender) {
   } else {
     addEvent(m, 'foul', opponent, `${offender.name} concedes a tactical free kick.`, { playerId: offender.id });
   }
+}
+
+function applyRedCardTactics(m, side) {
+  const tactics = m.tactics[side];
+  tactics.mentality = 'Defensive';
+  tactics.pressing = clamp(tactics.pressing - 22, 15, 55);
+  tactics.tempo = clamp(tactics.tempo - 16, 25, 60);
+  tactics.width = clamp(tactics.width - 12, 25, 55);
+  const opponent = side === 'home' ? 'away' : 'home';
+  m.tactics[opponent].mentality = 'Attacking';
+  m.tactics[opponent].pressing = clamp(m.tactics[opponent].pressing + 10, 40, 98);
+  addEvent(m, 'tactic', side, `${side === 'home' ? getTeam(m.homeId).short : getTeam(m.awayId).short} drops into a compact defensive shape after the dismissal.`);
 }
 
 // =========================================================================
