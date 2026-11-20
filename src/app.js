@@ -2049,6 +2049,7 @@ function startReplay(item){
   replay={source:item.match,index:0};
   match=matchFromFrame(item.match,0);
   selectedStarter=null;
+  showPage('matchday');
   renderSelects();
   render();
   window.scrollTo({top:0,behavior:'smooth'});

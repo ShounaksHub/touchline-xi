@@ -10,4 +10,6 @@ test('browser smoke: app shell and critical match controls are served', async t 
   const css = await readFile(new URL('../styles.css', import.meta.url), 'utf8');
   assert.match(css, /match-stage/);
   assert.match(css, /min-width:\s*0/);
+  const app = await readFile(new URL('../src/app.js', import.meta.url), 'utf8');
+  assert.match(app, /function startReplay[\s\S]*?showPage\('matchday'\)/, 'replay should return to Match Centre');
 });
