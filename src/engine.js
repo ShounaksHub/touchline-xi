@@ -620,7 +620,7 @@ function simulateMinutePhases(m) {
       const angleRad = Math.atan2(Math.abs(PITCH.goalYMax - PITCH.goalYMin) * 0.68, goalDist);
       shootUtil = (34 - goalDist) * 1.6 + (carrier.shooting - 65) * 0.85 - (pressure * 6) + (m.tactics[side].mentality === 'Attacking' ? 8 : -6);
       if (carrier.role === 'ST' || carrier.role === 'CF') shootUtil += 12;
-      if (side === 'home' && m.minute <= (m.shootUntil ?? -1)) shootUtil += 24;
+      if (m.minute <= (m.shootUntilBySide?.[side] ?? (side === 'home' ? m.shootUntil : -1) ?? -1)) shootUtil += 24;
       if (m.lastShotId === carrier.id) {
         shootUtil -= 16 + Math.min(12, m.shotStreak * 4);
         passUtil += 10;
@@ -1108,7 +1108,7 @@ export function advanceMinute(m) {
         const physicalBuffer = Math.max(0, player.physical - 70) * 0.0015;
         const paceCost = Math.max(0, player.pace - 70) * 0.001;
         const touchCost = player.id === m.ballState.carrierId ? 0.05 : 0;
-        const shoutCost = side === 'home' && m.minute <= (m.effortUntil ?? -1) ? 0.35 : 0;
+        const shoutCost = m.minute <= (m.effortUntilBySide?.[side] ?? (side === 'home' ? m.effortUntil : -1) ?? -1) ? 0.35 : 0;
         const drain = clamp(roleCost + distance * 0.014 + intensity + paceCost + touchCost - physicalBuffer + shoutCost, 0.08, 1.25);
         m.stamina[player.id] = clamp(round2((m.stamina[player.id] ?? 100) - drain), 18, 100);
         player.stamina = m.stamina[player.id];
@@ -1266,48 +1266,52 @@ export function simulatePenaltyShootout(m) {
   return shootout;
 }
 
-export function applyShout(m, shout) {
+export function applyShout(m, shout, side = 'home') {
   if (m.phase === 'FULL_TIME') return false;
+  if (!['home', 'away'].includes(side)) return false;
   if (shout === 'high_press') {
-    m.tactics.home.pressing = clamp(m.tactics.home.pressing + 20, 60, 98);
-    m.tactics.home.tempo = clamp(m.tactics.home.tempo + 15, 60, 95);
-    addEvent(m, 'tactic', 'home', 'Manager shout: HIGH PRESS! Suffocate them high up the pitch.');
+    m.tactics[side].pressing = clamp(m.tactics[side].pressing + 20, 60, 98);
+    m.tactics[side].tempo = clamp(m.tactics[side].tempo + 15, 60, 95);
+    addEvent(m, 'tactic', side, 'Manager shout: HIGH PRESS! Suffocate them high up the pitch.');
   } else if (shout === 'park_bus') {
-    m.tactics.home.mentality = 'Defensive';
-    m.tactics.home.pressing = clamp(m.tactics.home.pressing - 20, 15, 40);
-    m.tactics.home.width = clamp(m.tactics.home.width - 15, 25, 45);
-    addEvent(m, 'tactic', 'home', 'Manager shout: PARK THE BUS! Compact deep defensive fortress.');
+    m.tactics[side].mentality = 'Defensive';
+    m.tactics[side].pressing = clamp(m.tactics[side].pressing - 20, 15, 40);
+    m.tactics[side].width = clamp(m.tactics[side].width - 15, 25, 45);
+    addEvent(m, 'tactic', side, 'Manager shout: PARK THE BUS! Compact deep defensive fortress.');
   } else if (shout === 'shoot_sight') {
-    m.shootUntil = m.minute + 10;
-    addEvent(m, 'tactic', 'home', 'Shoot on sight: take earlier shots for the next ten minutes.');
+    m.shootUntilBySide = m.shootUntilBySide || {};
+    m.shootUntilBySide[side] = m.minute + 10;
+    addEvent(m, 'tactic', side, 'Shoot on sight: take earlier shots for the next ten minutes.');
   } else if (shout === 'work_box') {
-    m.tactics.home.tempo = clamp(m.tactics.home.tempo - 15, 30, 50);
-    addEvent(m, 'tactic', 'home', 'Manager shout: WORK BALL INTO BOX! Patient build-up, wait for the clear chance.');
+    m.tactics[side].tempo = clamp(m.tactics[side].tempo - 15, 30, 50);
+    addEvent(m, 'tactic', side, 'Manager shout: WORK BALL INTO BOX! Patient build-up, wait for the clear chance.');
   } else if (shout === 'demand_more') {
-    m.effortUntil = m.minute + 10;
-    addEvent(m, 'tactic', 'home', 'Demand more: close down harder for ten minutes at extra stamina cost.');
+    m.effortUntilBySide = m.effortUntilBySide || {};
+    m.effortUntilBySide[side] = m.minute + 10;
+    addEvent(m, 'tactic', side, 'Demand more: close down harder for ten minutes at extra stamina cost.');
   }
   updateCurrentFrame(m);
   return true;
 }
 
-export function applyTeamTalk(m, talk) {
+export function applyTeamTalk(m, talk, side = 'home') {
   if (m.phase !== 'HALF_TIME') return false;
+  if (!['home', 'away'].includes(side)) return false;
   if (talk === 'fire_up') {
-    addEvent(m, 'talk', 'home', 'Half-time speech: "Show them who we are! Leave everything out on the pitch!" (Team motivated 🔥)');
+    addEvent(m, 'talk', side, 'Half-time speech: "Show them who we are! Leave everything out on the pitch!" (Team motivated 🔥)');
   } else if (talk === 'demand_more') {
-    for (const id of m.lineups.home) {
+    for (const id of m.lineups[side]) {
       if (m.stamina && m.stamina[id]) m.stamina[id] = clamp(m.stamina[id] + 8, 30, 100);
-      const ps = m.playerStates?.home?.find(p => p.id === id);
+      const ps = m.playerStates?.[side]?.find(p => p.id === id);
       if (ps) ps.stamina = m.stamina[id];
     }
-    m.tactics.home.pressing = clamp(m.tactics.home.pressing + 10, 50, 95);
-    addEvent(m, 'talk', 'home', 'Half-time speech: "Demand more! Our standards must be higher in the second half." (+Stamina recovery)');
+    m.tactics[side].pressing = clamp(m.tactics[side].pressing + 10, 50, 95);
+    addEvent(m, 'talk', side, 'Half-time speech: "Demand more! Our standards must be higher in the second half." (+Stamina recovery)');
   } else if (talk === 'praise') {
-    addEvent(m, 'talk', 'home', 'Half-time speech: "Superb execution, lads. Keep the rhythm and trust our quality." (Confidence high)');
+    addEvent(m, 'talk', side, 'Half-time speech: "Superb execution, lads. Keep the rhythm and trust our quality." (Confidence high)');
   } else if (talk === 'focus') {
-    m.tactics.home.mentality = 'Balanced';
-    addEvent(m, 'talk', 'home', 'Half-time speech: "Stay disciplined and organized. Give them no openings." (Defensive focus)');
+    m.tactics[side].mentality = 'Balanced';
+    addEvent(m, 'talk', side, 'Half-time speech: "Stay disciplined and organized. Give them no openings." (Defensive focus)');
   }
   updateCurrentFrame(m);
   return true;

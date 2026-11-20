@@ -2677,6 +2677,16 @@ function bind(){
     toast(`📢 Shout delivered to pitch!`);
   });
 
+  $('#managerShoutsPanelAway')?.addEventListener('click', e => {
+    const b = e.target.closest('[data-shout]');
+    if (!b || replay || match.phase === 'FULL_TIME') return;
+    applyShout(match, b.dataset.shout, 'away');
+    renderTactics();
+    renderLineupBoards();
+    renderFeed();
+    toast('📢 User 2 shout delivered to pitch!');
+  });
+
   // Half-Time Team Talk options
   $('#teamTalkCard')?.addEventListener('click', e => {
     const b = e.target.closest('[data-talk]');
