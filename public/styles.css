@@ -2908,10 +2908,31 @@ footer {
   white-space: nowrap;
 }
 
+/* HyperUI-inspired editorial footer: layered grid, pill action, and a quiet orbit animation. */
+.site-footer { position:relative; display:grid; grid-template-columns:minmax(250px,1.4fr) minmax(230px,1fr) minmax(260px,.9fr); gap:42px; min-height:250px; margin-top:72px; padding:42px 0 22px; overflow:hidden; border-top:1px solid var(--line); color:var(--muted); }
+.footer-orbit { position:absolute; right:5%; top:-120px; width:300px; height:300px; border:1px solid color-mix(in srgb,var(--accent) 24%,transparent); border-radius:50%; opacity:.8; pointer-events:none; animation:footer-orbit-drift 12s ease-in-out infinite; }
+.footer-orbit:before,.footer-orbit:after { content:""; position:absolute; inset:28px; border:1px solid color-mix(in srgb,var(--accent) 15%,transparent); border-radius:50%; }
+.footer-orbit:after { inset:72px; border-color:color-mix(in srgb,var(--ink) 12%,transparent); }
+.footer-orbit span,.footer-orbit i,.footer-orbit b { position:absolute; display:block; width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 13%,transparent); }
+.footer-orbit span { left:24px; top:137px; }.footer-orbit i { right:43px; top:72px; width:5px; height:5px; background:var(--ink); }.footer-orbit b { right:91px; bottom:35px; width:4px; height:4px; background:var(--accent); }
+.footer-lead,.footer-links,.footer-action { position:relative; z-index:1; }
+.footer-mark { display:inline-flex; align-items:center; gap:10px; color:var(--ink); text-decoration:none; }
+.footer-mark span { display:grid; place-items:center; width:38px; height:38px; border:1px solid var(--accent); border-radius:50%; color:var(--accent); font-size:11px; font-weight:850; letter-spacing:.08em; }
+.footer-mark em { font-style:normal; font-size:15px; font-weight:800; letter-spacing:-.04em; }.footer-lead p { max-width:270px; margin:18px 0 0; color:var(--muted); font-size:14px; line-height:1.5; }
+.footer-links { display:grid; grid-template-columns:1fr 1fr; gap:24px; }.footer-links div { display:flex; flex-direction:column; align-items:flex-start; gap:10px; }.footer-label,.footer-action>span { color:#8d9b91; font-size:9px; font-weight:850; letter-spacing:.14em; }.footer-links a { color:var(--ink); font-size:12px; text-decoration:none; transition:color .2s,transform .2s; }.footer-links a:hover { color:var(--accent); transform:translateX(3px); }
+.footer-action { display:flex; flex-direction:column; align-items:flex-start; gap:14px; }.footer-github { display:flex; align-items:center; gap:10px; width:100%; max-width:270px; padding:12px 14px; border:1px solid var(--line); border-radius:7px; background:color-mix(in srgb,var(--card) 74%,transparent); color:var(--ink); font-size:12px; font-weight:750; text-decoration:none; transition:background .2s,border-color .2s,transform .2s; }.footer-github:hover { border-color:var(--accent); background:var(--card); transform:translateY(-2px); }.footer-github svg { width:17px; height:17px; fill:currentColor; }.footer-github b { margin-left:auto; color:var(--accent); font-size:15px; }.footer-base { grid-column:1/-1; display:flex; justify-content:space-between; gap:18px; padding-top:17px; border-top:1px solid var(--line); color:#8d9b91; font-size:10px; letter-spacing:.06em; }.footer-base a { color:var(--accent); text-decoration:none; }.footer-base a:hover { text-decoration:underline; }
+@keyframes footer-orbit-drift { 0%,100% { transform:translate3d(0,0,0) rotate(0deg); } 50% { transform:translate3d(-12px,10px,0) rotate(8deg); } }
+@media (prefers-reduced-motion:reduce) { .footer-orbit { animation:none; } .footer-links a,.footer-github { transition:none; } }
+
 @media (max-width: 660px) {
   .site-shell {
     padding: 0 16px;
   }
+
+  .site-footer { grid-template-columns:1fr; gap:28px; margin-top:42px; padding-top:32px; }
+  .footer-orbit { right:-110px; top:-100px; }
+  .footer-links { max-width:280px; }
+  .footer-base { flex-direction:column; gap:8px; }
 
   .topbar {
     height: auto;
