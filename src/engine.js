@@ -175,6 +175,7 @@ function frameFromMatch(m) {
     formations: m.formations,
     lineups: m.lineups,
     substitutionsUsed: m.substitutionsUsed,
+    substitutionsUsedBySide: copy(m.substitutionsUsedBySide || { home: 0, away: 0 }),
     stamina: copy(m.stamina || {}),
     winner: m.winner || null,
     penalties: m.penalties || null,
@@ -316,6 +317,7 @@ export function createMatch(options = {}) {
     stats: { home: emptyStats(), away: emptyStats() },
     lineups,
     substitutionsUsed: 0,
+    substitutionsUsedBySide: { home: 0, away: 0 },
     stamina,
     knockout: !!options.knockout,
     winner: null,
@@ -337,20 +339,22 @@ export function updateCurrentFrame(m) {
   if (m.frames.length) m.frames[m.frames.length - 1] = frameFromMatch(m);
 }
 
-export function applyTactic(m, key, value) {
+export function applyTactic(m, key, value, side = 'home') {
   if (m.phase === 'FULL_TIME') return;
+  if (!['home', 'away'].includes(side)) return;
   if (key === 'mentality') {
-    if (['Defensive','Balanced','Attacking'].includes(value)) m.tactics.home.mentality = value;
+    if (['Defensive','Balanced','Attacking'].includes(value)) m.tactics[side].mentality = value;
   } else if (['pressing','tempo','width'].includes(key) && Number.isFinite(Number(value))) {
-    m.tactics.home[key] = clamp(Number(value), 0, 100);
+    m.tactics[side][key] = clamp(Number(value), 0, 100);
   }
   updateCurrentFrame(m);
 }
 
-export function changeFormation(m, formation) {
+export function changeFormation(m, formation, side = 'home') {
   if (m.phase === 'FULL_TIME' || !FORMATIONS[formation]) return false;
-  m.formations.home = formation;
-  if (m.minute > 0) addEvent(m, 'tactic', 'home', `Shape adjusted to ${formation}.`);
+  if (!['home', 'away'].includes(side)) return false;
+  m.formations[side] = formation;
+  if (m.minute > 0) addEvent(m, 'tactic', side, `Shape adjusted to ${formation}.`);
   updateCurrentFrame(m);
   return true;
 }
@@ -366,23 +370,25 @@ export function resetStartingXI(m) {
   return true;
 }
 
-export function swapPlayer(m, starterId, benchId) {
+export function swapPlayer(m, starterId, benchId, side = 'home') {
   if (m.phase === 'FULL_TIME') return false;
-  const team = getTeam(m.homeId);
-  const idx = m.lineups.home.indexOf(starterId);
-  if (idx < 0 || m.lineups.home.includes(benchId) || !team.players.some(p => p.id === benchId)) return false;
+  if (!['home', 'away'].includes(side)) return false;
+  const team = getTeam(side === 'home' ? m.homeId : m.awayId);
+  const idx = m.lineups[side].indexOf(starterId);
+  if (idx < 0 || m.lineups[side].includes(benchId) || !team.players.some(p => p.id === benchId)) return false;
   const starter = getPlayer(team, starterId), incoming = getPlayer(team, benchId);
   if (!starter || !incoming) return false;
   // Always retain a keeper. In-match GK swaps must be GK-for-GK.
   if ((starter.role === 'GK') !== (incoming.role === 'GK')) return false;
-  if (m.minute > 0 && m.substitutionsUsed >= 5) return false;
+  const usedBySide = m.substitutionsUsedBySide?.[side] ?? (side === 'home' ? m.substitutionsUsed : 0);
+  if (m.minute > 0 && usedBySide >= 5) return false;
 
-  m.lineups.home[idx] = benchId;
+  m.lineups[side][idx] = benchId;
 
   // Update dynamic spatial player state
-  if (m.playerStates && m.playerStates.home && m.playerStates.home[idx]) {
-    const oldP = m.playerStates.home[idx];
-    m.playerStates.home[idx] = {
+  if (m.playerStates && m.playerStates[side] && m.playerStates[side][idx]) {
+    const oldP = m.playerStates[side][idx];
+    m.playerStates[side][idx] = {
       ...oldP,
       id: incoming.id,
       name: incoming.name,
@@ -401,8 +407,10 @@ export function swapPlayer(m, starterId, benchId) {
 
   if (m.minute > 0) {
     m.substitutionsUsed = (m.substitutionsUsed ?? 0) + 1;
-    playerStat(m, 'home', incoming.id).substituted = true;
-    addEvent(m, 'sub', 'home', `${incoming.name} replaces ${starter.name}.`, { playerId: incoming.id, outgoingId: starter.id });
+    if (!m.substitutionsUsedBySide) m.substitutionsUsedBySide = { home: 0, away: 0 };
+    m.substitutionsUsedBySide[side] = (m.substitutionsUsedBySide[side] || 0) + 1;
+    playerStat(m, side, incoming.id).substituted = true;
+    addEvent(m, 'sub', side, `${incoming.name} replaces ${starter.name}.`, { playerId: incoming.id, outgoingId: starter.id });
   }
   updateCurrentFrame(m);
   return true;

@@ -1851,7 +1851,7 @@ function playerRatingSummary(side) {
     rating = Math.max(5.2, Math.min(10, rating));
     const contribution = player.role === 'GK'
       ? [trackedSaves && `${trackedSaves} saves`, tracked.conceded && `${tracked.conceded} conceded`, tracked.shotsFaced && `${Math.round((trackedSaves / tracked.shotsFaced) * 100)}% save rate`].filter(Boolean).join(' · ') || (minutes ? 'No shots on target faced' : 'Unused substitute')
-      : [trackedGoals && `${trackedGoals}G`, trackedAssists && `${trackedAssists}A`, trackedSaves && `${trackedSaves} saves`, trackedShots && `${trackedShots} shots`, trackedXg && `${trackedXg.toFixed(2)} xG`, tracked.tacklesWon && `${tracked.tacklesWon} tackles`, tracked.interceptions && `${tracked.interceptions} interceptions`].filter(Boolean).join(' · ') || (minutes ? `${Math.round(tracked.distance || 0)} distance units covered` : 'Unused substitute');
+      : [trackedGoals && `${trackedGoals}G`, trackedAssists && `${trackedAssists}A`, trackedShots && `${trackedShots} shots`, trackedXg && `${trackedXg.toFixed(2)} xG`, tracked.keyPasses && `${tracked.keyPasses} key passes`, tracked.completedPasses && `${tracked.completedPasses} completed passes`, tracked.tacklesWon && `${tracked.tacklesWon} tackles`, tracked.interceptions && `${tracked.interceptions} interceptions`, tracked.blocks && `${tracked.blocks} blocks`, tracked.recoveries && `${tracked.recoveries} recoveries`, tracked.offsides && `${tracked.offsides} offsides`].filter(Boolean).join(' · ') || (minutes ? 'No recorded actions' : 'Unused substitute');
     return {player,rating,minutes,energy,contribution,goals:trackedGoals,assists:trackedAssists,shots:trackedShots,onTarget,xg:trackedXg,cards,saves:trackedSaves};
   }).filter(Boolean).sort((a,b)=>b.rating-a.rating || b.minutes-a.minutes);
 }
@@ -2019,7 +2019,14 @@ function renderLineupBoards(){
   const board=(side)=>{
     const team=getTeam(side==='home'?match.homeId:match.awayId);
     const lineup=match.lineups?.[side] || team.starting || [];
-    const isInteractive = side === 'home' && !replay && match.phase !== 'FULL_TIME' && match.minute > 0;
+    const isInteractive = !replay && match.phase !== 'FULL_TIME' && match.minute > 0;
+    const sideTactics = match.tactics?.[side] || {};
+    const tacticControls = `<div class="lineup-tactics" aria-label="${side === 'home' ? 'User' : 'User 2'} tactics">
+      <label>Press <input type="range" min="0" max="100" value="${sideTactics.pressing ?? 50}" data-side-tactic="${side}" data-tactic-key="pressing" aria-label="${side} pressing"></label>
+      <label>Tempo <input type="range" min="0" max="100" value="${sideTactics.tempo ?? 50}" data-side-tactic="${side}" data-tactic-key="tempo" aria-label="${side} tempo"></label>
+      <label>Width <input type="range" min="0" max="100" value="${sideTactics.width ?? 50}" data-side-tactic="${side}" data-tactic-key="width" aria-label="${side} width"></label>
+      <div class="lineup-mentality">${['Defensive','Balanced','Attacking'].map(value => `<button type="button" data-side-mentality="${side}" data-mentality-value="${value}" class="${sideTactics.mentality === value ? 'is-active' : ''}">${value}</button>`).join('')}</div>
+    </div>`;
     const starterRows=lineup.map((id,i)=>{
       const p=getPlayer(team,id); if(!p)return '';
       const stamina=Math.round(match.stamina?.[id] ?? 100);
@@ -2030,7 +2037,8 @@ function renderLineupBoards(){
       const action = isInteractive ? `<button type="button" class="lineup-action lineup-action--in" data-quick-in="${escapeHtml(p.id)}" aria-label="Use ${escapeHtml(p.name)} as a substitute">Use</button>` : '';
       return `<div class="lineup-row is-bench"><span class="lineup-number">${p.number || i+12}</span><span class="lineup-player" title="${escapeHtml(p.name)}">${escapeHtml(p.name)}</span><span class="lineup-role">${escapeHtml(p.role || '')}</span>${action}</div>`;
     }).join('');
-    return `<div class="lineup-board-head"><div><div class="lineup-board-kicker">${side==='home'?'USER XI':'OPPOSITION XI'}</div><h3>${escapeHtml(team.name)}</h3></div><span class="lineup-board-meta">${match.formations?.[side] || 'XI'}</span></div><div class="lineup-list">${starterRows}</div><div class="lineup-divider">SUBSTITUTES · ${Math.max(0,5-(match.substitutionsUsed||0))} CHANGES LEFT</div><div class="lineup-list">${bench}</div>`;
+    const used = match.substitutionsUsedBySide?.[side] ?? (side === 'home' ? match.substitutionsUsed || 0 : 0);
+    return `<div class="lineup-board-head"><div><div class="lineup-board-kicker">${side==='home'?'USER 1 XI':'USER 2 XI'}</div><h3>${escapeHtml(team.name)}</h3></div><span class="lineup-board-meta">${match.formations?.[side] || 'XI'}</span></div>${tacticControls}<div class="lineup-list">${starterRows}</div><div class="lineup-divider">SUBSTITUTES · ${Math.max(0,5-used)} CHANGES LEFT</div><div class="lineup-list">${bench}</div>`;
   };
   const homeBoard=$('#homeLineupBoard'),awayBoard=$('#awayLineupBoard');
   if(homeBoard)homeBoard.innerHTML=board('home');
@@ -2038,8 +2046,8 @@ function renderLineupBoards(){
   const alert=$('#quickSubAlert');
   if(alert){
     const tired=[];
-    for(const side of ['home','away']) for(const id of (match.lineups?.[side]||[])) if((match.stamina?.[id]??100)<=42){const team=getTeam(side==='home'?match.homeId:match.awayId);const p=getPlayer(team,id);const bench=(team.players||[]).filter(q=>!match.lineups[side].includes(q.id)&&q.role===p?.role)[0] || (team.players||[]).find(q=>!match.lineups[side].includes(q.id));if(p)tired.push({name:p.name,energy:Math.round(match.stamina?.[id]??42),replacement:bench?.name||'a compatible substitute',role:p.role})}
-    const shouldShow=match.minute>0 && match.phase!=='FULL_TIME' && tired.length>0 && (match.substitutionsUsed||0)<5;
+    for(const side of ['home','away']) for(const id of (match.lineups?.[side]||[])) if((match.stamina?.[id]??100)<=42){const team=getTeam(side==='home'?match.homeId:match.awayId);const p=getPlayer(team,id);const bench=(team.players||[]).filter(q=>!match.lineups[side].includes(q.id)&&q.role===p?.role)[0] || (team.players||[]).find(q=>!match.lineups[side].includes(q.id));if(p)tired.push({side,name:p.name,energy:Math.round(match.stamina?.[id]??42),replacement:bench?.name||'a compatible substitute',role:p.role})}
+    const shouldShow=match.minute>0 && match.phase!=='FULL_TIME' && tired.length>0 && tired.some(t => (match.substitutionsUsedBySide?.[t.side] ?? (t.side === 'home' ? match.substitutionsUsed || 0 : 0)) < 5);
     alert.classList.toggle('is-visible',shouldShow);
     if(shouldShow) $('#quickSubText').textContent=`${tired[0].name} (${tired[0].role}) is at ${tired[0].energy}% energy. Consider ${tired[0].replacement}.`;
   }
@@ -2271,7 +2279,7 @@ function bind(){
   });
 
   $('#quickSubBtn')?.addEventListener('click',()=>{
-    const firstTired = [...document.querySelectorAll('#homeLineupBoard [data-quick-out]')].find(button => button.closest('.lineup-row')?.classList.contains('is-tired'));
+    const firstTired = [...document.querySelectorAll('[data-quick-out]')].find(button => button.closest('.lineup-row')?.classList.contains('is-tired'));
     if (firstTired) firstTired.focus();
     toast('Choose Sub beside a tired player, then Use beside a compatible substitute.');
   });
@@ -2291,7 +2299,8 @@ function bind(){
       toast('Choose Sub beside a starter first.');
       return;
     }
-    if (swapPlayer(match, selectedStarter, incoming.dataset.quickIn)) {
+    const side = incoming.closest('[id$="LineupBoard"]')?.id.startsWith('away') ? 'away' : 'home';
+    if (swapPlayer(match, selectedStarter, incoming.dataset.quickIn, side)) {
       selectedStarter = null;
       render();
       toast('Substitution made from Match Centre.');
@@ -2299,6 +2308,39 @@ function bind(){
       toast('Choose a substitute with the same position.');
     }
   });
+
+  $('#awayLineupBoard')?.addEventListener('click', e => {
+    const out = e.target.closest('[data-quick-out]');
+    const incoming = e.target.closest('[data-quick-in]');
+    if (!out && !incoming) return;
+    if (replay || match.phase === 'FULL_TIME' || match.minute === 0) return;
+    if (out) {
+      selectedStarter = selectedStarter === out.dataset.quickOut ? null : out.dataset.quickOut;
+      renderLineupBoards();
+      return;
+    }
+    if (!selectedStarter) { toast('Choose Sub beside a starter first.'); return; }
+    if (swapPlayer(match, selectedStarter, incoming.dataset.quickIn, 'away')) {
+      selectedStarter = null;
+      render();
+      toast('User 2 substitution made.');
+    } else toast('Choose a substitute with the same position.');
+  });
+
+  ['home', 'away'].forEach(side => {
+    $(`#${side}LineupBoard`)?.addEventListener('input', e => {
+      const input = e.target.closest('[data-side-tactic]');
+      if (!input || replay || match.phase === 'FULL_TIME') return;
+      applyTactic(match, input.dataset.tacticKey, input.value, side);
+    });
+    $(`#${side}LineupBoard`)?.addEventListener('click', e => {
+      const button = e.target.closest('[data-side-mentality]');
+      if (!button || replay || match.phase === 'FULL_TIME') return;
+      applyTactic(match, 'mentality', button.dataset.mentalityValue, side);
+      renderLineupBoards();
+    });
+  });
+
 
   $('#fullTimeBtn').addEventListener('click',()=>{
     hidePauseBanner();
