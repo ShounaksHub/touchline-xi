@@ -6849,3 +6849,23 @@ h1, h2, h3, h4,
   .topbar .topbar-right { grid-row: 2; justify-self: start; margin: 0; }
   .topbar .main-nav { grid-row: 3; }
 }
+#page-squad { padding-top: 24px; }
+.squad-page-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-bottom: 24px;
+}
+.squad-page-heading h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 3rem);
+  line-height: 1.1;
+  font-weight: 600;
+}
+.squad-page-heading p {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}
