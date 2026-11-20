@@ -121,7 +121,8 @@
               <div class="match-stage">
                 <aside class="lineup-board lineup-board-home" id="homeLineupBoard" aria-label="Home starting eleven and substitutes"></aside>
                 <div class="pitch-surface" id="pitchSurface">
-                <canvas id="pitchCanvas" width="1120" height="660" role="img" aria-label="Top-down animated football pitch showing both teams and the match ball"></canvas>
+                <canvas id="pitchCanvas" width="1120" height="660" role="img" aria-describedby="pitchAccessibleSummary" aria-label="Top-down animated football pitch showing both teams and the match ball"></canvas>
+                <p id="pitchAccessibleSummary" class="sr-only" aria-live="polite">Match pitch visualiser. The live score, possession, lineups, and events are listed around this canvas.</p>
                 <div class="pitch-overlay pitch-overlay-top">
                   <span class="pitch-brand">TXI <i>·</i> LIVE</span>
                   <span class="pitch-compass">N <span>↑</span></span>
@@ -300,7 +301,7 @@
                   <label for="teamFilterInput">QUICK SEARCH (350+ TEAMS)</label>
                   <div class="team-filter-wrap">
                     <input type="text" id="teamFilterInput" class="team-filter-input" placeholder="Filter teams by name or city..." aria-label="Filter clubs and nations">
-                    <button type="button" class="team-filter-clear-btn" id="teamFilterClearBtn" title="Clear filter" style="display:none;"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                    <button type="button" class="team-filter-clear-btn" id="teamFilterClearBtn" title="Clear filter" aria-label="Clear filter" style="display:none;"><svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                   </div>
                 </div>
                 <div class="field"><label for="homeSelect">YOUR CLUB / NATION</label><div class="select-wrap"><select id="homeSelect"></select></div></div>
@@ -515,39 +516,39 @@
           </div>
 
           <div class="scouting-toolbar">
-            <input type="text" id="scoutSearchInput" placeholder="Search by player name, club, or nationality..." />
-            <select id="scoutProvenanceFilter">
+            <input type="text" id="scoutSearchInput" placeholder="Search by player name, club, or nationality..." aria-label="Search players by name, club or nationality" />
+            <select id="scoutProvenanceFilter" aria-label="Filter by player provenance">
               <option value="ALL">All Provenance</option>
               <option value="verified">Verified Real Stars &amp; Legends</option>
               <option value="legend">Historic Legends &amp; Icons</option>
               <option value="active">Active Verified Footballers</option>
               <option value="generated">Club Reserves &amp; Youth</option>
             </select>
-            <select id="scoutRoleFilter">
+            <select id="scoutRoleFilter" aria-label="Filter by position">
               <option value="ALL">All Positions</option>
               <option value="GK">Goalkeepers</option>
               <option value="DEF">Defenders</option>
               <option value="MID">Midfielders</option>
               <option value="FWD">Forwards</option>
             </select>
-            <select id="scoutTierFilter">
+            <select id="scoutTierFilter" aria-label="Filter by rating tier">
               <option value="ALL">All OVR Ratings</option>
               <option value="95">95+ All-Time Icons / Ballon d'Or</option>
               <option value="90">90 - 94 World Class / TOTS</option>
               <option value="85">85 - 89 Elite League Regulars</option>
               <option value="80">80 - 84 Senior Professionals</option>
             </select>
-            <select id="scoutTeamFilter">
+            <select id="scoutTeamFilter" aria-label="Filter by club or national team">
               <option value="ALL">All Clubs &amp; Nations</option>
             </select>
-            <select id="scoutSortFilter">
+            <select id="scoutSortFilter" aria-label="Sort player results">
               <option value="ovr">Sort: Highest OVR</option>
               <option value="pace">Sort: Fastest Pace</option>
               <option value="shooting">Sort: Top Finishing</option>
               <option value="passing">Sort: Best Playmakers</option>
               <option value="defending">Sort: Best Defenders</option>
             </select>
-            <button type="button" class="secondary-button scout-reset-btn" id="scoutResetBtn" style="padding:8px 14px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;" title="Reset all filters">Reset ↻</button>
+            <button type="button" class="secondary-button scout-reset-btn" id="scoutResetBtn" style="padding:8px 14px;font-size:12px;font-weight:600;white-space:nowrap;cursor:pointer;" title="Reset all filters" aria-label="Reset all filters">Reset ↻</button>
           </div>
 
           <div class="scouting-stats-bar">
@@ -578,9 +579,9 @@
 
           <!-- Mode Quick Switcher Tabs -->
           <div class="duel-mode-tabs" role="tablist" aria-label="Duel Format Switcher">
-            <button type="button" class="duel-tab-btn is-active" data-duel-mode="attack_defence">👤 1v1 Player Duel</button>
-            <button type="button" class="duel-tab-btn" data-duel-mode="team_5aside">👥 5v5 Team Match (1 / Nation)</button>
-            <button type="button" class="duel-tab-btn" data-duel-mode="team_11aside">👥 11v11 Team Match (1 / Nation)</button>
+            <button type="button" class="duel-tab-btn is-active" data-duel-mode="attack_defence">1v1 Player Duel</button>
+            <button type="button" class="duel-tab-btn" data-duel-mode="team_5aside">5v5 Team Match (1 / Nation)</button>
+            <button type="button" class="duel-tab-btn" data-duel-mode="team_11aside">11v11 Team Match (1 / Nation)</button>
           </div>
 
           <!-- Duel Configurator: 2-Player Selection & Head-to-Head Comparison -->
@@ -602,12 +603,12 @@
               <div class="duel-mode-picker">
                 <label for="duelTypeSelect">Duel Challenge / Mode</label>
                 <select id="duelTypeSelect">
-                  <optgroup label="👤 1v1 Individual Duels">
+                  <optgroup label="1v1 Individual Duels">
                     <option value="attack_defence" selected>1v1 Attack vs Defence</option>
                     <option value="dribbling">1v1 Dribbling Duel</option>
                     <option value="skill_challenge">1v1 Skill Challenge</option>
                   </optgroup>
-                  <optgroup label="👥 Team vs Team (1 Player Per Nation)">
+                  <optgroup label="Team vs Team (1 Player Per Nation)">
                     <option value="team_5aside">5-a-side Match (1 Player / Nation)</option>
                     <option value="team_11aside">11-a-side Match (1 Player / Nation)</option>
                   </optgroup>
@@ -671,7 +672,7 @@
               </div>
               <div class="duel-team-builder-actions">
                 <button class="secondary-button" id="duelResetDraftBtn" type="button">↺ New Draft &amp; Toss</button>
-                <button class="secondary-button" id="duelAutoDraftTeamsBtn" type="button">🎲 Auto-Draft Balanced Nations</button>
+                <button class="secondary-button" id="duelAutoDraftTeamsBtn" type="button">Auto-Draft Balanced Nations</button>
               </div>
             </div>
 
@@ -793,7 +794,7 @@
   </div>
 
   <!-- Player Picker Modal (position:fixed — outside main) -->
-  <div class="player-modal" id="playerPickerModal" aria-hidden="true" role="dialog" aria-label="Select Player">
+  <div class="player-modal" id="playerPickerModal" aria-hidden="true" aria-modal="true" role="dialog" aria-label="Select Player">
     <div class="player-modal-backdrop" id="playerModalBackdrop"></div>
     <div class="player-modal-sheet">
       <div class="player-modal-header">
@@ -801,11 +802,11 @@
           <h3 id="modalSlotTitle">Select Player for Slot</h3>
           <span class="modal-sub">Filter from thousands of international and club players</span>
         </div>
-        <button class="modal-close-btn" id="closePlayerModalBtn"><svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="modal-close-btn" id="closePlayerModalBtn" aria-label="Close dialog"><svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
       </div>
       <div class="modal-search-bar">
-        <input type="text" id="playerSearchInput" placeholder="Search player name, club, or country..." />
-        <select id="modalRoleFilter">
+        <input type="text" id="playerSearchInput" placeholder="Search player name, club, or country..." aria-label="Search players by name, club or country" />
+        <select id="modalRoleFilter" aria-label="Filter position category">
           <option value="ALL">All Categories</option>
           <option value="GK">Goalkeepers</option>
           <option value="DEF">Defenders</option>
@@ -821,7 +822,7 @@
   <div class="fut-modal-backdrop" id="futCardModal">
     <div class="fut-card-container">
       <div class="fut-card-shield" id="futCardShield">
-        <button class="modal-close-btn" id="closeFutModalBtn" style="position:absolute;top:16px;right:18px;color:#d4af37;font-size:20px;z-index:10;"><svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <button class="modal-close-btn" id="closeFutModalBtn" aria-label="Close player card inspection dialog" style="position:absolute;top:16px;right:18px;color:#d4af37;font-size:20px;z-index:10;"><svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
         <div class="fut-card-head">
           <div class="fut-card-ovr-group">
             <span class="fut-card-big-ovr" id="futBigOvr">99</span>
@@ -854,7 +855,7 @@
   </div>
 
   <!-- Welcome / How to Play Pop-Out Modal -->
-  <div class="welcome-modal-backdrop" id="welcomeModal" aria-hidden="true" role="dialog" aria-label="Welcome and How to Play Guide">
+  <div class="welcome-modal-backdrop" id="welcomeModal" aria-hidden="true" aria-modal="true" role="dialog" aria-label="Welcome and How to Play Guide">
     <div class="welcome-modal-sheet">
       <div class="welcome-modal-banner">
         <div class="welcome-badge"><img src="assets/logo.svg" alt="Logo" class="welcome-banner-logo" /> THE GAFFER'S MATCHDAY BRIEFING</div>
@@ -872,8 +873,8 @@
             <p>Learn matchday controls, tactical formations, tournament progression, and player scouting with a live guided tour.</p>
           </div>
           <div class="welcome-tour-actions">
-            <button type="button" class="primary-button" id="startGuidedTourBtn">⭐ Start Guided Tour</button>
-            <button type="button" class="secondary-button" id="quickStartBtn">⚡ Quick Start</button>
+            <button type="button" class="primary-button" id="startGuidedTourBtn">Start Guided Tour</button>
+            <button type="button" class="secondary-button" id="quickStartBtn">Quick Start</button>
           </div>
         </div>
 

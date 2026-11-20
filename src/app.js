@@ -7,6 +7,7 @@ import {getTeamBadgeSvg} from './badges.js';
 import {MatchEffectsController} from './match-effects.js';
 import {createPlayerDuel, advanceDuelTick, playFullDuel, renderDuelPitch, DUEL_TYPES} from './duel.js';
 import {TutorialController, TUTORIAL_MODES} from './tutorial.js';
+import {readStore, writeStore, removeStore} from './storage.js';
 
 const $=selector=>document.querySelector(selector);
 const $$=selector=>[...document.querySelectorAll(selector)];
@@ -20,7 +21,7 @@ const formatStat=(key,value)=>{
   return num.toLocaleString('en-GB');
 };
 const keyEvents=new Set(['goal','save','shot','card','half','full','sub','tactic','talk','shootout']);
-const savedPrefs=(()=>{try{return JSON.parse(localStorage.getItem(PREFS))||{}}catch{return {}}})();
+const savedPrefs=readStore(PREFS, {});
 
 const MUSIC_TRACKS = [
   ['John Newman — Love Me Again', 'John Newman - Love Me Again.mp3'],
@@ -37,8 +38,8 @@ const MUSIC_TRACKS = [
 const musicPlayer = (() => {
   const audio = new Audio();
   audio.loop = true;
-  audio.volume = Number(localStorage.getItem('touchline_music_volume') ?? 0.45);
-  let index = Number(localStorage.getItem('touchline_music_track') ?? 0) || 0;
+  audio.volume = Number(readStore('music-volume', 0.45));
+  let index = Number(readStore('music-track', 0)) || 0;
   const source = () => `music%20of%20the%20game/${encodeURIComponent(MUSIC_TRACKS[index][1])}`;
   const load = () => { audio.src = source(); audio.load(); };
   load();
@@ -46,11 +47,12 @@ const musicPlayer = (() => {
     tracks: MUSIC_TRACKS,
     get index() { return index; },
     get playing() { return !audio.paused; },
-    play() { return audio.play().catch(() => {}); },
+    play() { return audio.play().catch(error => { this.lastError = error; return false; }); },
     pause() { audio.pause(); },
     toggle() { return this.playing ? (this.pause(), false) : (this.play(), true); },
-    setTrack(next) { index = Number(next) || 0; localStorage.setItem('touchline_music_track', String(index)); load(); return this.play(); },
-    setVolume(value) { audio.volume = Number(value); localStorage.setItem('touchline_music_volume', String(audio.volume)); }
+    setTrack(next) { index = Number(next) || 0; writeStore('music-track', index); load(); return this.play(); },
+    setVolume(value) { audio.volume = Number(value); writeStore('music-volume', audio.volume); },
+    get error() { return this.lastError || null; }
   };
 })();
 
@@ -215,11 +217,11 @@ let teamFilterQuery = '';
 
 function buildTeamOptionsHtml(selectedId, includeAllOption = false, filterQuery = '') {
   const continents = [
-    { key: 'Europe', label: '🏆 European Clubs (UEFA)' },
-    { key: 'South America', label: '🔥 South American Clubs (CONMEBOL)' },
-    { key: 'North America', label: '⭐ North & Central American Clubs (CONCACAF)' },
-    { key: 'Asia & Oceania', label: '🌏 Asian & Oceanic Clubs (AFC / OFC)' },
-    { key: 'Africa', label: '🦁 African Clubs (CAF)' }
+    { key: 'Europe', label: 'European Clubs (UEFA)' },
+    { key: 'South America', label: 'South American Clubs (CONMEBOL)' },
+    { key: 'North America', label: 'North & Central American Clubs (CONCACAF)' },
+    { key: 'Asia & Oceania', label: 'Asian & Oceanic Clubs (AFC / OFC)' },
+    { key: 'Africa', label: 'African Clubs (CAF)' }
   ];
 
   const q = (filterQuery || '').trim().toLowerCase();
@@ -258,7 +260,7 @@ function buildTeamOptionsHtml(selectedId, includeAllOption = false, filterQuery 
   const otherClubs = TEAMS.filter(t => (t.isClub || !t.fifa_rank) && !t.continent && matchesQuery(t));
   if (otherClubs.length > 0) {
     totalMatches += otherClubs.length;
-    html += `<optgroup label="🌐 Other World Clubs${q ? ` (${otherClubs.length})` : ''}">`;
+    html += `<optgroup label="Other World Clubs${q ? ` (${otherClubs.length})` : ''}">`;
     html += otherClubs.map(t => {
       const isSel = t.id === selectedId;
       if (isSel) selectedMatched = true;
@@ -270,7 +272,7 @@ function buildTeamOptionsHtml(selectedId, includeAllOption = false, filterQuery 
   const nations = TEAMS.filter(t => t.fifa_rank && matchesQuery(t));
   if (nations.length > 0) {
     totalMatches += nations.length;
-    html += `<optgroup label="🌍 FIFA Senior National Teams${q ? ` (${nations.length})` : ' (Top 150)'}">`;
+    html += `<optgroup label="FIFA Senior National Teams${q ? ` (${nations.length})` : ' (Top 150)'}">`;
     html += nations.map(t => {
       const isSel = t.id === selectedId;
       if (isSel) selectedMatched = true;
@@ -282,7 +284,7 @@ function buildTeamOptionsHtml(selectedId, includeAllOption = false, filterQuery 
   if (selectedId && !selectedMatched) {
     const selTeam = getTeam(selectedId);
     if (selTeam) {
-      html = `<optgroup label="📌 Active Match Fixture"><option value="${selTeam.id}" selected>${escapeHtml(selTeam.name)}</option></optgroup>` + html;
+      html = `<optgroup label="Active Match Fixture"><option value="${selTeam.id}" selected>${escapeHtml(selTeam.name)}</option></optgroup>` + html;
     }
   }
 
@@ -375,7 +377,9 @@ function openPlayerModal(type, index) {
 
   $('#modalSlotTitle').textContent = `Select Player for ${requiredRole} (Current: ${targetPlayer.name})`;
   $('#playerPickerModal').classList.add('is-open');
+  $('#playerPickerModal').setAttribute('aria-hidden','false');
   $('#playerSearchInput').value = '';
+  requestAnimationFrame(() => $('#playerSearchInput')?.focus());
 
   const cat = getRoleCategory(requiredRole);
   $('#modalRoleFilter').value = cat === 'GK' ? 'GK' : 'ALL';
@@ -1567,7 +1571,7 @@ function saveDuelToVault() {
   };
   vault = [vaultItem, ...vault].slice(0, 12);
   try {
-    localStorage.setItem(STORAGE, JSON.stringify(vault));
+    writeStore(STORAGE, vault);
     renderVault();
     toast('1v1 Player Duel recorded and saved to Vault!');
   } catch (err) {
@@ -1580,8 +1584,8 @@ function saveDuelToVault() {
 // ==========================================
 let vault=loadVault();
 
-function loadVault(){try{const v=JSON.parse(localStorage.getItem(STORAGE)||'[]');return Array.isArray(v)?v.filter(item=>item?.match?.frames && item?.id).slice(0,12):[]}catch{return []}}
-function persistPrefs(){if(replay)return;try{localStorage.setItem(PREFS,JSON.stringify({homeId:match.homeId,awayId:match.awayId,seed:match.seed,formation:match.formations.home,tactics:match.tactics.home}))}catch{}}
+function loadVault(){const v=readStore(STORAGE,[]);return Array.isArray(v)?v.filter(item=>item?.match?.frames && item?.id).slice(0,12):[]}
+function persistPrefs(){if(replay)return;writeStore(PREFS,{homeId:match.homeId,awayId:match.awayId,seed:match.seed,formation:match.formations.home,tactics:match.tactics.home})}
 function toast(message){const el=$('#toast');el.textContent=message;el.classList.add('visible');clearTimeout(toastTimeout);toastTimeout=setTimeout(()=>el.classList.remove('visible'),2500)}
 function showPage(pageId){
   const norm=pageId.startsWith('page-')?pageId:`page-${pageId}`;
@@ -1733,6 +1737,8 @@ function renderScoreboard(){
   $('#liveIndicator').classList.toggle('is-live',running);
   $('#pitchStatus').textContent=`${home.short || 'HOM'} vs ${away.short || 'AWY'}`;
   $('#pitchPossession').textContent=`${(getTeam(match.possession==='home'?match.homeId:match.awayId).short || 'POS')} IN POSSESSION`;
+  const pitchSummary=$('#pitchAccessibleSummary');
+  if(pitchSummary) pitchSummary.textContent=`${home.name} ${match.score.home}, ${away.name} ${match.score.away}. Minute ${match.minute}. ${(getTeam(match.possession==='home'?match.homeId:match.awayId).name || 'The team')} in possession. ${match.events.at(-1)?.text || 'Kick-off awaits.'}`;
 
   const notable=[...match.events].reverse().find(e=>['goal','save','shot','card','sub','tactic','talk'].includes(e.type));
   let scoreNoteText = match.phase==='FULL_TIME'?`${resultLabel(match).toUpperCase()} / FINAL WHISTLE`:notable?`${notable.minute}' ${notable.text.toUpperCase().slice(0,55)}`:'READY FOR KICK-OFF';
@@ -1944,10 +1950,10 @@ function renderLineupBoards(){
   const alert=$('#quickSubAlert');
   if(alert){
     const tired=[];
-    for(const side of ['home','away']) for(const id of (match.lineups?.[side]||[])) if((match.stamina?.[id]??100)<=42){const p=getPlayer(getTeam(side==='home'?match.homeId:match.awayId),id);if(p)tired.push({name:p.name,energy:Math.round(match.stamina?.[id]??42)})}
+    for(const side of ['home','away']) for(const id of (match.lineups?.[side]||[])) if((match.stamina?.[id]??100)<=42){const team=getTeam(side==='home'?match.homeId:match.awayId);const p=getPlayer(team,id);const bench=(team.players||[]).filter(q=>!match.lineups[side].includes(q.id)&&q.role===p?.role)[0] || (team.players||[]).find(q=>!match.lineups[side].includes(q.id));if(p)tired.push({name:p.name,energy:Math.round(match.stamina?.[id]??42),replacement:bench?.name||'a compatible substitute',role:p.role})}
     const shouldShow=match.minute>0 && match.phase!=='FULL_TIME' && tired.length>0 && (match.substitutionsUsed||0)<5;
     alert.classList.toggle('is-visible',shouldShow);
-    if(shouldShow) $('#quickSubText').textContent=`${tired[0].name} is at ${tired[0].energy}% energy. Open Squad Lab to make a change.`;
+    if(shouldShow) $('#quickSubText').textContent=`${tired[0].name} (${tired[0].role}) is at ${tired[0].energy}% energy. Consider ${tired[0].replacement}.`;
   }
 }
 
@@ -1972,7 +1978,7 @@ function saveVault(silent=false){
   const snapshot=JSON.parse(JSON.stringify(match));
   const id=`${snapshot.seed}-${Date.now()}`;
   vault=[{id,savedAt:new Date().toISOString(),match:snapshot},...vault].slice(0,12);
-  try{localStorage.setItem(STORAGE,JSON.stringify(vault));renderVault();if(!silent)toast('Match saved to your replay vault.');}catch{vault.shift();toast('Storage full; export replay instead.');}
+  if(writeStore(STORAGE,vault)){renderVault();if(!silent)toast('Match saved to your replay vault.');}else{vault.shift();toast('Storage full; export replay instead.');}
 }
 
 function newTick(){
@@ -2062,6 +2068,12 @@ function exportReplay(item){
 }
 
 function bind(){
+  const playerModal=$('#playerPickerModal');
+  if(playerModal){
+    const syncModalState=()=>playerModal.setAttribute('aria-hidden',playerModal.classList.contains('is-open')?'false':'true');
+    new MutationObserver(syncModalState).observe(playerModal,{attributes:true,attributeFilter:['class']});
+    syncModalState();
+  }
   $('#playBtn').addEventListener('click',()=>{
     if(match.phase==='FULL_TIME'&&!replay) return;
     running=!running;
@@ -2293,7 +2305,7 @@ function bind(){
 
         const id = `${String(targetMatch.seed).replace(/[^a-zA-Z0-9_-]/g, '')}-${Date.now()}`;
         vault = [{ id, savedAt: data.savedAt || new Date().toISOString(), match: targetMatch }, ...vault].slice(0, 12);
-        localStorage.setItem(STORAGE, JSON.stringify(vault));
+        writeStore(STORAGE, vault);
         renderVault();
         toast(`Replay "${targetMatch.seed}" imported to vault!`);
       } catch (err) {
@@ -2308,7 +2320,7 @@ function bind(){
     if(!vault.length) return;
     if(window.confirm('Clear all saved match replays?')){
       vault=[];
-      localStorage.removeItem(STORAGE);
+      removeStore(STORAGE);
       renderVault();
       toast('Vault cleared.');
     }
@@ -2339,7 +2351,7 @@ function bind(){
       toast('Replay exported as JSON.');
     } else {
       vault=vault.filter(v=>v.id!==id);
-      localStorage.setItem(STORAGE,JSON.stringify(vault));
+      writeStore(STORAGE,vault);
       renderVault();
     }
   });
@@ -2364,13 +2376,13 @@ function bind(){
   if (musicPlayBtn && musicTrackSelect && musicVolume) {
     musicTrackSelect.innerHTML = musicPlayer.tracks.map(([title], index) => `<option value="${index}">${escapeHtml(title)}</option>`).join('');
     musicTrackSelect.value = String(musicPlayer.index);
-    musicVolume.value = String(Number(localStorage.getItem('touchline_music_volume') ?? 0.45));
+    musicVolume.value = String(Number(readStore('music-volume', 0.45)));
     const updateMusicButton = () => {
       musicPlayBtn.textContent = musicPlayer.playing ? '⏸ Pause' : '▶ Play';
       musicPlayBtn.classList.toggle('is-playing', musicPlayer.playing);
     };
-    musicPlayBtn.addEventListener('click', () => { musicPlayer.toggle(); updateMusicButton(); });
-    musicTrackSelect.addEventListener('change', e => { musicPlayer.setTrack(e.target.value); updateMusicButton(); });
+    musicPlayBtn.addEventListener('click', async () => { const result=await musicPlayer.toggle(); updateMusicButton(); if(result===false && musicPlayer.error) toast('Music is blocked until the browser allows audio. Click Play again after interacting with the page.'); });
+    musicTrackSelect.addEventListener('change', async e => { const result=await musicPlayer.setTrack(e.target.value); updateMusicButton(); if(result===false) toast('This soundtrack could not start. Check the music file or browser audio permission.'); });
     musicVolume.addEventListener('input', e => musicPlayer.setVolume(e.target.value));
     updateMusicButton();
   }

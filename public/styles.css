@@ -1,3 +1,15 @@
+ .sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
 /* ==========================================================================
    OFFLINE SELF-HOSTED ATHLETIC & INTERFACE TYPOGRAPHY
    ========================================================================== */
@@ -86,6 +98,14 @@
   --font-display: 'Barlow Condensed', 'Arial Narrow', -apple-system, sans-serif;
   --font-interface: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
+  /* Nested Border Radius Tokens (4px scale) */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-pill: 9999px;
+
   /* Backward-Compatible Aliases */
   --paper: var(--color-bg);
   --paper2: var(--color-surface);
@@ -140,8 +160,8 @@ button:disabled {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid #95b843;
-  outline-offset: 3px;
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .site-shell {
@@ -341,7 +361,7 @@ select:focus-visible {
   font-size: 10px;
   font-weight: 800;
   letter-spacing: .14em;
-  color: #64736a;
+  color: var(--color-text-dim);
   white-space: nowrap
 }
 
@@ -351,7 +371,7 @@ select:focus-visible {
 }
 
 .topbar-version {
-  color: #849386;
+  color: var(--color-text-muted);
 }
 
 .signal-dot {
@@ -359,8 +379,8 @@ select:focus-visible {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #71984a;
-  box-shadow: 0 0 0 3px #ddedcf;
+  background: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-subtle);
   margin-right: 6px
 }
 
@@ -385,23 +405,23 @@ select:focus-visible {
   font-size: 10px;
   font-weight: 850;
   letter-spacing: .15em;
-  color: #68756a
+  color: var(--color-text-muted)
 }
 
 .eyebrow-index {
   font-weight: 900;
-  color: #455f40
+  color: var(--color-accent)
 }
 
 .eyebrow-line {
   height: 1px;
   width: 30px;
-  background: #b4c0b1
+  background: var(--color-border)
 }
 
 .intro h1 {
   font-size: clamp(42px, 4.1vw, 67px);
-  letter-spacing: -.075em;
+  letter-spacing: -.04em;
   line-height: 1.04;
   margin: 16px 0 13px;
   font-weight: 800;
@@ -409,11 +429,11 @@ select:focus-visible {
 }
 
 .intro h1 em {
-  font-weight: 400;
+  font-weight: 600;
   font-style: italic;
-  font-family: Georgia, 'Times New Roman', serif;
-  letter-spacing: -.07em;
-  color: #658069
+  font-family: var(--font-display);
+  letter-spacing: -.03em;
+  color: var(--color-accent-light);
 }
 
 .intro-copy {
@@ -810,10 +830,11 @@ select:focus-visible {
 }
 
 .section-num {
-  font-family: Georgia, serif;
-  font-size: 12px;
-  font-style: italic;
-  color: #829383
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  font-style: normal;
+  color: var(--color-accent);
 }
 
 .panel-heading h2 {
@@ -1383,10 +1404,11 @@ select:focus-visible {
 }
 
 .control-card-heading>span {
-  font-family: Georgia, serif;
-  color: #86a38a;
-  font-size: 14px;
-  font-style: italic
+  font-family: var(--font-display);
+  color: var(--color-accent);
+  font-size: 13px;
+  font-weight: 700;
+  font-style: normal;
 }
 
 .control-card-heading h3 {
@@ -5471,12 +5493,13 @@ footer {
 }
 
 .stoppage-led-digits {
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 26px;
-  font-weight: 950;
-  letter-spacing: 0.1em;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
   color: #ff9f1a;
-  text-shadow: 0 0 10px rgba(255, 159, 26, 0.7);
+  text-shadow: 0 0 10px rgba(255, 159, 26, 0.5);
 }
 
 /* 6. HALF-TIME & FULL-TIME BROADCAST REPORTS */
