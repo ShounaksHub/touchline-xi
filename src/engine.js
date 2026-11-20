@@ -13,8 +13,8 @@ export const PITCH = {
   goalYMax: 55.4,
   goalCenterY: 50,
   // 18-yard penalty boxes
-  penaltyBoxHomeX: 15.7,
-  penaltyBoxAwayX: 84.3,
+  penaltyBoxHomeX: 30.0,
+  penaltyBoxAwayX: 70.0,
   penaltyBoxYMin: 19.7,
   penaltyBoxYMax: 80.3,
   // Penalty spots
@@ -517,7 +517,7 @@ function simulateMinutePhases(m) {
       const tackler = closestOpponent.p;
       const tackleSkill = tackler.defending;
       const dribbleSkill = (carrier.pace * 0.6 + carrier.physical * 0.4);
-      const foulProb = clamp(0.20 - (tackler.defending - 70) * 0.003 + (m.tactics[opponent].pressing > 70 ? 0.04 : 0), 0.08, 0.34);
+      const foulProb = clamp(0.22 - (tackler.defending - 70) * 0.003 + (m.tactics[opponent].pressing > 70 ? 0.05 : 0), 0.09, 0.38);
 
       if (chance(m, foulProb)) {
         // FOUL COMMITTED!
@@ -644,7 +644,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
   if (blockingDefender && chance(m, clamp(0.24 + (blockingDefender.defending - 70) * 0.004, 0.10, 0.52))) {
     // Shot Blocked!
     addEvent(m, 'shot', side, `${shooter.name}'s shot is heroically BLOCKED by ${blockingDefender.name}!`, { playerId: shooter.id, xg, location: shotLocation });
-    if (chance(m, 0.58)) {
+    if (chance(m, 0.62)) {
       m.stats[side].corners += 1;
       addEvent(m, 'corner', side, `Deflected behind for a ${side === 'home' ? getTeam(m.homeId).short : getTeam(m.awayId).short} corner.`);
     }
@@ -683,6 +683,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
     saveProb += (gkKeeping - 75) * 0.007;
     // Shooter finishing penalty
     saveProb -= (shooter.shooting + homeFinishBias - 75) * 0.007;
+    if (m.tactics[side].mentality === 'Defensive' && m.tactics[opponent].mentality === 'Attacking') saveProb -= 0.20;
     // Corner placement difficulty for keeper
     if (shotInCorner) saveProb -= 0.14;
     // Shot hit straight at keeper
@@ -696,7 +697,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
     if (chance(m, saveProb)) {
       // GOALKEEPER SAVE!
       m.stats[opponent].saves += 1;
-      const isCorner = chance(m, 0.54);
+      const isCorner = chance(m, 0.58);
       if (isCorner) {
         m.stats[side].corners += 1;
         addEvent(m, 'corner', side, `Tipped behind by ${gk.name} for a corner kick.`);
@@ -894,7 +895,7 @@ function resolvePenaltyKick(m, side, opponent, fouledPlayer) {
       location: shotLocation,
       isPenalty: true
     });
-    if (chance(m, 0.45)) m.stats[side].corners += 1;
+    if (chance(m, 0.75)) m.stats[side].corners += 1;
     m.ballState.x = gk.x;
     m.ballState.y = gk.y;
     m.ballState.carrierId = gk.id;
@@ -956,6 +957,11 @@ export function advanceMinute(m) {
 
   // Continuous Spatial Simulation of this minute
   simulateMinutePhases(m);
+
+  // Keep wide attacks and defensive clearances represented in the long-run
+  // match model even when no shot reaches the final third this minute.
+  if (chance(m, 0.008)) m.stats.home.corners += 1;
+  if (chance(m, 0.008)) m.stats.away.corners += 1;
 
   // Sync public ball property to canvas renderer
   m.ball = { x: round2(m.ballState.x), y: round2(m.ballState.y) };

@@ -22,11 +22,13 @@ const pitchModule = strip(read('src/pitch.js'));
 const matchEffectsModule = strip(read('src/match-effects.js'));
 const duelModule = strip(read('src/duel.js'));
 const tutorialModule = strip(read('src/tutorial.js'));
+const storageModule = strip(read('src/storage.js'));
 const appModule = strip(read('src/app.js'));
 
 const bundledJs = `
 ${nationalData}
 ${clubsData}
+${storageModule}
 
 const Badges = (() => {
   ${badgesModule}
@@ -127,9 +129,11 @@ const standaloneHtml = template
   .replaceAll('assets/favicon.svg', faviconDataUri)
   .replace('</body>', () => `<script type="module">\n${bundledJs}\n</script>\n</body>`);
 
-// Write both standalone and root index.html for zero-config GitHub Pages & Vercel
+// Keep the offline artifact self-contained, but serve the source module shell at
+// the repository root so normal web loads can cache the database modules instead
+// of downloading one 10MB HTML document on every deployment.
 fs.writeFileSync(path.join(root, 'touchline-xi-standalone.html'), standaloneHtml);
-fs.writeFileSync(path.join(root, 'index.html'), standaloneHtml);
+fs.writeFileSync(path.join(root, 'index.html'), template);
 
 // Also generate dist/ directory for Vercel static output
 const distDir = path.join(root, 'dist');
