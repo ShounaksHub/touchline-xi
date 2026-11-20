@@ -247494,6 +247494,27 @@ const emptyStats = () => ({
   saves: 0
 });
 
+const emptyPlayerStats = () => ({
+  minutes: 0, goals: 0, assists: 0, shots: 0, shotsOnTarget: 0, xg: 0,
+  passes: 0, completedPasses: 0, keyPasses: 0, tackles: 0, tacklesWon: 0,
+  interceptions: 0, recoveries: 0, foulsCommitted: 0, foulsWon: 0,
+  yellow: 0, red: 0, saves: 0, conceded: 0, substituted: false, sentOff: false
+});
+
+function createPlayerStats(team) {
+  return Object.fromEntries((team.players || []).map(player => [player.id, emptyPlayerStats()]));
+}
+
+function playerStat(m, side, id) {
+  if (!id) return null;
+  if (!m.playerStats[side][id]) m.playerStats[side][id] = emptyPlayerStats();
+  return m.playerStats[side][id];
+}
+
+function activePlayers(m, side) {
+  return m.playerStates[side].filter(player => !player.sentOff);
+}
+
 function validateLineup(teamId, ids) {
   if (!Array.isArray(ids)) return false;
   const count = ids.length;
@@ -247545,8 +247566,8 @@ function frameFromMatch(m) {
       carrierSide: m.ballState.carrierSide
     } : null,
     playerStates: m.playerStates ? {
-      home: m.playerStates.home.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina) })),
-      away: m.playerStates.away.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina) }))
+      home: m.playerStates.home.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff })),
+      away: m.playerStates.away.map(p => ({ id: p.id, role: p.role, x: round2(p.x), y: round2(p.y), stamina: Math.round(p.stamina), sentOff: !!p.sentOff }))
     } : null,
     possession: m.possession,
     rng: m.rng,
@@ -247561,6 +247582,7 @@ function frameFromMatch(m) {
     knockout: !!m.knockout,
     injuryTime: copy(m.injuryTime || { firstHalf: 2, secondHalf: 4 }),
     bookings: copy(m.bookings || { home: {}, away: {} })
+    ,playerStats: copy(m.playerStats || { home: {}, away: {} })
   });
 }
 
@@ -247608,7 +247630,8 @@ function getInitialPlayerStates(team, lineup, side, formationKey, tactics) {
       defending: p.defending || 70,
       physical: p.physical || 75,
       keeping: p.role === 'GK' || idx === 0 ? (p.keeping || p.overall || p.ovr || 82) : 5,
-      ovr: p.overall || p.ovr || 75
+      ovr: p.overall || p.ovr || 75,
+      sentOff: false
     };
   });
 }
@@ -247694,6 +247717,7 @@ function createMatch(options = {}) {
     winner: null,
     penalties: null,
     bookings: { home: {}, away: {} },
+    playerStats: { home: createPlayerStats(home), away: createPlayerStats(away) },
     injuryTime: { firstHalf: injuryFirstHalf, secondHalf: injurySecondHalf },
     formations: { home: homeFormation, away: awayFormation },
     tactics: { home: homeTactics, away: awayTactics },
@@ -247773,6 +247797,7 @@ function swapPlayer(m, starterId, benchId) {
 
   if (m.minute > 0) {
     m.substitutionsUsed = (m.substitutionsUsed ?? 0) + 1;
+    playerStat(m, 'home', incoming.id).substituted = true;
     addEvent(m, 'sub', 'home', `${incoming.name} replaces ${starter.name}.`, { playerId: incoming.id, outgoingId: starter.id });
   }
   updateCurrentFrame(m);
@@ -247818,7 +247843,7 @@ function updateTacticalTargets(m) {
   const awayBallDrift = (ball.x - 50) * 0.28 + (attackingSide === 'away' ? -8 : 6);
 
   // Update Home players
-  m.playerStates.home.forEach((p, idx) => {
+  activePlayers(m, 'home').forEach((p, idx) => {
     if (idx === 0) {
       // Goalkeeper: positions between ball and goal center
       p.targetX = clamp(5 + (ball.x * 0.08), 3, 14);
@@ -247833,7 +247858,7 @@ function updateTacticalTargets(m) {
   });
 
   // Update Away players
-  m.playerStates.away.forEach((p, idx) => {
+  activePlayers(m, 'away').forEach((p, idx) => {
     if (idx === 0) {
       p.targetX = clamp(95 - ((100 - ball.x) * 0.08), 86, 97);
       p.targetY = clamp(50 + (ball.y - 50) * 0.22, 43, 57);
@@ -247850,7 +247875,7 @@ function updateTacticalTargets(m) {
 // Move players towards targets according to pace, stamina, and acceleration
 function stepPlayerMovement(m) {
   for (const side of ['home', 'away']) {
-    m.playerStates[side].forEach((p, idx) => {
+    activePlayers(m, side).forEach((p, idx) => {
       const dx = p.targetX - p.x;
       const dy = p.targetY - p.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -247886,13 +247911,13 @@ function simulateMinutePhases(m) {
     else awayTicksPossessed++;
 
     // Find current carrier
-    let carrier = m.playerStates[side].find(p => p.id === m.ballState.carrierId);
+    let carrier = activePlayers(m, side).find(p => p.id === m.ballState.carrierId);
     if (!carrier) {
       // Ball is contested / loose: closest player claims it
       let closestPlayer = null;
       let minD = Infinity;
       for (const s of ['home', 'away']) {
-        for (const p of m.playerStates[s]) {
+        for (const p of activePlayers(m, s)) {
           const d = distM(p.x, p.y, m.ballState.x, m.ballState.y);
           if (d < minD) {
             minD = d;
@@ -247900,7 +247925,7 @@ function simulateMinutePhases(m) {
           }
         }
       }
-      carrier = closestPlayer || m.playerStates[side][9] || m.playerStates[side][0];
+      carrier = closestPlayer || activePlayers(m, side)[9] || activePlayers(m, side)[0];
       m.ballState.carrierId = carrier.id;
       m.ballState.carrierSide = carrier.side;
       m.possession = carrier.side;
@@ -247911,7 +247936,7 @@ function simulateMinutePhases(m) {
     m.ballState.y = carrier.y;
 
     // Evaluate pressure from nearby opponents
-    const oppPlayers = m.playerStates[opponent];
+    const oppPlayers = activePlayers(m, opponent);
     const nearbyOpponents = oppPlayers.map(op => ({
       p: op,
       distM: distM(carrier.x, carrier.y, op.x, op.y)
@@ -247936,6 +247961,8 @@ function simulateMinutePhases(m) {
 
         if (inPenaltyBox) {
           // PENALTY KICK AWARDED!
+          playerStat(m, opponent, tackler.id).foulsCommitted += 1;
+          playerStat(m, side, carrier.id).foulsWon += 1;
           resolvePenaltyKick(m, side, opponent, carrier);
           break;
         } else {
@@ -247947,10 +247974,13 @@ function simulateMinutePhases(m) {
           break;
         }
       } else {
+        playerStat(m, opponent, tackler.id).tackles += 1;
         // Clean Tackle vs Shielding (authentic home ground duel confidence)
         const homeEdge = tackler.side === 'home' ? 0.055 : -0.055;
         const winTackleProb = clamp(0.48 + (tackleSkill - dribbleSkill) * 0.007 + homeEdge, 0.15, 0.85);
         if (chance(m, winTackleProb)) {
+          playerStat(m, opponent, tackler.id).tacklesWon += 1;
+          playerStat(m, opponent, tackler.id).recoveries += 1;
           // Turnover! Tackler wins possession
           m.ballState.carrierId = tackler.id;
           m.ballState.carrierSide = tackler.side;
@@ -247989,7 +248019,7 @@ function simulateMinutePhases(m) {
     const isOpponentHighLine = (side === 'home' && deepestOppX < 65) || (side === 'away' && deepestOppX > 35);
 
     // Find forward runners
-    const forwardTeammates = m.playerStates[side].filter(tm => {
+    const forwardTeammates = activePlayers(m, side).filter(tm => {
       if (tm.id === carrier.id || tm.role === 'GK') return false;
       return side === 'home' ? tm.x > carrier.x : tm.x < carrier.x;
     });
@@ -248043,9 +248073,12 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
 
   m.stats[side].shots += 1;
   m.stats[side].xg = round2(m.stats[side].xg + xg);
+  const shooterStats = playerStat(m, side, shooter.id);
+  shooterStats.shots += 1;
+  shooterStats.xg = round2(shooterStats.xg + xg);
 
   // Defender block check (close defenders in trajectory cone)
-  const oppDefenders = m.playerStates[opponent].filter(p => p.role !== 'GK');
+  const oppDefenders = activePlayers(m, opponent).filter(p => p.role !== 'GK');
   const blockingDefender = oppDefenders.find(d => {
     const dDist = distM(shooter.x, shooter.y, d.x, d.y);
     return dDist < 3.8 && distToSegmentM(d.x, d.y, shooter.x, shooter.y, goalX, PITCH.goalCenterY) < 1.8;
@@ -248053,6 +248086,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
 
   if (blockingDefender && chance(m, clamp(0.24 + (blockingDefender.defending - 70) * 0.004, 0.10, 0.52))) {
     // Shot Blocked!
+    playerStat(m, opponent, blockingDefender.id).blocks = (playerStat(m, opponent, blockingDefender.id).blocks || 0) + 1;
     addEvent(m, 'shot', side, `${shooter.name}'s shot is heroically BLOCKED by ${blockingDefender.name}!`, { playerId: shooter.id, xg, location: shotLocation });
     if (chance(m, 0.62)) {
       m.stats[side].corners += 1;
@@ -248078,7 +248112,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
   if (shotY >= PITCH.goalYMin && shotY <= PITCH.goalYMax) {
     // SHOT ON TARGET!
     m.stats[side].onTarget += 1;
-    const gk = m.playerStates[opponent][0]; // Goalkeeper
+    const gk = activePlayers(m, opponent).find(player => player.role === 'GK') || { id: null, name: 'Emergency keeper', keeping: 35, stamina: 60, x: goalX === 100 ? 95 : 5, y: 50 }; // Goalkeeper
     const gkKeeping = gk?.keeping ?? 80;
 
     // Physical save probability:
@@ -248086,27 +248120,25 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
     const distFromKeeper = Math.abs(shotY - gk.y);
     const shotInCorner = (shotY <= 46.5 || shotY >= 53.5);
 
-    let saveProb = 0.76;
-    // Distance bonus: keeper has more reaction time from distance
-    saveProb += (goalDist - 15) * 0.016;
-    // Goalkeeper attribute bonus
-    saveProb += (gkKeeping - 75) * 0.007;
-    // Shooter finishing penalty
-    saveProb -= (shooter.shooting + homeFinishBias - 75) * 0.007;
-    if (m.tactics[side].mentality === 'Defensive' && m.tactics[opponent].mentality === 'Attacking') saveProb -= 0.20;
-    // Corner placement difficulty for keeper
-    if (shotInCorner) saveProb -= 0.14;
-    // Shot hit straight at keeper
-    if (distFromKeeper < 1.6) saveProb += 0.18;
-    // Fatigue effect on keeper
-    const gkStam = clamp((gk.stamina || 100) / 100, 0.4, 1.0);
-    saveProb *= (0.88 + gkStam * 0.12);
-
-    saveProb = clamp(saveProb, 0.22, 0.94);
+    // Anchor finishing to the xG shown in the match report. Player quality,
+    // keeper quality, placement, and fatigue can move the result around it.
+    let goalProb = xg;
+    goalProb *= clamp(0.86 + (shooter.shooting - 70) * 0.0035, 0.72, 1.16);
+    goalProb *= clamp(1 + (shooter.ovr - 78) * 0.014, 0.70, 1.34);
+    goalProb *= clamp(1 + (shooter.ovr - (gk.ovr || gkKeeping)) * 0.01, 0.72, 1.28);
+    goalProb *= clamp(1 - (gkKeeping - 75) * 0.0025, 0.78, 1.18);
+    if (m.tactics[side].mentality === 'Defensive' && m.tactics[opponent].mentality === 'Attacking') goalProb *= 0.88;
+    if (shotInCorner) goalProb *= 1.12;
+    if (distFromKeeper < 1.6) goalProb *= 0.78;
+    const gkStam = clamp((gk?.stamina || 100) / 100, 0.4, 1.0);
+    goalProb *= 0.92 + gkStam * 0.08;
+    const saveProb = clamp(1 - goalProb, 0.12, 0.98);
 
     if (chance(m, saveProb)) {
       // GOALKEEPER SAVE!
       m.stats[opponent].saves += 1;
+      if (gk.id) playerStat(m, opponent, gk.id).saves += 1;
+      shooterStats.shotsOnTarget += 1;
       const isCorner = chance(m, 0.58);
       if (isCorner) {
         m.stats[side].corners += 1;
@@ -248121,13 +248153,16 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
     } else {
       // GOAL SCORED!
       m.score[side] += 1;
+      shooterStats.shotsOnTarget += 1;
+      shooterStats.goals += 1;
       m.ballState.x = side === 'home' ? 99 : 1;
       m.ballState.y = 50;
       m.ballState.carrierId = null;
 
       // Find assister
-      const assister = m.playerStates[side].find(p => p.id === m.ballState.lastCarrierId && p.id !== shooter.id);
+      const assister = activePlayers(m, side).find(p => p.id === m.ballState.lastCarrierId && p.id !== shooter.id);
       const assistText = assister ? ` (Assist: ${assister.name})` : '';
+      if (assister) playerStat(m, side, assister.id).assists += 1;
       addEvent(m, 'goal', side, `⚽ GOAL! ${shooter.name} finds the back of the net!${assistText}`, {
         playerId: shooter.id,
         assistId: assister?.id,
@@ -248140,7 +248175,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
       m.possession = opponent;
       m.ballState.x = 50;
       m.ballState.y = 50;
-      m.ballState.carrierId = m.playerStates[opponent][9]?.id || null;
+      m.ballState.carrierId = activePlayers(m, opponent)[9]?.id || activePlayers(m, opponent)[0]?.id || null;
       m.ballState.carrierSide = opponent;
     }
   } else if (Math.abs(shotY - PITCH.goalYMin) < 0.8 || Math.abs(shotY - PITCH.goalYMax) < 0.8) {
@@ -248153,7 +248188,7 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
     // SHOT WIDE / OVER
     addEvent(m, 'shot', side, `${shooter.name} sends the effort ${chance(m, 0.6) ? 'wide of the post' : 'over the crossbar'}.`, { playerId: shooter.id, xg, location: shotLocation });
     // Goal kick for defending side
-    const gk = m.playerStates[opponent][0];
+    const gk = activePlayers(m, opponent).find(player => player.role === 'GK') || { id: null, name: 'Emergency keeper', keeping: 35, stamina: 60, x: goalX === 100 ? 95 : 5, y: 50 };
     m.ballState.x = gk.x;
     m.ballState.y = gk.y;
     m.ballState.carrierId = gk.id;
@@ -248166,6 +248201,8 @@ function resolveShot(m, side, opponent, shooter, goalDist) {
 function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepestOppX) {
   const runner = forwardTeammates.sort((a, b) => b.pace - a.pace)[0];
   m.stats[side].passes += 1;
+  const carrierStats = playerStat(m, side, carrier.id);
+  carrierStats.passes += 1;
 
   // Offside check: was runner beyond deepest opponent when pass was struck?
   const isOffside = side === 'home'
@@ -248175,7 +248212,7 @@ function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepes
   if (isOffside) {
     m.stats[side].offsides += 1;
     addEvent(m, 'offside', side, `Flag raised! ${runner.name} is caught offside on the through-ball.`);
-    const oppGK = m.playerStates[opponent][0];
+    const oppGK = activePlayers(m, opponent).find(player => player.role === 'GK');
     m.ballState.x = oppGK.x;
     m.ballState.y = oppGK.y;
     m.ballState.carrierId = oppGK.id;
@@ -248188,7 +248225,7 @@ function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepes
   const passTargetX = side === 'home' ? Math.min(92, runner.x + 14) : Math.max(8, runner.x - 14);
   const passTargetY = runner.y;
 
-  const oppDefenders = m.playerStates[opponent].filter(p => p.role !== 'GK');
+  const oppDefenders = activePlayers(m, opponent).filter(p => p.role !== 'GK');
   const interceptor = oppDefenders.find(d => distToSegmentM(d.x, d.y, carrier.x, carrier.y, passTargetX, passTargetY) < 2.5);
 
   if (interceptor && chance(m, clamp(0.35 + (interceptor.defending - carrier.passing) * 0.005, 0.15, 0.65))) {
@@ -248198,11 +248235,14 @@ function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepes
     m.ballState.carrierId = interceptor.id;
     m.ballState.carrierSide = opponent;
     m.possession = opponent;
+    playerStat(m, opponent, interceptor.id).interceptions += 1;
     return;
   }
 
   // Through-ball completed! Runner breaks clear behind defense!
   m.stats[side].completed += 1;
+  carrierStats.completedPasses += 1;
+  carrierStats.keyPasses += 1;
   m.ballState.lastCarrierId = carrier.id;
   runner.x = passTargetX;
   runner.y = passTargetY;
@@ -248219,9 +248259,9 @@ function resolveThroughBall(m, side, opponent, carrier, forwardTeammates, deepes
 
 // Normal passing and midfield retention
 function resolvePass(m, side, opponent, carrier) {
-  const teammates = m.playerStates[side].filter(p => p.id !== carrier.id);
+  const teammates = activePlayers(m, side).filter(p => p.id !== carrier.id);
   // Pick teammate with clearest passing lane
-  const oppPlayers = m.playerStates[opponent];
+  const oppPlayers = activePlayers(m, opponent);
 
   const candidatePasses = teammates.map(tm => {
     let minOppDist = Infinity;
@@ -248234,6 +248274,8 @@ function resolvePass(m, side, opponent, carrier) {
 
   const target = candidatePasses[0]?.tm || teammates[0];
   m.stats[side].passes += 1;
+  const carrierStats = playerStat(m, side, carrier.id);
+  carrierStats.passes += 1;
 
   const pressAgainst = m.tactics[opponent].pressing;
   const homePassBonus = side === 'home' ? 0.045 : -0.045;
@@ -248242,6 +248284,7 @@ function resolvePass(m, side, opponent, carrier) {
   if (chance(m, passAccuracy)) {
     // Completed pass
     m.stats[side].completed += 1;
+    carrierStats.completedPasses += 1;
     m.ballState.lastCarrierId = carrier.id;
     m.ballState.carrierId = target.id;
     m.ballState.x = target.x;
@@ -248262,6 +248305,7 @@ function resolvePass(m, side, opponent, carrier) {
     m.ballState.carrierSide = opponent;
     m.possession = opponent;
     if (interceptor) {
+      playerStat(m, opponent, interceptor.id).interceptions += 1;
       m.ballState.x = interceptor.x;
       m.ballState.y = interceptor.y;
     }
@@ -248270,12 +248314,17 @@ function resolvePass(m, side, opponent, carrier) {
 
 // In-regulation penalty kick
 function resolvePenaltyKick(m, side, opponent, fouledPlayer) {
-  const taker = m.playerStates[side].sort((a, b) => b.shooting - a.shooting)[0] || fouledPlayer;
-  const gk = m.playerStates[opponent][0];
+  const taker = activePlayers(m, side).sort((a, b) => b.shooting - a.shooting)[0] || fouledPlayer;
+  const gk = activePlayers(m, opponent).find(player => player.role === 'GK') || { id: null, name: 'Emergency keeper', keeping: 35, stamina: 60, x: side === 'home' ? 95 : 5, y: 50 };
   m.stats[side].shots += 1;
   m.stats[side].onTarget += 1;
   const penXg = 0.79;
   m.stats[side].xg = round2(m.stats[side].xg + penXg);
+  const takerStats = playerStat(m, side, taker.id);
+  takerStats.shots += 1;
+  takerStats.shotsOnTarget += 1;
+  takerStats.xg = round2(takerStats.xg + penXg);
+  playerStat(m, side, fouledPlayer.id).foulsWon += 1;
 
   const conversion = clamp(0.76 + ((taker.shooting - 75) * 0.003) - (((gk?.keeping ?? 75) - 75) * 0.003), 0.58, 0.90);
   const scored = chance(m, conversion);
@@ -248283,6 +248332,7 @@ function resolvePenaltyKick(m, side, opponent, fouledPlayer) {
 
   if (scored) {
     m.score[side] += 1;
+    takerStats.goals += 1;
     m.ballState.x = side === 'home' ? 99 : 1;
     m.ballState.y = 50;
     addEvent(m, 'goal', side, `⚽ PENALTY GOAL! ${taker.name} coolly sends keeper the wrong way from the spot!`, {
@@ -248296,10 +248346,11 @@ function resolvePenaltyKick(m, side, opponent, fouledPlayer) {
     m.possession = opponent;
     m.ballState.x = 50;
     m.ballState.y = 50;
-    m.ballState.carrierId = m.playerStates[opponent][9]?.id || null;
+    m.ballState.carrierId = activePlayers(m, opponent)[9]?.id || activePlayers(m, opponent)[0]?.id || null;
     m.ballState.carrierSide = opponent;
   } else {
     m.stats[opponent].saves += 1;
+    if (gk.id) playerStat(m, opponent, gk.id).saves += 1;
     addEvent(m, 'save', side, `🧤 PENALTY SAVED! ${gk.name} dives full length to deny ${taker.name} from the spot!`, {
       playerId: taker.id,
       xg: penXg,
@@ -248320,8 +248371,14 @@ function resolveDiscipline(m, opponent, offender) {
   const booking = chance(m, 0.25);
   if (!m.bookings) m.bookings = { home: {}, away: {} };
 
+  const offenderStats = playerStat(m, opponent, offender.id);
+  offenderStats.foulsCommitted += 1;
   if (straightRed) {
     m.stats[opponent].red += 1;
+    offenderStats.red += 1;
+    offenderStats.sentOff = true;
+    const dismissed = m.playerStates[opponent].find(player => player.id === offender.id);
+    if (dismissed) dismissed.sentOff = true;
     m.bookings[opponent][offender.id] = (m.bookings[opponent][offender.id] || 0) + 2;
     addEvent(m, 'card', opponent, `🔴 DIRECT RED CARD! Dangerous foul by ${offender.name} — straight dismissal!`, { playerId: offender.id, card: 'red' });
   } else if (booking) {
@@ -248329,10 +248386,16 @@ function resolveDiscipline(m, opponent, offender) {
     if (prior >= 1) {
       m.stats[opponent].yellow += 1;
       m.stats[opponent].red += 1;
+      offenderStats.yellow += 1;
+      offenderStats.red += 1;
+      offenderStats.sentOff = true;
+      const dismissed = m.playerStates[opponent].find(player => player.id === offender.id);
+      if (dismissed) dismissed.sentOff = true;
       m.bookings[opponent][offender.id] = prior + 1;
       addEvent(m, 'card', opponent, `🔴 SECOND YELLOW CARD! ${offender.name} receives his marching orders and is sent off!`, { playerId: offender.id, card: 'second_yellow' });
     } else {
       m.stats[opponent].yellow += 1;
+      offenderStats.yellow += 1;
       m.bookings[opponent][offender.id] = 1;
       addEvent(m, 'card', opponent, `🟨 BOOKING: ${offender.name} goes into the referee's notebook.`, { playerId: offender.id, card: 'yellow' });
     }
@@ -248349,6 +248412,10 @@ function advanceMinute(m) {
   if (m.phase === 'FULL_TIME' || (!m.knockout && m.minute >= 90) || (m.knockout && m.minute >= 120)) return null;
   m.phase = 'LIVE';
   m.minute += 1;
+
+  for (const side of ['home', 'away']) {
+    for (const player of activePlayers(m, side)) playerStat(m, side, player.id).minutes += 1;
+  }
 
   // Dynamic stamina fatigue
   if (m.stamina) {
